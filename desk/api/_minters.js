@@ -92,6 +92,22 @@ export async function mintVercel(email, existing = {}) {
     payload.dashboard_url = `https://vercel.com/${teamSlug}/${slug}`;
   }
 
+  if (!payload.public_deployments) {
+    // New-team default is Vercel Authentication on every deployment URL.
+    // Participants have no Vercel dashboard logins, so their deploys must be
+    // publicly accessible — disable deployment protection on their project.
+    const res = await fetch(`${VERCEL_API}/v9/projects/${payload.project_id}?teamId=${teamId}`, {
+      method: "PATCH",
+      headers: auth(master),
+      body: JSON.stringify({ ssoProtection: null }),
+    });
+    if (res.ok) {
+      payload.public_deployments = true;
+    } else {
+      console.error(`vercel protection disable failed for ${slug}: ${res.status} ${await res.text()}`);
+    }
+  }
+
   if (!payload.token) {
     // Token minting needs a PERSONAL-scope Vercel token (VERCEL_USER_TOKEN).
     // A team-scoped token gets 403 here; the project still provisions and the
@@ -115,7 +131,10 @@ export async function mintVercel(email, existing = {}) {
     }
   }
 
-  return finalize(payload, payload.token ? [] : ["token"]);
+  const vercelPending = [];
+  if (!payload.token) vercelPending.push("token");
+  if (!payload.public_deployments) vercelPending.push("public_access");
+  return finalize(payload, vercelPending);
 }
 
 // -------------------------------------------------------------- supabase ---
