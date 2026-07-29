@@ -34,7 +34,7 @@ Other commands: `/insurwreck:status`, `/insurwreck:update`, `/insurwreck:uninsta
 | `POST /api/provision` | Bearer session | Update registration, mint live credentials (Resend), return the bundle |
 | `GET /api/roster` | `x-admin-key` | Organizer view: participants, idea briefs, issued credentials |
 
-Live minting today: Resend sending-only keys. Pre-provisioned by organizers (inserted into the `credentials` table): Vercel, n8n, and for now Supabase and AgentMail.
+Live minting today, per registrant: a Vercel project on the Insurwreck team (plus a personal Vercel access token once `VERCEL_USER_TOKEN` is set), a dedicated Supabase project with its keys, and a Resend sending-only key. Incomplete entries (keys that weren't ready, tokens awaiting the personal-scope PAT) repair themselves on the next provision call. Pre-provisioned by organizers via the `credentials` table: n8n and AgentMail.
 
 ## Dev loop (organizers)
 
@@ -47,7 +47,7 @@ Test the plugin from your local checkout without pushing:
 
 Edit command files, then `/insurwreck:update` (or `/plugin marketplace update insurwreck-kit` + reinstall) and restart the session to pick up command changes. `/insurwreck:uninstall` removes everything for a clean retry.
 
-Desk deploys from `desk/`: `vercel deploy --prod`. Environment variables (set in Vercel, documented in `desk/.env.example`): `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `RESEND_FROM`, `ADMIN_KEY`, `ALLOWED_DOMAIN`, `ALLOWED_EMAILS`.
+Desk deploys from `desk/`: `vercel deploy --prod`. Environment variables are documented in `desk/.env.example` — the credential store (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`), mail (`RESEND_API_KEY`, `RESEND_FROM`), minting (`VERCEL_API_TOKEN`, `VERCEL_TEAM_ID`, `VERCEL_TEAM_SLUG`, `VERCEL_USER_TOKEN`, `SUPABASE_MGMT_TOKEN`, `SUPABASE_ORG_ID`, `SUPABASE_REGION`), and access control (`ADMIN_KEY`, `ALLOWED_DOMAIN`, `ALLOWED_EMAILS`).
 
 ## Security posture
 

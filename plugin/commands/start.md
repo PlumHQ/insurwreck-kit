@@ -54,14 +54,16 @@ curl -s -X POST $DESK/api/verify -H "Content-Type: application/json" -d '{"email
 
 ## Step 4 — Fetch their credential bundle
 
+Before running this call, tell the participant their personal infrastructure is being created — their own Vercel project and their own Supabase project — and that it takes a minute or two. Then run it with a generous timeout:
+
 ```
-curl -s -X POST $DESK/api/provision \
+curl -s --max-time 280 -X POST $DESK/api/provision \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"name":"<name>","idea_brief":"<brief>","agent":"claude-code"}'
 ```
 
-The response is their credential bundle: `{ participant, services: {...}, pending: [...] }`.
+The response is their credential bundle: `{ participant, services: {...}, pending: [...] }`. A service entry with `"incomplete": true` is partially provisioned — its `pending_parts` lists what's still coming (for example Supabase `api_keys` that need another minute). Re-running this same call later repairs incomplete entries; it never duplicates anything.
 
 Store it:
 
@@ -71,7 +73,11 @@ Store it:
 
 ## Step 5 — Summary and first build step
 
-Show a compact status table for the five services — Vercel, Supabase, n8n, Resend, AgentMail. A service present in `services` is **Ready**; one in `pending` is **Pending — the PS team is provisioning it**. For ready services, mention in one line what the credential is for (for example: Resend — sending-only key on the shared hackathon domain).
+Show a compact status table for the five services — Vercel, Supabase, n8n, Resend, AgentMail. A service present in `services` is **Ready**; one marked `incomplete` is **Almost ready** (name its `pending_parts` and say `/insurwreck:status` can refresh it later); one in `pending` is **Pending — the PS team is provisioning it**. For ready services, mention in one line what the credential is for:
+
+- Vercel — their own project on the Insurwreck team plus a personal access token; deploys go live with `vercel deploy --token`.
+- Supabase — their own dedicated project (URL, anon key, service_role key, DB password).
+- Resend — sending-only key on the shared hackathon domain.
 
 Then read their idea brief back to them and propose ONE concrete first build step tailored to it:
 

@@ -1,6 +1,11 @@
-import { sb, sha256, nowIso, readBody, resendFrom } from "./_lib.js";
+import { sb, sha256, nowIso, readBody } from "./_lib.js";
+import { mintResend, mintVercel, mintSupabase } from "./_minters.js";
 
 const SERVICES = ["vercel", "supabase", "n8n", "resend", "agentmail"];
+
+// Live minters. n8n and agentmail have no minter yet — organizers pre-insert
+// their credentials rows, and they surface here automatically once present.
+const MINTERS = { resend: mintResend, vercel: mintVercel, supabase: mintSupabase };
 
 async function sessionEmail(req) {
   const auth = req.headers.authorization || "";
@@ -10,30 +15,6 @@ async function sessionEmail(req) {
     `sessions?token_hash=eq.${sha256(token)}&expires_at=gt.${nowIso()}&select=email&limit=1`
   );
   return rows.length ? rows[0].email : null;
-}
-
-// The one credential the desk can mint live today: a sending-only Resend key
-// on the shared hackathon domain. Everything else is pre-provisioned by
-// organizers into the credentials table.
-async function mintResendKey(email) {
-  const response = await fetch("https://api.resend.com/api-keys", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ name: `insurwreck-${email}`, permission: "sending_access" }),
-  });
-  if (!response.ok) {
-    throw new Error(`resend key mint failed: ${response.status} ${await response.text()}`);
-  }
-  const key = await response.json();
-  return {
-    api_key: key.token,
-    key_id: key.id,
-    from: resendFrom(),
-    note: "Sending-only Resend key for the shared hackathon domain.",
-  };
 }
 
 export default async function handler(req, res) {
@@ -56,24 +37,40 @@ export default async function handler(req, res) {
     });
     const participant = updated[0] || { email };
 
-    let rows = await sb(
+    const rows = await sb(
       `credentials?participant_email=eq.${encodeURIComponent(email)}&revoked_at=is.null&select=service,payload,minted_live`
     );
+    const byService = new Map(rows.map((row) => [row.service, row]));
 
-    if (!rows.some((row) => row.service === "resend")) {
+    // Mint anything missing; repair anything incomplete (e.g. Supabase keys
+    // that weren't ready on the first pass, or a Vercel token once a
+    // personal-scope PAT lands in the environment). Failures never sink the
+    // whole provision — the service just stays pending for the next run.
+    for (const [service, minter] of Object.entries(MINTERS)) {
+      const row = byService.get(service);
+      if (row && !row.payload?.incomplete) continue;
       try {
-        const payload = await mintResendKey(email);
-        await sb("credentials", {
-          method: "POST",
-          body: { participant_email: email, service: "resend", payload, minted_live: true },
-        });
-        rows = [...rows, { service: "resend", payload, minted_live: true }];
-      } catch (mintError) {
-        console.error(mintError); // provision still succeeds; resend stays pending
+        const payload = await minter(email, row?.payload || {});
+        if (row) {
+          await sb(
+            `credentials?participant_email=eq.${encodeURIComponent(email)}&service=eq.${service}`,
+            { method: "PATCH", body: { payload, minted_live: true } }
+          );
+        } else {
+          await sb("credentials", {
+            method: "POST",
+            body: { participant_email: email, service, payload, minted_live: true },
+          });
+        }
+        byService.set(service, { service, payload, minted_live: true });
+      } catch (error) {
+        console.error(`mint ${service} failed for ${email}:`, error);
       }
     }
 
-    const services = Object.fromEntries(rows.map((row) => [row.service, row.payload]));
+    const services = Object.fromEntries(
+      [...byService.values()].map((row) => [row.service, row.payload])
+    );
     const pending = SERVICES.filter((service) => !services[service]);
     return res.status(200).json({
       ok: true,

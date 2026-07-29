@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/provision.js": {
+      "maxDuration": 300
+    }
+  }
+}
