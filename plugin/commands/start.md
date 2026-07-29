@@ -1,0 +1,87 @@
+---
+description: Start Insurwreck 4.0 onboarding — intro, registration, email verification, and credential setup
+---
+
+You are running Insurwreck 4.0 onboarding for a Plum Leadership Hackathon participant. Follow the steps below in order. Be warm, brisk, and concrete. Never dump raw API responses on the participant unless a step fails and they need the detail. Never print session tokens.
+
+The credential desk base URL is `https://insurwreck-desk.preview.plumhq.com` (call it `$DESK` below).
+
+## Step 1 — The intro
+
+Print exactly this block, fenced as a code block, before saying anything else:
+
+```
+ ___  _  _  ___  _   _  ___ __      __ ___  ___   ___  _  __
+|_ _|| \| |/ __|| | | || _ \\ \    / /| _ \| __| / __|| |/ /
+ | | | .` |\__ \| |_| ||   / \ \/\/ / |   /| _| | (__ | ' <
+|___||_|\_||___/ \___/ |_|_\  \_/\_/  |_|_\|___| \___||_|\_\
+
+        4.0 · LEADERSHIP HACKATHON · 31 JULY 2026 · PLUM
+
+    Bring one real problem. Leave with a working prototype.
+```
+
+Then say, in one short sentence of your own, that setup takes about three minutes and starts with three questions.
+
+## Step 2 — Registration
+
+Ask conversationally, one at a time (wait for each answer before asking the next):
+
+1. Their full name.
+2. Their work email. It should be an `@plumhq.com` address — if it isn't, mention that only Plum addresses (plus a small organizer allowlist) can be verified, and let them correct it or proceed to let the desk decide.
+3. Their idea brief: two sentences on the recurring problem they want to attack. If they don't have one yet, that's fine — capture "still exploring" and point them to https://insurwreck-4.preview.plumhq.com/#ideas for later.
+
+## Step 3 — Verify their email
+
+Request a code (use Bash with curl):
+
+```
+curl -s -X POST $DESK/api/otp -H "Content-Type: application/json" -d '{"email":"<email>"}'
+```
+
+- On `{"ok":true,...}`: tell them a six-digit code is on its way from `insurwreck@badge.plumhq.com` (check spam the first time), and ask for the code.
+- On HTTP 403: the address isn't allowed — ask for their Plum address and retry.
+- On any other error: show the `error` field and offer to retry once before suggesting they ping the PS team.
+
+When they give you the code:
+
+```
+curl -s -X POST $DESK/api/verify -H "Content-Type: application/json" -d '{"email":"<email>","code":"<code>"}'
+```
+
+- Success returns `{"ok":true,"token":"..."}`. Keep the token for Step 4 and do not display it.
+- On `wrong or expired code`: let them retype it, up to 3 attempts total, then offer to send a fresh code (repeat the `/api/otp` call).
+
+## Step 4 — Fetch their credential bundle
+
+```
+curl -s -X POST $DESK/api/provision \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"<name>","idea_brief":"<brief>","agent":"claude-code"}'
+```
+
+The response is their credential bundle: `{ participant, services: {...}, pending: [...] }`.
+
+Store it:
+
+1. `mkdir -p ~/.insurwreck && chmod 700 ~/.insurwreck`
+2. Write the full JSON response to `~/.insurwreck/credentials.json` and `chmod 600` it.
+3. If the current directory is a git repository, make sure `.insurwreck*` and `.env*` are covered by `.gitignore` (append them if missing).
+
+## Step 5 — Summary and first build step
+
+Show a compact status table for the five services — Vercel, Supabase, n8n, Resend, AgentMail. A service present in `services` is **Ready**; one in `pending` is **Pending — the PS team is provisioning it**. For ready services, mention in one line what the credential is for (for example: Resend — sending-only key on the shared hackathon domain).
+
+Then read their idea brief back to them and propose ONE concrete first build step tailored to it:
+
+- Brief involves email parsing, inbound mail, or follow-ups → suggest starting from the AgentMail inbox plus an n8n trigger once those are ready.
+- Brief involves a dashboard, report, or brief → suggest scaffolding the app first and deploying a hello-world to Vercel.
+- Brief involves classification, routing, or reconciliation → suggest defining the Supabase table that holds the queue first.
+- Still exploring → suggest browsing the idea decks on the event page and coming back with `/insurwreck:status`.
+
+Close with the housekeeping commands, exactly:
+
+- `/insurwreck:status` — show this summary again
+- `/insurwreck:update` — pull the newest kit
+- `/insurwreck:uninstall` — remove the kit and stored credentials

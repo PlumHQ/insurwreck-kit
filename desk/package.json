@@ -1,0 +1,6 @@
+{
+  "name": "insurwreck-desk",
+  "private": true,
+  "type": "module",
+  "description": "Insurwreck 4.0 credential desk — OTP-gated delivery of per-participant credential bundles"
+}

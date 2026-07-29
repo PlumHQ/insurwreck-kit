@@ -1,0 +1,18 @@
+{
+  "name": "insurwreck-kit",
+  "owner": {
+    "name": "Plum PS team",
+    "url": "https://github.com/PlumHQ"
+  },
+  "metadata": {
+    "description": "Insurwreck 4.0 build kit — Leadership Hackathon onboarding and setup",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "insurwreck",
+      "source": "./plugin",
+      "description": "Onboarding for Insurwreck 4.0: terminal intro, registration, email verification, and credential setup for Vercel, Supabase, n8n, Resend, and AgentMail."
+    }
+  ]
+}

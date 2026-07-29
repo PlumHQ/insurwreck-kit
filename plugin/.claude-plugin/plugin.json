@@ -1,0 +1,11 @@
+{
+  "name": "insurwreck",
+  "version": "0.1.0",
+  "description": "Insurwreck 4.0 build kit — onboarding, credentials, and setup for Plum's Leadership Hackathon",
+  "author": {
+    "name": "Plum PS team"
+  },
+  "homepage": "https://insurwreck-4.preview.plumhq.com",
+  "repository": "https://github.com/PlumHQ/insurwreck-kit",
+  "keywords": ["plum", "insurwreck", "hackathon"]
+}
