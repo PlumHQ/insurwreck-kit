@@ -71,7 +71,21 @@ Store it:
 2. Write the full JSON response to `~/.insurwreck/credentials.json` and `chmod 600` it.
 3. If the current directory is a git repository, make sure `.insurwreck*` and `.env*` are covered by `.gitignore` (append them if missing).
 
-## Step 5 — Summary and first build step
+## Step 5 — Install the CLIs
+
+Their infrastructure is ready; now make sure the tools are on this machine. Tell the participant you're checking their tooling, then:
+
+1. Run `vercel --version`. If missing, install it: `npm install -g vercel@latest` (if npm is unavailable, use `brew install vercel-cli` on macOS).
+2. Run `supabase --version`. If missing, install it: `brew install supabase/tap/supabase` on macOS, `scoop install supabase` on Windows. If neither package manager exists, note that `npx supabase` works per-project and continue.
+
+Confirm both versions after installing. If an install fails, do not block onboarding — show the error, link the official install docs, and move on.
+
+No CLI logins are needed, and never run `vercel login` or `supabase login`:
+
+- Vercel authenticates with the personal token from their bundle — every command takes `--token <token>` (their bundle's `note` field has the exact link + deploy command).
+- The Supabase CLI reaches their project without login through the direct database URL: `postgresql://postgres:<db_password>@db.<project_ref>.supabase.co:5432/postgres` (both values are in their bundle).
+
+## Step 6 — Summary and first build step
 
 Show a compact status table for the five services — Vercel, Supabase, n8n, Resend, AgentMail. A service present in `services` is **Ready**; one marked `incomplete` is **Almost ready** (name its `pending_parts` and say `/insurwreck:status` can refresh it later); one in `pending` is **Pending — the PS team is provisioning it**. For ready services, mention in one line what the credential is for:
 
