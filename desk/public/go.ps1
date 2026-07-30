@@ -84,7 +84,7 @@ function Install-WinGetPackage {
   winget install --exact --id $Id --silent `
     --accept-source-agreements --accept-package-agreements
   Sync-Path
-  Write-Info "$Label: winget finished in $([int]((Get-Date) - $started).TotalSeconds)s"
+  Write-Info "${Label}: winget finished in $([int]((Get-Date) - $started).TotalSeconds)s"
   # Exit codes are not a reliable signal here - winget returns non-zero for
   # "already installed" and zero for some partial installs. Callers verify the
   # capability instead, which is the only thing that actually matters.

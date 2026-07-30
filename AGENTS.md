@@ -79,6 +79,26 @@ curl -s -X POST $DESK/api/provision -H "x-admin-key: $ADMIN_KEY" -d '{"email":"t
 
 If something can only be verified by a human in a browser (a real Google login, an OAuth consent screen), say that explicitly rather than implying you tested it.
 
+## 5a. go.ps1 must be parsed before it ships
+
+`desk/public/go.ps1` is served to participants and run with `irm ... | iex`, which
+parses the entire file before executing any of it. One syntax error therefore does
+not degrade the setup - it kills it outright, and the participant sees a parser
+message about a line in a script they never opened.
+
+That has happened once: `"$Label: ..."` is invalid, because PowerShell reads
+`$Label:` as a scope-qualified variable like `$env:`. There is no `bash -n` for
+PowerShell, so use the real parser:
+
+```bash
+brew install powershell     # or apt / winget install Microsoft.PowerShell
+test/parse-go-ps1.sh
+```
+
+It also asserts the CLAUDE.md marker `require-brief.sh` depends on is still
+written, and that `--disable-interactivity` has not come back - that flag hides
+the UAC prompt where the admin password goes.
+
 ## 6. Plugin version bumps go in two files
 
 `.claude-plugin/marketplace.json` → `metadata.version`, **and** `plugin/.claude-plugin/plugin.json` → `version`. They must match. Then:
