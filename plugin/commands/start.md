@@ -41,7 +41,7 @@ curl -s -X POST $DESK/api/otp -H "Content-Type: application/json" -d '{"email":"
 
 - On `{"ok":true,...}`: tell them a six-digit code is on its way from `insurwreck@badge.plumhq.com` (check spam the first time), and ask for the code.
 - On HTTP 403: the address isn't allowed — ask for their Plum address and retry.
-- On any other error: show the `error` field and offer to retry once before suggesting they ping the PS team.
+- On any other error: show the `error` field and offer to retry once before suggesting they ping the AI pod.
 
 When they give you the code:
 
@@ -106,17 +106,18 @@ No CLI logins are needed, and never run `vercel login` or `supabase login`:
 
 ## Step 6 — Summary and first build step
 
-Show a compact status table for the six services — Vercel, Supabase, Anthropic, Resend, AgentMail, n8n. A service present in `services` is **Ready**; one marked `incomplete` is **Almost ready** (name its `pending_parts` and say `/insurwreck:status` can refresh it later); one in `pending` is **Pending — the PS team is provisioning it**. For ready services, mention in one line what the credential is for:
+Show a compact status table for the seven services - Vercel, Supabase, Anthropic, Resend, AgentMail, n8n, Google sign-in. A service present in `services` is **Ready**; one marked `incomplete` is **Almost ready** (name its `pending_parts` and say `/insurwreck:status` can refresh it later); one in `pending` is **Pending - the AI pod is provisioning it**. For ready services, mention in one line what the credential is for:
 
 - Vercel — their own project on the Insurwreck team plus a personal access token. Deploy with `iw-deploy`, which handles the token for them.
 - Supabase — their own dedicated project (URL, anon key, service_role key, DB password).
 - Anthropic — model access for the app they build, metered against a per-person budget. It plugs into the Anthropic SDK by setting `baseURL` to `api_base`; it is not a normal Anthropic key and won't work against `api.anthropic.com`.
 - Resend — sending-only key on the shared hackathon domain.
-- AgentMail — their own agent inbox with a real address that can send and receive.
+- AgentMail - their own agent inbox with a real address that can send and receive.
+- Google sign-in - Plum Workspace login for their app, restricted to `@plumhq.com`; run `/insurwreck:add-google-auth` when they want it wired in.
 
 Also mention the two things they get for free: `iw-doctor` checks their whole setup and
 explains anything broken in plain English, and the `insurwreck-data` MCP server gives
-them read-only Plum data slices — tell them to just ask for what they want, e.g.
+them read-only Plum data slices - tell them to just ask for what they want, e.g.
 "show me claims by status".
 
 Then read their idea brief back to them and propose ONE concrete first build step tailored to it:
@@ -129,5 +130,6 @@ Then read their idea brief back to them and propose ONE concrete first build ste
 Close with the housekeeping commands, exactly:
 
 - `/insurwreck:status` — show this summary again
+- `/insurwreck:add-google-auth` — add Plum Workspace sign-in to your app
 - `/insurwreck:update` — pull the newest kit
 - `/insurwreck:uninstall` — remove the kit and stored credentials

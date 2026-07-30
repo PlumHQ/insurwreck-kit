@@ -138,6 +138,103 @@ export async function mintVercel(email, existing = {}) {
   return finalize(payload, vercelPending);
 }
 
+// ----------------------------------------------------------- google auth ---
+
+// Domain enforcement lives INSIDE the participant's project as a
+// before-user-created hook, so it holds even if the Google console config is
+// later loosened. The Internal OAuth consent screen is the primary lock; this
+// is defence in depth.
+function domainGuardSql(domain) {
+  const safe = domain.replace(/[^a-z0-9.-]/gi, "");
+  return `
+create or replace function public.insurwreck_restrict_signup_domain(event jsonb)
+returns jsonb
+language plpgsql
+as $$
+declare
+  user_email text;
+begin
+  user_email := lower(coalesce(event->'user'->>'email', ''));
+  if user_email like '%@${safe}' then
+    return '{}'::jsonb;
+  end if;
+  return jsonb_build_object(
+    'error', jsonb_build_object(
+      'http_code', 403,
+      'message', 'Only ${safe} accounts can sign in to this Insurwreck app.'
+    )
+  );
+end;
+$$;
+
+grant execute on function public.insurwreck_restrict_signup_domain(jsonb) to supabase_auth_admin;
+revoke execute on function public.insurwreck_restrict_signup_domain(jsonb) from authenticated, anon, public;
+`;
+}
+
+export async function mintGoogleAuth(email, existing = {}, context = {}) {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) throw new Error("google oauth client not configured");
+
+  const domain = process.env.ALLOWED_DOMAIN || "plumhq.com";
+  const token = process.env.SUPABASE_MGMT_TOKEN;
+  const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+
+  const ref = context.supabase?.project_ref;
+  if (!ref) throw new Error("supabase project not ready yet — google auth deferred");
+
+  const payload = { ...existing };
+  payload.callback_url = `https://${ref}.supabase.co/auth/v1/callback`;
+  payload.client_id = clientId; // public by design; the secret never leaves the desk
+  payload.hd = domain;
+
+  if (!payload.configured) {
+    const guard = await fetch(`${SUPABASE_API}/projects/${ref}/database/query`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ query: domainGuardSql(domain) }),
+    });
+    if (!guard.ok) {
+      throw new Error(`domain guard install failed: ${guard.status} ${await guard.text()}`);
+    }
+
+    const appProject = context.vercel?.project_name;
+    const allowList = ["http://localhost:3000/**", "http://localhost:5173/**"];
+    if (appProject) allowList.push(`https://${appProject}*.vercel.app/**`);
+
+    const config = {
+      external_google_enabled: true,
+      external_google_client_id: clientId,
+      external_google_secret: clientSecret,
+      hook_before_user_created_enabled: true,
+      hook_before_user_created_uri:
+        "pg-functions://postgres/public/insurwreck_restrict_signup_domain",
+      uri_allow_list: allowList.join(","),
+    };
+    if (appProject) config.site_url = `https://${appProject}.vercel.app`;
+
+    const res = await fetch(`${SUPABASE_API}/projects/${ref}/config/auth`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify(config),
+    });
+    if (!res.ok) {
+      throw new Error(`google auth config failed: ${res.status} ${await res.text()}`);
+    }
+    payload.configured = true;
+    payload.redirect_allow_list = allowList;
+    payload.domain_guard = "insurwreck_restrict_signup_domain";
+    payload.sign_in_snippet =
+      `await supabase.auth.signInWithOAuth({ provider: 'google', ` +
+      `options: { queryParams: { hd: '${domain}' } } })`;
+  }
+
+  // Google has no API for authorized redirect URIs, so an organizer registers
+  // callbacks in the console in batches and marks them via /api/google-callbacks.
+  return finalize(payload, payload.console_registered ? [] : ["google_console_registration"]);
+}
+
 // -------------------------------------------------------------- supabase ---
 
 export async function mintSupabase(email, existing = {}) {

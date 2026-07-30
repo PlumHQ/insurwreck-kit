@@ -41,7 +41,7 @@ export default async function handler(req, res) {
           `It expires in ${OTP_TTL_MINUTES} minutes.`,
           "",
           "Bring one real problem. Leave with a working prototype.",
-          "— Saurabh, Abhishek & PS team",
+          "— AI pod at Plum",
         ].join("\n"),
       }),
     });
