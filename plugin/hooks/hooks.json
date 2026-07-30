@@ -18,6 +18,15 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/block-destructive.sh"
           }
         ]
+      },
+      {
+        "matcher": "mcp__kula__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/block-kula-writes.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [

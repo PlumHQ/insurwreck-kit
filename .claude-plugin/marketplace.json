@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "Insurwreck 4.0 build kit — Leadership Hackathon onboarding and setup",
-    "version": "0.3.0"
+    "version": "0.4.0"
   },
   "plugins": [
     {
       "name": "insurwreck",
       "source": "./plugin",
-      "description": "Onboarding for Insurwreck 4.0: terminal intro, registration, email verification, and credential setup for Vercel, Supabase, n8n, Resend, and AgentMail."
+      "description": "Onboarding for Insurwreck 4.0: terminal intro, registration, email verification, credential setup for Vercel, Supabase, n8n, Resend, and AgentMail, plus MCP servers for Salesforce and Kula."
     },
     {
       "name": "insurwreck-organizer",
