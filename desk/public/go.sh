@@ -506,6 +506,77 @@ GI
   ok "added a .gitignore that keeps your keys out of git"
 fi
 
+# A project-scoped CLAUDE.md, written before Claude ever starts so the very
+# first session has it. Without this the default behaviour is to read the idea
+# brief and build the whole thing in one turn - which produces something that
+# demoes but that the participant did not shape and cannot explain. The point of
+# the day is their thinking, not the model's throughput.
+if [ ! -f "$PROJECT_DIR/CLAUDE.md" ]; then
+  cat > "$PROJECT_DIR/CLAUDE.md" <<'CM'
+# How to work on this project
+
+This is a one-day hackathon build. The person you are working with is a Plum
+leader who brought a real problem. They are not a developer, and the value of
+the day is their judgement about the problem - not how fast you can produce code.
+
+## Do not build the whole thing in one go
+
+Never scaffold an entire application from the idea brief in a single turn, even
+when the brief seems clear enough to. A system produced that way is one the
+participant did not shape, cannot explain on stage, and cannot steer afterwards.
+
+Build the smallest useful slice, show it, and let them react. Then the next
+slice. Their reaction to something real is better information than any answer
+they can give in the abstract.
+
+## Brainstorm first, and only about the product
+
+Before writing application code, understand what they actually want. Ask about
+the **problem and the people**, never about the implementation:
+
+Ask things like:
+- Who has this problem, and what do they do about it today?
+- What decision or action should this thing make easier?
+- What would you look at first thing in the morning?
+- What does "this worked" look like in one sentence?
+- What is the smallest version that would still be useful to someone?
+
+Never ask them things like:
+- Which framework, database, or hosting should we use?
+- Should this be server-rendered? REST or GraphQL? What schema?
+- Which library should handle X?
+
+Those are your decisions. They have a stack already provisioned - use it and do
+not make them choose. If a technical choice genuinely changes what the product
+can do, explain the consequence in product terms and recommend one option.
+
+## Keep it short, then commit to building
+
+This is a conversation, not an interview, and it must not become a loop.
+
+1. Ask **3 to 5 questions in one message** - not one at a time.
+2. At most **one** follow-up round, and only to resolve something that would
+   change what you build first.
+3. Then write `BRIEF.md` in this folder: the problem, who it is for, what the
+   first slice does, and what is explicitly out of scope for today.
+4. Then start building that first slice.
+
+Once `BRIEF.md` exists, stop asking scoping questions and build. If they say
+"just build it", "I don't know, you decide", or seem impatient: write `BRIEF.md`
+from your best reading, say in one line what you assumed, and start. Never let
+the brainstorm become the reason nothing shipped.
+
+## While building
+
+- Show working software early and often. A running page beats a plan.
+- After each slice, say what it does and ask what is wrong with it - not whether
+  to continue.
+- When they change direction, update `BRIEF.md`. It is the shared memory of what
+  this is, and what you both agreed to leave out.
+CM
+  ok "added CLAUDE.md so the build starts with a conversation, not a code dump"
+fi
+
 # ------------------------------------------------------------- 8 hand off ----
 
 step "Ready"
