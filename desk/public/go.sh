@@ -498,17 +498,24 @@ cat <<EOF
 
 EOF
 
+# --permission-mode auto so the day isn't spent approving prompts. Onboarding
+# alone runs curl, writes files and installs CLIs; a leader who has never used a
+# terminal reads each of those approvals as "is this safe?" and stalls. The
+# guardrails that matter are hooks, not prompts - block-secrets and
+# block-destructive still run on every Bash call, and they deny rather than ask.
+CLAUDE_LAUNCH="claude --permission-mode auto"
+
 if [ "$LAUNCH" = "0" ]; then
-  info "Start it yourself with:  cd $PROJECT_DIR && claude"
+  info "Start it yourself with:  cd $PROJECT_DIR && $CLAUDE_LAUNCH"
   exit 0
 fi
 
 if [ ! -t 0 ]; then
   # Piped from curl, so stdin isn't a terminal and we can't hand over an
   # interactive session. Tell them the one line to paste instead.
-  printf "  ${B}Paste this to begin:${R}\n\n      cd %s && claude\n\n" "$PROJECT_DIR"
+  printf "  ${B}Paste this to begin:${R}\n\n      cd %s && %s\n\n" "$PROJECT_DIR" "$CLAUDE_LAUNCH"
   exit 0
 fi
 
 cd "$PROJECT_DIR"
-exec claude
+exec claude --permission-mode auto
