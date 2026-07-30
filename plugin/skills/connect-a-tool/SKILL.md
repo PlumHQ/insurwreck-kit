@@ -12,17 +12,18 @@ Ask them what they're missing, pick the row, run the command, restart Claude Cod
 
 ## Already installed - just needs auth
 
-Kula and Salesforce ship with the plugin and start automatically. Don't run
-`claude mcp add` for either; sending someone to a second copy of the same server is how
-you end up with two entries and a confused participant. Send them to the command:
+Kula, Salesforce and Remotion ship with the plugin and start automatically. Don't run
+`claude mcp add` for any of them; sending someone to a second copy of the same server is
+how you end up with two entries and a confused participant.
 
 | System | Command | Scoped to them? |
 |---|---|---|
 | Kula (candidates, jobs, interviews) | `/insurwreck:connect` | No - one shared organizer key, same view for everyone, read-only |
 | Salesforce (accounts, opportunities, notes) | `/insurwreck:connect` | Yes - browser login, their own profile and sharing rules |
+| Remotion docs (programmatic video in React) | nothing - already working | n/a - public docs, no key |
 
-Because both are always on, they cost context on every turn for everyone. If a
-participant's idea touches neither, tell them they can drop one with
+All three are always on, so they cost context on every turn for everyone. If a
+participant's idea touches none of them, tell them they can drop one with
 `claude mcp remove <name>` for the rest of the day.
 
 Kula has no OAuth and no per-user keys, so don't send anyone to https://developers.kula.ai
@@ -39,6 +40,11 @@ things to know:
 - There is no documented tool that downloads a resume **file**. `get_candidate` may return
   a resume URL as a field. If their idea depends on parsing resume PDFs, verify that early -
   don't discover it at 4pm.
+
+If an idea needs **video**, `remotion` is already connected and answers documentation
+questions - but it only searches docs. It renders nothing. Rendering means a real Remotion
+project in their repo, and Remotion needs a paid company licence beyond prototype use, so
+raise it with an organizer before anyone builds a demo that depends on shipping video.
 
 ## What else is ready
 
