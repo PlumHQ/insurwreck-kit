@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+# Switch on the two MCP servers that need a per-participant token.
+#
+#   iw-connect
+#
+# The insurwreck-data and n8n servers are declared in the plugin with
+# ${INSURWRECK_TOKEN} and ${N8N_TOKEN} placeholders, and Claude Code resolves
+# those once, at process start. The tokens themselves don't exist until
+# /insurwreck:start has run - inside an already-started Claude Code. So the
+# handoff is a file write plus one restart, and it used to be a paragraph of
+# prose asking the model to edit JSON by hand. Skipping that paragraph looks
+# identical to the data server being broken, so it is a command now.
+#
+# Safe to re-run: it merges into whatever is already in settings.json.
+
+set -uo pipefail
+
+CREDS="$HOME/.insurwreck/credentials.json"
+SETTINGS="$HOME/.claude/settings.json"
+
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+  B=$'\033[1m'; R=$'\033[0m'; GRN=$'\033[32m'; YLW=$'\033[33m'; RED=$'\033[31m'; DIM=$'\033[2m'
+else
+  B=""; R=""; GRN=""; YLW=""; RED=""; DIM=""
+fi
+
+if [ ! -f "$CREDS" ]; then
+  printf "\n  ${RED}✗${R} No credentials yet.\n"
+  printf "    ${DIM}Run /insurwreck:start inside Claude Code first.${R}\n\n"
+  exit 1
+fi
+
+command -v node >/dev/null 2>&1 || {
+  printf "\n  ${RED}✗${R} node is missing — re-run the setup command from the invite.\n\n"
+  exit 1
+}
+
+mkdir -p "$HOME/.claude"
+
+node -e '
+const fs = require("fs");
+const [credsPath, settingsPath] = process.argv.slice(1);
+
+const bundle = JSON.parse(fs.readFileSync(credsPath, "utf8"));
+const svc = bundle.services || {};
+
+// Only what an MCP server needs resolved at Claude Code startup. Every other
+// credential lives in the bundle and is read from there by the code
+// participants write - putting those in the environment would leak them into
+// every subprocess for no gain.
+const wanted = {
+  INSURWRECK_TOKEN: svc.anthropic?.api_key,
+  N8N_TOKEN: svc.n8n?.token,
+  KULA_API_KEY: svc.kula?.api_key,
+};
+
+let settings = {};
+if (fs.existsSync(settingsPath)) {
+  try {
+    settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+  } catch {
+    // A corrupt settings.json would otherwise be silently overwritten, taking
+    // the participant s own configuration with it.
+    console.log("CORRUPT");
+    process.exit(3);
+  }
+}
+settings.env = settings.env || {};
+
+const set = [], skipped = [], unchanged = [];
+for (const [key, value] of Object.entries(wanted)) {
+  if (!value) { skipped.push(key); continue; }
+  if (settings.env[key] === value) { unchanged.push(key); continue; }
+  settings.env[key] = value;
+  set.push(key);
+}
+
+if (set.length) fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n");
+console.log(JSON.stringify({ set, skipped, unchanged, live: set.length === 0 && unchanged.length > 0 }));
+' "$CREDS" "$SETTINGS" > /tmp/iw-connect.$$ 2>/dev/null
+STATUS=$?
+
+if [ "$STATUS" = "3" ]; then
+  printf "\n  ${RED}✗${R} %s is not valid JSON.\n" "$SETTINGS"
+  printf "    ${DIM}Fix or delete it, then run iw-connect again.${R}\n\n"
+  rm -f /tmp/iw-connect.$$
+  exit 1
+fi
+if [ "$STATUS" != "0" ]; then
+  printf "\n  ${RED}✗${R} Could not read your credential bundle.\n"
+  printf "    ${DIM}Run /insurwreck:status to repair it.${R}\n\n"
+  rm -f /tmp/iw-connect.$$
+  exit 1
+fi
+
+RESULT="$(cat /tmp/iw-connect.$$)"; rm -f /tmp/iw-connect.$$
+
+printf "\n${B}Connecting your data servers${R}\n\n"
+
+SET="$(printf '%s' "$RESULT" | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).set.join(" ")')"
+SKIPPED="$(printf '%s' "$RESULT" | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).skipped.join(" ")')"
+UNCHANGED="$(printf '%s' "$RESULT" | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).unchanged.join(" ")')"
+
+for key in $SET;       do printf "  ${GRN}✓${R} %s written to settings.json\n" "$key"; done
+for key in $UNCHANGED; do printf "  ${GRN}✓${R} %s already set\n" "$key"; done
+for key in $SKIPPED; do
+  # Only the data token is expected for everyone. n8n and kula are shared
+  # organizer credentials that may legitimately not be issued yet, and warning
+  # about those on 25 machines trains people to ignore the warnings.
+  if [ "$key" = "INSURWRECK_TOKEN" ]; then
+    printf "  ${RED}✗${R} %s is not in your bundle\n" "$key"
+    printf "    ${DIM}run /insurwreck:status to repair it, then iw-connect again${R}\n"
+  else
+    printf "  ${DIM}·${R} ${DIM}%s not issued yet — that server stays off${R}\n" "$key"
+  fi
+done
+
+# Does the token actually work? A written-but-rejected token and a
+# never-written one look the same from the participant's side, and the
+# difference decides whether they restart or call an organizer.
+TOKEN="$(node -pe 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).services?.anthropic?.api_key || ""' "$CREDS" 2>/dev/null)"
+if [ -n "$TOKEN" ] && command -v curl >/dev/null 2>&1; then
+  CODE="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
+    -X POST https://insurwreck-desk.preview.plumhq.com/api/mcp \
+    -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+    -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' 2>/dev/null)"
+  case "$CODE" in
+    200) printf "  ${GRN}✓${R} the Plum data server accepts your token\n" ;;
+    401) printf "  ${RED}✗${R} the Plum data server rejected your token — tell an organizer\n" ;;
+    *)   printf "  ${YLW}!${R} could not reach the Plum data server (HTTP %s)\n" "${CODE:-000}" ;;
+  esac
+fi
+
+# The env block is read once, when Claude Code starts. If this session doesn't
+# already have the variable, the write cannot take effect until it restarts.
+printf "\n"
+if [ -n "${INSURWRECK_TOKEN:-}" ]; then
+  printf "${GRN}${B}Connected.${R} Ask for Plum data — try \"show me claims by status\".\n\n"
+else
+  printf "${YLW}${B}One more step:${R} quit Claude Code and start it again.\n"
+  printf "  ${DIM}The data servers are read at startup, so this session can't see them yet.${R}\n\n"
+fi

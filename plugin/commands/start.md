@@ -73,21 +73,25 @@ Store it:
 
 ### Step 4b — Switch on the data connection
 
-The bundle's `anthropic.api_key` (an `iwk-…` token) is also what authenticates the
-read-only Plum data server. Put it in the participant's Claude Code environment so the
-`insurwreck-data` MCP server can reach it, then tell them to restart Claude Code once.
+Three of the MCP servers resolve a `${TOKEN}` placeholder at Claude Code startup, and
+those tokens only exist once Step 4 has run. Hand them over by running:
 
-Read `~/.claude/settings.json` if it exists, add these to its `env` object (preserving
-everything already there), and write it back. If the file doesn't exist, create it with
-just an `env` object. Never print either token.
+```
+iw-connect
+```
 
-- `INSURWRECK_TOKEN` - the bundle's `anthropic.api_key`. Powers the `insurwreck-data`
-  MCP server (read-only Plum data slices).
-- `N8N_TOKEN` - the bundle's `n8n.token`, if the n8n service is present. Powers the `n8n`
-  MCP server for building workflows. Skip it silently if n8n is still pending.
-- `KULA_API_KEY` - the bundle's `kula.api_key`, if the kula service is present. Powers the
-  `kula` MCP server (recruiting data, read-only - a hook blocks every write tool). Skip it
-  silently if kula is still pending.
+That is the whole step. It reads the bundle you just stored, merges `INSURWRECK_TOKEN`
+(read-only Plum data slices), `N8N_TOKEN` (workflows) and `KULA_API_KEY` (recruiting data)
+into `~/.claude/settings.json` without disturbing anything already there, skips whatever
+isn't issued yet, and checks the data server actually accepts the token. It is safe to
+run again.
+
+**Do not edit `~/.claude/settings.json` yourself.** Hand-editing it is how this step gets
+skipped or half-done, and a missing `INSURWRECK_TOKEN` looks exactly like the data server
+being broken. Show the participant `iw-connect`'s output as-is; it never prints a token.
+
+If it reports the data server rejected the token, stop and tell them to find an organizer -
+re-running will not fix that.
 
 After the restart, three of the four MCP servers work with no further action:
 `insurwreck-data`, `n8n` and `kula`. Only Salesforce needs the participant to log in as
