@@ -93,6 +93,10 @@ being broken. Show the participant `iw-connect`'s output as-is; it never prints 
 If it reports the data server rejected the token, stop and tell them to find an organizer -
 re-running will not fix that.
 
+`iw-connect` will end by telling them to quit and restart. **Do not act on that yet** - the
+restart is the last thing in this whole flow, and restarting here would drop them out of
+onboarding. You will instruct them at the end, in Step 7.
+
 After the restart, three of the four MCP servers work with no further action:
 `insurwreck-data`, `n8n` and `kula`. Only Salesforce needs the participant to log in as
 themselves, because it acts with that person's own permissions - point them at
@@ -139,9 +143,29 @@ Then read their idea brief back to them and propose ONE concrete first build ste
 - Brief involves classification, routing, or reconciliation → suggest defining the Supabase table that holds the queue first.
 - Still exploring → suggest browsing the idea decks on the event page and coming back with `/insurwreck:status`.
 
-Close with the housekeeping commands, exactly:
+Then the housekeeping commands, exactly:
 
 - `/insurwreck:status` — show this summary again
 - `/insurwreck:add-google-auth` — add Plum Workspace sign-in to your app
 - `/insurwreck:update` — pull the newest kit
-- `/insurwreck:uninstall` — remove the kit and stored credentials
+
+## Step 7 — The restart, and nothing after it
+
+This is the last thing you say. Everything above is set up; the Plum data connection is
+written but not yet loaded, because Claude Code reads it once at startup and this session
+started before it existed.
+
+Make it the final, unmissable instruction. Say it in your own words, but it must carry
+all three of these:
+
+1. **What to do** — quit Claude Code and start it again, with the same command the
+   installer gave them (`claude --permission-mode auto` from their project folder).
+2. **Why it matters** — until they do, asking for Plum data will fail, and it will look
+   like the data server is broken rather than like a pending restart.
+3. **How to check** — after restarting, ask for something real, e.g. "show me claims by
+   status". If it doesn't work, `iw-doctor` will say which of the three states they're in
+   and what to do.
+
+Do not bury this under other text, do not pair it with a new suggestion, and do not end on
+anything else. A participant who misses this line is the single most likely failure in the
+whole onboarding - it has already happened once in testing.
