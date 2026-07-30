@@ -71,6 +71,25 @@ Store it:
 2. Write the full JSON response to `~/.insurwreck/credentials.json` and `chmod 600` it.
 3. If the current directory is a git repository, make sure `.insurwreck*` and `.env*` are covered by `.gitignore` (append them if missing).
 
+### Step 4b — Switch on the data connection
+
+The bundle's `anthropic.api_key` (an `iwk-…` token) is also what authenticates the
+read-only Plum data server. Put it in the participant's Claude Code environment so the
+`insurwreck-data` MCP server can reach it, then tell them to restart Claude Code once.
+
+Read `~/.claude/settings.json` if it exists, add these to its `env` object (preserving
+everything already there), and write it back. If the file doesn't exist, create it with
+just an `env` object. Never print either token.
+
+- `INSURWRECK_TOKEN` - the bundle's `anthropic.api_key`. Powers the `insurwreck-data`
+  MCP server (read-only Plum data slices).
+- `N8N_TOKEN` - the bundle's `n8n.token`, if the n8n service is present. Powers the `n8n`
+  MCP server for building workflows. Skip it silently if n8n is still pending.
+
+Say plainly: the data they get is a **de-identified snapshot** of Plum data — no member
+names, ages banded, free-text diagnosis and ticket bodies removed. It is still
+confidential: no screenshots into Slack, nothing on a slide.
+
 ## Step 5 — Install the CLIs
 
 Their infrastructure is ready; now make sure the tools are on this machine. Tell the participant you're checking their tooling, then:
@@ -87,11 +106,18 @@ No CLI logins are needed, and never run `vercel login` or `supabase login`:
 
 ## Step 6 — Summary and first build step
 
-Show a compact status table for the five services — Vercel, Supabase, n8n, Resend, AgentMail. A service present in `services` is **Ready**; one marked `incomplete` is **Almost ready** (name its `pending_parts` and say `/insurwreck:status` can refresh it later); one in `pending` is **Pending — the PS team is provisioning it**. For ready services, mention in one line what the credential is for:
+Show a compact status table for the six services — Vercel, Supabase, Anthropic, Resend, AgentMail, n8n. A service present in `services` is **Ready**; one marked `incomplete` is **Almost ready** (name its `pending_parts` and say `/insurwreck:status` can refresh it later); one in `pending` is **Pending — the PS team is provisioning it**. For ready services, mention in one line what the credential is for:
 
-- Vercel — their own project on the Insurwreck team plus a personal access token; deploys go live with `vercel deploy --token`.
+- Vercel — their own project on the Insurwreck team plus a personal access token. Deploy with `iw-deploy`, which handles the token for them.
 - Supabase — their own dedicated project (URL, anon key, service_role key, DB password).
+- Anthropic — model access for the app they build, metered against a per-person budget. It plugs into the Anthropic SDK by setting `baseURL` to `api_base`; it is not a normal Anthropic key and won't work against `api.anthropic.com`.
 - Resend — sending-only key on the shared hackathon domain.
+- AgentMail — their own agent inbox with a real address that can send and receive.
+
+Also mention the two things they get for free: `iw-doctor` checks their whole setup and
+explains anything broken in plain English, and the `insurwreck-data` MCP server gives
+them read-only Plum data slices — tell them to just ask for what they want, e.g.
+"show me claims by status".
 
 Then read their idea brief back to them and propose ONE concrete first build step tailored to it:
 

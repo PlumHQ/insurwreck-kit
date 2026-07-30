@@ -1,0 +1,22 @@
+[
+  { "id": "DEMO-CLM-1001", "memberName": "Priya Sharma", "hospital": "Sunrise Multispecialty (Demo)", "amount": 84500, "status": "Under Review", "diagnosis": "Acute Appendicitis" },
+  { "id": "DEMO-CLM-1002", "memberName": "Arjun Mehta", "hospital": "Northgate Care Hospital (Demo)", "amount": 212000, "status": "Submitted", "diagnosis": "Coronary Angioplasty" },
+  { "id": "DEMO-CLM-1003", "memberName": "Sara Fernandes", "hospital": "Lakeview Medical Centre (Demo)", "amount": 15750, "status": "Approved", "diagnosis": "Fractured Wrist" },
+  { "id": "DEMO-CLM-1004", "memberName": "Rohit Iyer", "hospital": "Sunrise Multispecialty (Demo)", "amount": 342000, "status": "Under Review", "diagnosis": "Cataract Surgery (Bilateral)" },
+  { "id": "DEMO-CLM-1005", "memberName": "Neha Kapoor", "hospital": "Green Valley Hospital (Demo)", "amount": 5200, "status": "Paid", "diagnosis": "Viral Fever" },
+  { "id": "DEMO-CLM-1006", "memberName": "Vikram Rao", "hospital": "Northgate Care Hospital (Demo)", "amount": 98000, "status": "Rejected", "diagnosis": "Elective Cosmetic Surgery" },
+  { "id": "DEMO-CLM-1007", "memberName": "Ananya Das", "hospital": "Lakeview Medical Centre (Demo)", "amount": 47500, "status": "Submitted", "diagnosis": "Gallbladder Removal" },
+  { "id": "DEMO-CLM-1008", "memberName": "Karan Malhotra", "hospital": "Green Valley Hospital (Demo)", "amount": 630000, "status": "Under Review", "diagnosis": "Total Knee Replacement" },
+  { "id": "DEMO-CLM-1009", "memberName": "Ishita Bose", "hospital": "Sunrise Multispecialty (Demo)", "amount": 11200, "status": "Approved", "diagnosis": "Dengue Fever" },
+  { "id": "DEMO-CLM-1010", "memberName": "Aditya Kulkarni", "hospital": "Northgate Care Hospital (Demo)", "amount": 275000, "status": "Submitted", "diagnosis": "Cardiac Bypass Surgery" },
+  { "id": "DEMO-CLM-1011", "memberName": "Meera Pillai", "hospital": "Green Valley Hospital (Demo)", "amount": 8900, "status": "Paid", "diagnosis": "Minor Laceration Repair" },
+  { "id": "DEMO-CLM-1012", "memberName": "Siddharth Bhatt", "hospital": "Lakeview Medical Centre (Demo)", "amount": 156000, "status": "Under Review", "diagnosis": "Appendectomy with Complications" },
+  { "id": "DEMO-CLM-1013", "memberName": "Divya Menon", "hospital": "Sunrise Multispecialty (Demo)", "amount": 3200, "status": "Rejected", "diagnosis": "Routine Dental Cleaning" },
+  { "id": "DEMO-CLM-1014", "memberName": "Rahul Verma", "hospital": "Northgate Care Hospital (Demo)", "amount": 410000, "status": "Submitted", "diagnosis": "Spinal Fusion Surgery" },
+  { "id": "DEMO-CLM-1015", "memberName": "Kavya Reddy", "hospital": "Green Valley Hospital (Demo)", "amount": 22400, "status": "Approved", "diagnosis": "Pneumonia" },
+  { "id": "DEMO-CLM-1016", "memberName": "Nikhil Chawla", "hospital": "Lakeview Medical Centre (Demo)", "amount": 189000, "status": "Under Review", "diagnosis": "Hernia Repair" },
+  { "id": "DEMO-CLM-1017", "memberName": "Ritu Desai", "hospital": "Sunrise Multispecialty (Demo)", "amount": 6700, "status": "Paid", "diagnosis": "Sprained Ankle" },
+  { "id": "DEMO-CLM-1018", "memberName": "Aman Joshi", "hospital": "Northgate Care Hospital (Demo)", "amount": 525000, "status": "Submitted", "diagnosis": "Liver Transplant Evaluation" },
+  { "id": "DEMO-CLM-1019", "memberName": "Tanvi Shetty", "hospital": "Green Valley Hospital (Demo)", "amount": 14300, "status": "Approved", "diagnosis": "Migraine Management" },
+  { "id": "DEMO-CLM-1020", "memberName": "Yash Agarwal", "hospital": "Lakeview Medical Centre (Demo)", "amount": 67800, "status": "Under Review", "diagnosis": "Kidney Stone Removal" }
+]

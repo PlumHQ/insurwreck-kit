@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# Check everything a build needs and say what's wrong in plain English.
+#
+#   iw-doctor
+
+set -uo pipefail
+
+CREDS="$HOME/.insurwreck/credentials.json"
+FAIL=0
+
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+  B=$'\033[1m'; R=$'\033[0m'; GRN=$'\033[32m'; YLW=$'\033[33m'; RED=$'\033[31m'; DIM=$'\033[2m'
+else
+  B=""; R=""; GRN=""; YLW=""; RED=""; DIM=""
+fi
+
+ok()   { printf "  ${GRN}✓${R} %s\n" "$1"; }
+bad()  { printf "  ${RED}✗${R} %s\n" "$1"; FAIL=1; }
+warn() { printf "  ${YLW}!${R} %s\n" "$1"; }
+note() { printf "    ${DIM}%s${R}\n" "$1"; }
+
+printf "\n${B}Checking your setup${R}\n\n"
+
+# --- tools -----------------------------------------------------------------
+for tool in node npm git claude; do
+  if command -v "$tool" >/dev/null 2>&1; then
+    ok "$tool"
+  else
+    case "$tool" in
+      node|npm) bad "$tool is missing"; note "install Node from https://nodejs.org (LTS)" ;;
+      git)      bad "git is missing"; note "on macOS run: xcode-select --install" ;;
+      claude)   bad "claude is missing"; note "re-run the setup command from the invite" ;;
+    esac
+  fi
+done
+
+# --- credentials -----------------------------------------------------------
+if [ ! -f "$CREDS" ]; then
+  bad "no credentials found"
+  note "run /insurwreck:start inside Claude Code"
+else
+  ok "credentials file present"
+  node -e '
+    const c = require(process.argv[1]);
+    const s = c.services || {};
+    const rows = [
+      ["vercel",    s.vercel?.token,            "deploy token"],
+      ["supabase",  s.supabase?.service_role_key,"database keys"],
+      ["resend",    s.resend?.api_key,          "email sending"],
+      ["anthropic", s.anthropic?.api_key,       "model access"],
+      ["agentmail", s.agentmail?.inbox_id,      "agent inbox"],
+    ];
+    const g = "\u001b[32m", y = "\u001b[33m", r = "\u001b[0m";
+    for (const [name, value, label] of rows) {
+      if (value) console.log(`  ${g}\u2713${r} ${name} (${label})`);
+      else console.log(`  ${y}!${r} ${name} not ready yet (${label}) \u2014 run /insurwreck:status`);
+    }
+  ' "$CREDS" 2>/dev/null || warn "could not read credentials (is the file valid JSON?)"
+fi
+
+# --- the classic deploy killer ---------------------------------------------
+printf "\n${B}Checking this project${R}\n\n"
+
+if [ -f package.json ]; then
+  ok "package.json found"
+  [ -d node_modules ] || { warn "dependencies not installed"; note "run: npm install"; }
+else
+  warn "no package.json here — are you in your project folder?"
+fi
+
+if [ -f .env ] || [ -f .env.local ]; then
+  if [ -f .vercel/project.json ]; then
+    warn "you have a local .env — those values do NOT reach Vercel automatically"
+    note "your deployed site will break unless you add them in the Vercel dashboard"
+    note "or pass them at deploy time; ask Claude: \"my env vars aren't on Vercel\""
+  else
+    ok ".env present (local only)"
+  fi
+fi
+
+if git rev-parse --git-dir >/dev/null 2>&1; then
+  if git check-ignore -q .env 2>/dev/null || ! [ -f .env ]; then
+    ok "secrets are git-ignored"
+  else
+    bad ".env is NOT ignored by git — your keys could get published"
+    note "add a line '.env*' to .gitignore before committing"
+  fi
+fi
+
+printf "\n"
+if [ "$FAIL" = "1" ]; then
+  printf "${RED}${B}Some things need fixing.${R} Paste this whole output to Claude and ask it to fix them.\n\n"
+  exit 1
+fi
+printf "${GRN}${B}All good.${R}\n\n"
