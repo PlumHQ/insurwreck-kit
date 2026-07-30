@@ -10,23 +10,37 @@ server costs context on every turn.
 
 Ask them what they're missing, pick the row, run the command, restart Claude Code.
 
-## What's ready
+## Already installed - just needs auth
 
-### Kula (candidates, jobs, interviews, resumes)
+Kula and Salesforce ship with the plugin and start automatically. Don't run
+`claude mcp add` for either; sending someone to a second copy of the same server is how
+you end up with two entries and a confused participant. Send them to the command:
 
-Official Kula server. Auth is a plain API key from https://developers.kula.ai
-(Developer Settings) - no OAuth dance.
+| System | Command | Scoped to them? |
+|---|---|---|
+| Kula (candidates, jobs, interviews) | `/insurwreck:connect` | No - one shared organizer key, same view for everyone, read-only |
+| Salesforce (accounts, opportunities, notes) | `/insurwreck:connect` | Yes - browser login, their own profile and sharing rules |
 
-```
-claude mcp add kula -e KULA_API_KEY=<key> -- npx -y @kula-ai/mcp-server
-```
+Because both are always on, they cost context on every turn for everyone. If a
+participant's idea touches neither, tell them they can drop one with
+`claude mcp remove <name>` for the rest of the day.
 
-Gives ~51 tools: `list_jobs`, `search_candidates`, `get_candidate`, `list_applications`,
-`update_application_stage`, `list_scorecard_submissions`, and more.
+Kula has no OAuth and no per-user keys, so don't send anyone to https://developers.kula.ai
+expecting to self-serve - the key is organizer-issued and already in their bundle. Three
+things to know:
+- **Kula is read-only and enforced that way.** The event key is Kula's "full access"
+  Application API type and it's shared by all ~25 participants, so a `block-kula-writes.sh`
+  hook denies every non-read tool (`create_candidate`, `update_application_stage`, the
+  webhook tools, and anything a future release adds). There is no override. If a project
+  needs to persist a change, it writes to its own Supabase and demos from there - don't go
+  looking for a way around the hook.
+- What they read is real candidate data about real people. Say so once, and tell them not to
+  put it on a slide or in a Slack channel.
+- There is no documented tool that downloads a resume **file**. `get_candidate` may return
+  a resume URL as a field. If their idea depends on parsing resume PDFs, verify that early -
+  don't discover it at 4pm.
 
-One thing to check rather than assume: there is no documented tool that downloads a
-resume **file**. `get_candidate` may return a resume URL as a field. If the participant's
-idea depends on parsing resume PDFs, verify that early - don't discover it at 4pm.
+## What else is ready
 
 ### Slack (messages, channels, history)
 
@@ -42,22 +56,12 @@ to imitate how they think is a people question, not a permissions question.
 
 ### Salesforce (accounts, opportunities, notes)
 
-Official Salesforce server. Read-only is achieved by limiting the toolset - the `data`
-toolset contains only `run_soql_query`, and SOQL cannot write.
+Preinstalled - see the table above, and send them to `/insurwreck:connect`. The two hard
+rules still hold if you ever reconfigure it by hand:
 
-```
-claude mcp add salesforce -- npx -y @salesforce/mcp --orgs DEFAULT_TARGET_ORG --toolsets data --tools run_soql_query
-```
-
-Two hard rules:
-- **Never add `--toolsets metadata` or `devops`.** Those can deploy and write.
+- **Never add `--toolsets metadata` or `devops`.** Those can deploy and write. The shipped
+  config is `--toolsets data --tools run_soql_query`, and SOQL cannot write.
 - Point it at the **sandbox**, not production, unless an organizer says otherwise.
-
-It needs the Salesforce CLI and a browser login first:
-
-```
-npm i -g @salesforce/cli && sf org login web
-```
 
 If that login stalls or they have no Salesforce account, stop and ask an organizer -
 don't burn an hour on it.

@@ -13,6 +13,27 @@
       "headers": {
         "Authorization": "Bearer ${N8N_TOKEN}"
       }
+    },
+    "salesforce": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@salesforce/mcp",
+        "--orgs",
+        "DEFAULT_TARGET_ORG",
+        "--toolsets",
+        "data",
+        "--tools",
+        "run_soql_query",
+        "--no-telemetry"
+      ]
+    },
+    "kula": {
+      "command": "npx",
+      "args": ["-y", "@kula-ai/mcp-server"],
+      "env": {
+        "KULA_API_KEY": "${KULA_API_KEY}"
+      }
     }
   }
 }

@@ -85,6 +85,14 @@ just an `env` object. Never print either token.
   MCP server (read-only Plum data slices).
 - `N8N_TOKEN` - the bundle's `n8n.token`, if the n8n service is present. Powers the `n8n`
   MCP server for building workflows. Skip it silently if n8n is still pending.
+- `KULA_API_KEY` - the bundle's `kula.api_key`, if the kula service is present. Powers the
+  `kula` MCP server (recruiting data, read-only - a hook blocks every write tool). Skip it
+  silently if kula is still pending.
+
+After the restart, three of the four MCP servers work with no further action:
+`insurwreck-data`, `n8n` and `kula`. Only Salesforce needs the participant to log in as
+themselves, because it acts with that person's own permissions - point them at
+`/insurwreck:connect` and don't walk them through it here.
 
 Say plainly: the data they get is a **de-identified snapshot** of Plum data — no member
 names, ages banded, free-text diagnosis and ticket bodies removed. It is still
