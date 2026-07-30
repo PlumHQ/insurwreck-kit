@@ -219,6 +219,9 @@ export async function mintAgentmail(email, existing = {}) {
         username: slug,
         client_id: slug,
         display_name: `Insurwreck · ${email.split("@")[0]}`,
+        // Omitted -> AgentMail's default agentmail.to. Set once the custom
+        // domain shows VERIFIED; an unverified domain fails the create call.
+        ...(process.env.AGENTMAIL_DOMAIN ? { domain: process.env.AGENTMAIL_DOMAIN } : {}),
       }),
     });
     const data = await res.json().catch(() => ({}));
