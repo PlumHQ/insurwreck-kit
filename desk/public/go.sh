@@ -483,6 +483,37 @@ EOF
 fi
 rm -f "$plugin_log"
 
+# Claude Code puts the plugin's bin/ on PATH for its own tool calls, but only
+# inside a running session. Out here - and in the participant's own terminal,
+# where the README tells them to type `iw-doctor` - nothing does. Link the
+# scripts into ~/.local/bin, which step 4 already put on PATH and wrote into
+# their shell rc, so `iw-*` works everywhere rather than only inside the agent.
+link_kit_bin() {
+  local bin_dir
+  for bin_dir in \
+    "$HOME"/.insurwreck/kit/*/plugin/bin \
+    "$HOME"/.claude/plugins/marketplaces/*/plugin/bin \
+    "$HOME"/.claude/plugins/cache/*/plugin/bin
+  do
+    [ -d "$bin_dir" ] || continue
+    [ -x "$bin_dir/iw-intro" ] || continue
+    mkdir -p "$LOCAL_BIN"
+    for script in "$bin_dir"/iw-*; do
+      [ -x "$script" ] || continue
+      ln -sf "$script" "$LOCAL_BIN/$(basename "$script")"
+    done
+    return 0
+  done
+  return 1
+}
+
+if link_kit_bin; then
+  ok "iw-* commands available in your terminal"
+else
+  # Not fatal: everything still works inside Claude Code, which finds them itself.
+  skip "iw-* commands are available inside Claude Code only"
+fi
+
 # -------------------------------------------------------- 7 project folder ----
 
 step "Creating your project folder"

@@ -310,6 +310,7 @@
 /* ----------------------------------------------------------------- gates --- */
 
 .gate {
+  position: relative;
   display: grid;
   grid-template-columns: 22px 1fr;
   gap: 14px;
@@ -333,6 +334,21 @@
   position: absolute;
   opacity: 0;
   pointer-events: none;
+}
+
+/* The tick itself. `.custom-check` ships transparent and is revealed by a
+   `:checked` sibling rule — but the only such rule lives under `.checklist`,
+   which these gates are not inside. Without this the box tinted on click and
+   the check never appeared. */
+.gate input:checked + .custom-check {
+  color: #fff;
+  background: var(--plum);
+  border-color: var(--plum);
+}
+
+.gate input:focus-visible + .custom-check {
+  outline: 3px solid rgb(122 49 93 / 28%);
+  outline-offset: 3px;
 }
 
 .gate.is-done {
@@ -462,6 +478,45 @@
   margin-bottom: 10px;
   color: var(--faint);
   font-size: 9.5px;
+}
+
+/* Product marks sit in restrained white tiles (DESIGN.md), so the vendor
+   colour is contained to a 34px square rather than loose on the card. */
+.kit-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 14px;
+}
+
+.kit-grid .kit-head .mono-label {
+  margin-bottom: 0;
+}
+
+.kit-logo {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  color: var(--plum);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.kit-logo img {
+  width: 19px;
+  height: 19px;
+  display: block;
+}
+
+/* Typographic stand-in where no official reusable asset exists. */
+.kit-logo b {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 750;
+  line-height: 1;
 }
 
 .kit-grid strong {

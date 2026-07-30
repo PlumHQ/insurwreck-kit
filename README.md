@@ -65,6 +65,7 @@ If anything looks stuck, type `iw-doctor`. It checks your whole setup and tells 
 |---|---|
 | `iw-doctor` | checks everything and explains what is broken |
 | `iw-status` | shows your setup in a fixed, readable table |
+| | *both work inside Claude Code and in your own terminal* |
 | `/insurwreck:status` | shows your setup again, and repairs anything that did not finish |
 | `/insurwreck:connect` | connects Salesforce or another outside system |
 | `/insurwreck:add-google-auth` | adds "Sign in with Google" to your app, Plum accounts only |
