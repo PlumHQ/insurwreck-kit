@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="auth-pending">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -23,6 +23,8 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="auth.css" />
+    <script src="auth.js" defer></script>
     <script src="script.js" defer></script>
   </head>
   <body>
@@ -83,6 +85,7 @@
           <a href="#ideas">Find an idea</a>
           <a href="#prepare">Prepare</a>
         </nav>
+        <span data-auth-slot></span>
         <a class="date-pill" href="#prepare">
           <svg aria-hidden="true"><use href="#icon-calendar"></use></svg>
           31 Jul

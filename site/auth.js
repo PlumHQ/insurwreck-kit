@@ -91,29 +91,61 @@
     }
   }
 
+  // The gate builds its own DOM so a page is protected by loading this file —
+  // no per-page markup to keep in sync.
+  function buildGate() {
+    let gate = document.querySelector(".auth-gate");
+    if (gate) return gate;
+    gate = document.createElement("div");
+    gate.className = "auth-gate";
+    gate.setAttribute("role", "dialog");
+    gate.setAttribute("aria-modal", "true");
+    gate.setAttribute("aria-labelledby", "auth-gate-title");
+    gate.innerHTML = `
+      <div class="auth-gate-card">
+        <img class="auth-gate-logo" src="assets/plum-logo.svg" alt="Plum" />
+        <p class="eyebrow">Insurwreck 4.0</p>
+        <h1 id="auth-gate-title">Sign in with your Plum account.</h1>
+        <p>This is for Plum colleagues taking part in Insurwreck 4.0. Continue with
+          Google using your <strong>@plumhq.com</strong> account.</p>
+        <button class="button button-primary" type="button" data-auth-signin>
+          Continue with Google
+        </button>
+        <p class="auth-gate-note" data-auth-message></p>
+      </div>`;
+    document.body.appendChild(gate);
+    return gate;
+  }
+
   function showGate(message) {
     document.documentElement.classList.remove("auth-ok");
     document.documentElement.classList.add("auth-blocked");
-    const note = document.querySelector("[data-auth-message]");
+    const gate = buildGate();
+    gate.querySelector("[data-auth-signin]")?.addEventListener("click", signIn);
+    const note = gate.querySelector("[data-auth-message]");
     if (note && message) note.textContent = message;
   }
 
   function showContent(email) {
     document.documentElement.classList.remove("auth-blocked", "auth-pending");
     document.documentElement.classList.add("auth-ok");
-    document.querySelectorAll("[data-auth-email]").forEach((el) => {
-      el.textContent = email;
-    });
+    document.querySelector(".auth-gate")?.remove();
+
+    // Identity chip: uses a page-provided slot when there is one, otherwise
+    // pins itself out of the way.
+    const slot = document.querySelector("[data-auth-slot]");
+    const host = slot || document.body;
+    if (host.querySelector("[data-auth-who]")) return;
+    const who = document.createElement("span");
+    who.className = slot ? "auth-who" : "auth-who auth-who-floating";
+    who.setAttribute("data-auth-who", "");
+    who.innerHTML = `<span data-auth-email></span><button type="button" data-auth-signout>Sign out</button>`;
+    who.querySelector("[data-auth-email]").textContent = email;
+    who.querySelector("[data-auth-signout]").addEventListener("click", signOut);
+    host.appendChild(who);
   }
 
   async function start() {
-    document.querySelectorAll("[data-auth-signin]").forEach((b) =>
-      b.addEventListener("click", signIn)
-    );
-    document.querySelectorAll("[data-auth-signout]").forEach((b) =>
-      b.addEventListener("click", signOut)
-    );
-
     const error = new URLSearchParams(window.location.search).get("error_description");
     const session = captureRedirect() || readSession();
 
