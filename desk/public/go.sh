@@ -394,14 +394,20 @@ if have npm; then
     warn "salesforce cli didn't install — run: npm i -g @salesforce/cli"
   fi
 
-  # Populate the npx cache so the first MCP launch doesn't race its own
-  # download. --version exits immediately once the package is fetched.
+  # Warm the download cache so the first MCP launch doesn't race its own fetch.
+  #
+  # This used to run `npx -y "$pkg" --version` on the assumption that --version
+  # exits once the package is fetched. Neither package implements it, so npx
+  # launches the MCP server instead and it waits on stdin for JSON-RPC - the step
+  # never returns. Redirecting stdin does not help; verified, it still hangs.
+  # Found on Windows, but this line was wrong here too.
+  #
+  # `npm cache add` fetches the tarball without executing the package, so it
+  # cannot hang by construction. Measured at under four seconds each.
   for pkg in "@salesforce/mcp" "@kula-ai/mcp-server"; do
-    if npx -y "$pkg" --version >/dev/null 2>&1; then
+    if npm cache add "$pkg" >/dev/null 2>&1; then
       ok "cached $pkg"
     else
-      # A non-zero exit here is usually the package rejecting --version, not a
-      # download failure, so this is informational only.
       skip "$pkg will download on first use"
     fi
   done

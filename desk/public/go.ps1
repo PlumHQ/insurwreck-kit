@@ -353,16 +353,23 @@ if (Test-Have 'npm') {
     else { Write-Warn "salesforce cli is missing - Salesforce tools will not work until it is installed" }
   }
 
-  # Populate the npx cache so the first MCP launch isn't racing its own download.
-  if ($npx) {
-    $pkgs = @('@salesforce/mcp', '@kula-ai/mcp-server')
-    for ($i = 0; $i -lt $pkgs.Count; $i++) {
-      Write-Info "caching $($pkgs[$i]) ($($i + 1) of $($pkgs.Count)) - about a minute each"
+  # Warm the download cache so the first MCP launch isn't racing its own fetch.
+  #
+  # This used to run `npx -y <pkg> --version`, which does not work: neither of
+  # these packages implements --version, so npx launches the MCP server, the
+  # server waits on stdin for JSON-RPC, and the step never returns. Closing stdin
+  # does not help - verified, it still hangs. One participant sat on it for four
+  # minutes before it cleared.
+  #
+  # `npm cache add` fetches the tarball and never executes the package, so it
+  # cannot hang by construction. Measured at under four seconds each.
+  if ($npm) {
+    foreach ($pkg in @('@salesforce/mcp', '@kula-ai/mcp-server')) {
       try {
-        & $npx -y $pkgs[$i] --version 2>&1 | Out-Null
-        Write-Ok "cached $($pkgs[$i])"
+        & $npm cache add $pkg 2>&1 | Out-Null
+        Write-Ok "cached $pkg"
       } catch {
-        Write-Skip "$($pkgs[$i]) will download on first use"
+        Write-Skip "$pkg will download on first use"
       }
     }
   }
