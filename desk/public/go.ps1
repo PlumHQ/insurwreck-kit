@@ -15,7 +15,19 @@
 #
 # Safe to re-run. Every step checks before it acts.
 
-$ErrorActionPreference = 'Stop'
+# 'Continue', not 'Stop', and deliberately so. With 'Stop', PowerShell turns a
+# native command's stderr into a terminating error - so one warning line from
+# winget, npm or claude aborts the whole setup and the participant never reaches
+# the plugin or the project folder. Both real Windows failures so far ended that
+# way: a marketplace error at step 5, and an ExecutionPolicy refusal at step 4,
+# each killing everything after it.
+#
+# Nothing here relies on exceptions to know whether it worked. Every step
+# verifies the capability it wanted - Test-Have git, node --version against the
+# floor, claude plugin list - so failures are caught by checking the outcome
+# rather than by trusting the command. Network calls that genuinely need to fail
+# loudly have their own try/catch.
+$ErrorActionPreference = 'Continue'
 
 $KitRepo    = if ($env:INSURWRECK_MARKETPLACE) { $env:INSURWRECK_MARKETPLACE } else { 'PlumHQ/insurwreck-kit' }
 $ProjectDir = if ($env:INSURWRECK_DIR) { $env:INSURWRECK_DIR } else { Join-Path $HOME 'insurwreck' }
@@ -137,6 +149,28 @@ function Install-PortableGit {
     }
     return $false
   } catch { return $false }
+}
+
+# npm on Windows ships npm.ps1, npm.cmd and npm. From PowerShell, bare `npm`
+# resolves to npm.ps1 - and on a managed laptop ExecutionPolicy refuses to load
+# it: "running scripts is disabled on this system". The .cmd shim is not a
+# PowerShell script, so it is not subject to that policy at all.
+#
+# Set-ExecutionPolicy -Scope Process would also work, except when the policy
+# comes from Group Policy, which is exactly where it comes from on a managed
+# laptop. So resolve the shim rather than fighting the policy.
+function Resolve-NodeTool {
+  param([string]$Name)   # 'npm' or 'npx'
+  foreach ($candidate in @("$Name.cmd", $Name)) {
+    $cmd = Get-Command $candidate -ErrorAction SilentlyContinue |
+           Where-Object { $_.Source -notlike '*.ps1' } |
+           Select-Object -First 1
+    if ($cmd) { return $cmd.Source }
+  }
+  # winget's Node lands here; PATH may not have caught up within this session.
+  $fallback = 'C:\Program Files\nodejs\' + "$Name.cmd"
+  if (Test-Path $fallback) { return $fallback }
+  return $null
 }
 
 function Find-GitBash {
@@ -292,25 +326,45 @@ if ($nodeMajor -ge $MinNode) {
 }
 
 if (Test-Have 'npm') {
-  if (Test-Have 'sf') {
+  $npm = Resolve-NodeTool 'npm'
+  $npx = Resolve-NodeTool 'npx'
+
+  # Everything from here is optional polish. $ErrorActionPreference is 'Stop', so
+  # without these try/catch blocks a refused npm script aborts the entire run and
+  # the participant never reaches the plugin, the project folder, or the CLAUDE.md
+  # - which is exactly what happened: an ExecutionPolicy error at step 4 meant
+  # steps 5 to 7 never executed. The plugin matters far more than the CLI.
+  if (-not $npm) {
+    Write-Warn "couldn't find a usable npm - skipping the Salesforce CLI"
+  } elseif (Test-Have 'sf') {
     Write-Skip "salesforce cli already installed"
   } else {
     Write-Info "Salesforce CLI - the biggest download here, usually 3-6 minutes."
     Write-Info "npm prints little while it works; that is normal, not a hang."
     $sfStart = Get-Date
-    npm install -g @salesforce/cli --loglevel http
-    Write-Info "Salesforce CLI finished in $([int]((Get-Date) - $sfStart).TotalSeconds)s"
-    Sync-Path
+    try {
+      & $npm install -g @salesforce/cli --loglevel http
+      Write-Info "Salesforce CLI finished in $([int]((Get-Date) - $sfStart).TotalSeconds)s"
+      Sync-Path
+    } catch {
+      Write-Warn "salesforce cli install failed: $($_.Exception.Message)"
+    }
     if (Test-Have 'sf') { Write-Ok "salesforce cli installed" }
-    else { Write-Warn "salesforce cli didn't install - run: npm i -g @salesforce/cli" }
+    else { Write-Warn "salesforce cli is missing - Salesforce tools will not work until it is installed" }
   }
 
   # Populate the npx cache so the first MCP launch isn't racing its own download.
-  $pkgs = @('@salesforce/mcp', '@kula-ai/mcp-server')
-  for ($i = 0; $i -lt $pkgs.Count; $i++) {
-    Write-Info "caching $($pkgs[$i]) ($($i + 1) of $($pkgs.Count)) - about a minute each"
-    npx -y $pkgs[$i] --version 2>&1 | Out-Null
-    Write-Ok "cached $($pkgs[$i])"
+  if ($npx) {
+    $pkgs = @('@salesforce/mcp', '@kula-ai/mcp-server')
+    for ($i = 0; $i -lt $pkgs.Count; $i++) {
+      Write-Info "caching $($pkgs[$i]) ($($i + 1) of $($pkgs.Count)) - about a minute each"
+      try {
+        & $npx -y $pkgs[$i] --version 2>&1 | Out-Null
+        Write-Ok "cached $($pkgs[$i])"
+      } catch {
+        Write-Skip "$($pkgs[$i]) will download on first use"
+      }
+    }
   }
 } else {
   Write-Warn "no npm, so the salesforce and kula servers will not start"
@@ -352,13 +406,15 @@ function Install-KitFromZip {
 }
 
 $local = Install-KitFromZip
-if ($local) {
-  claude plugin marketplace add $local 2>&1 | Out-Null
-} else {
-  Write-Info "zip download unavailable, trying git..."
-  claude plugin marketplace add $KitRepo 2>&1 | Out-Null
-}
-claude plugin install insurwreck@insurwreck-kit --scope user 2>&1 | Out-Null
+try {
+  if ($local) {
+    claude plugin marketplace add $local 2>&1 | Out-Null
+  } else {
+    Write-Info "zip download unavailable, trying git..."
+    claude plugin marketplace add $KitRepo 2>&1 | Out-Null
+  }
+} catch { }
+try { claude plugin install insurwreck@insurwreck-kit --scope user 2>&1 | Out-Null } catch { }
 
 # Exit codes here don't distinguish "already installed" from "couldn't reach the
 # repo", so ask what is actually installed instead.
