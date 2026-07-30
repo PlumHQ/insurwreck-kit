@@ -6,19 +6,61 @@ Private during the test phase; goes public before the event. **This repo must ne
 
 > **Contributing?** Read [AGENTS.md](AGENTS.md) first. Two rules bite immediately: the desk deploys on push to `main` (never `vercel deploy`), and `git pull --rebase` before every push because several people ship here hourly.
 
-## For participants
+## Getting started (participants)
 
-Inside Claude Code:
+Three steps, about ten minutes, most of it waiting. You do not need to know anything about terminals, and you will not be asked to copy a single password.
+
+### 1. Open Terminal and paste one line
+
+On a Mac, press `Cmd + Space`, type `Terminal`, hit Enter. Then paste this and press Enter:
 
 ```
-/plugin marketplace add PlumHQ/insurwreck-kit
-/plugin install insurwreck@insurwreck-kit
+curl -fsSL https://insurwreck-desk.preview.plumhq.com/go.sh | bash
+```
+
+It sets up everything on its own: a proper terminal, the AI assistant you will build with, and the Insurwreck toolkit. It prints a tick for each step. If it asks for your Mac password, that is the installer needing permission to install software - type it and carry on.
+
+Takes three to five minutes. Safe to run twice if something looks wrong; it skips whatever is already done.
+
+**On Windows?** Open PowerShell as administrator, run `wsl --install`, restart your laptop, then open "Ubuntu" from the Start menu and paste the same line there. Do this **tonight**, not tomorrow morning - it needs a restart.
+
+### 2. Sign in and get your toolkit
+
+When it finishes it prints one line to paste, ending in `claude --permission-mode auto`. Paste that. The assistant starts. Then type:
+
+```
 /insurwreck:start
 ```
 
-`/insurwreck:start` introduces the event, registers you (name, email, idea brief), verifies your email with a six-digit code, and writes your credential bundle to `~/.insurwreck/credentials.json`.
+It asks you three things: your name, your work email, and two sentences about the problem you want to attack. Then it emails you a six-digit code - paste that back in.
 
-Other commands: `/insurwreck:status`, `/insurwreck:connect`, `/insurwreck:add-google-auth`, `/insurwreck:update`, `/insurwreck:uninstall`.
+While you wait, it builds everything you need behind the scenes: your own website hosting, your own database, your own email inbox that can actually send and receive, and access to Plum data. Give it a minute or two.
+
+**Then quit and start it again.** Close the window, reopen Terminal, and paste the same line the installer gave you. This one restart is what switches the Plum data on. Skip it and the data will look broken.
+
+### 3. Build
+
+Just say what you want in plain English. Some things worth knowing you can ask for:
+
+- **"Show me claims by status"** - you have read access to ten slices of real Plum data: claims, covered lives, support tickets, NPS, policy schedules and more. Ask for what you want; you do not need to know table names.
+- **"Deploy this"** - your site goes live on a real URL you can share.
+- **"Email me when it finds one"** - you have a working inbox that sends and receives.
+- **"Build me a workflow that runs every morning"** - automation you can schedule.
+
+If anything looks stuck, type `iw-doctor`. It checks your whole setup and tells you in plain English what is wrong and what to do about it. If it says quit and restart, that is genuinely the fix.
+
+**About the data:** it is real Plum data with the identifying details removed - no member names, ages grouped into bands, free-text notes stripped out. It is still confidential. Nothing goes into Slack screenshots or onto a slide.
+
+### If you need help
+
+| | |
+|---|---|
+| `iw-doctor` | checks everything and explains what is broken |
+| `/insurwreck:status` | shows your setup again, and repairs anything that did not finish |
+| `/insurwreck:connect` | connects Salesforce or another outside system |
+| `/insurwreck:add-google-auth` | adds "Sign in with Google" to your app, Plum accounts only |
+
+Still stuck after `iw-doctor`? Find an organiser. Do not lose twenty minutes to it.
 
 ## Bundled MCP servers
 
@@ -31,9 +73,13 @@ All four start automatically when the plugin installs — they are declared in `
 | `insurwreck-data` | ours — `desk/api/mcp.js` | — | `INSURWRECK_TOKEN` | Allowlisted warehouse slices, same for everyone |
 | `n8n` | organizer-hosted | — | `N8N_TOKEN` | Shared workspace |
 
-`/insurwreck:start` writes `INSURWRECK_TOKEN`, `N8N_TOKEN` and `KULA_API_KEY` from the bundle into `~/.claude/settings.json`, so after one restart `insurwreck-data`, `n8n` and `kula` are live with no further action. Only Salesforce needs a login, via `/insurwreck:connect`, because it is the one server that acts with the participant's own identity. A server whose credential is missing fails to connect and the others keep working.
+Three of the four resolve a `${TOKEN}` placeholder when Claude Code starts, and those tokens do not exist until `/insurwreck:start` has run inside an already-started Claude Code. `/insurwreck:start` closes that gap by running `iw-connect`, which merges `INSURWRECK_TOKEN`, `N8N_TOKEN` and `KULA_API_KEY` from the bundle into `~/.claude/settings.json` without disturbing anything else there, skips whatever is not issued yet, and probes the desk so a rejected token cannot look like a missing one. After one restart `insurwreck-data`, `n8n` and `kula` are live.
 
-Every server here is always on, so it costs context on every turn for everyone. A participant whose idea touches none of them can drop one with `claude mcp remove <name>`.
+That restart is the one manual step in onboarding, and it is the step most likely to be skipped - a participant who skips it sees a data server that looks broken. `iw-doctor` names the three states apart: never connected (run `iw-connect`), connected but this session predates it (restart), and connected but rejected (find an organiser).
+
+Only Salesforce needs a login, via `/insurwreck:connect`, because it is the one server that acts with the participant's own identity. A server whose credential is missing fails to connect and the others keep working.
+
+Every server here is always on, so it costs context on every turn for everyone. If that becomes a problem for someone mid-build, an organiser can help them narrow it down - not something to change on your own during the day.
 
 ### Salesforce: scoped to the individual
 
