@@ -330,7 +330,28 @@ const rpcOk = (id, result) => ({ jsonrpc: "2.0", id, result });
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
-    return res.status(200).json({ ok: true, server: "insurwreck-data", protocol: PROTOCOL_VERSION });
+    // Unauthenticated health probe. It reports whether the desk can actually
+    // reach Metabase, because "no datasets are reachable" from inside a tool
+    // call is indistinguishable from a bad key, a blocked egress or an empty
+    // allowlist - and that ambiguity costs time on the day.
+    let upstream = "unknown";
+    try {
+      const r = await fetch(`${MB()}/api/card/${[...(await allowlist())][0] ?? 0}`, {
+        headers: { "x-api-key": MB_KEY() },
+        signal: AbortSignal.timeout(8000),
+      });
+      upstream = r.ok ? "ok" : `http_${r.status}`;
+    } catch (e) {
+      upstream = `unreachable: ${String(e.message).slice(0, 60)}`;
+    }
+    return res.status(200).json({
+      ok: true,
+      server: "insurwreck-data",
+      protocol: PROTOCOL_VERSION,
+      metabase: upstream,
+      metabase_key_set: Boolean(MB_KEY()),
+      slices: (await allowlist().catch(() => new Set())).size,
+    });
   }
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
 
