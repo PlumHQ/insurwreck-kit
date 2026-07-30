@@ -46,6 +46,26 @@ function Sync-Path {
   $env:Path = "$machine;$user;$extra"
 }
 
+# Sync-Path only fixes the RUNNING session. Claude Code's own installer says it
+# plainly - "Native installation exists but ...\.local\bin is not in your PATH" -
+# and without persisting it the participant closes this window and `claude` is
+# gone. go.sh has a whole step for this on macOS; this is its other half.
+#
+# User scope only: Machine scope needs administrator, and this command is
+# deliberately not run elevated. Read-modify-write, never blind overwrite - this
+# is the participant's real PATH.
+function Add-ToUserPath {
+  param([string]$Dir)
+  if (-not $Dir) { return $false }
+  $Dir = $Dir.TrimEnd('\')
+  $user = [Environment]::GetEnvironmentVariable('Path', 'User')
+  if (-not $user) { $user = '' }
+  $parts = @($user.Split(';') | Where-Object { $_ -and $_.Trim() } | ForEach-Object { $_.TrimEnd('\') })
+  if ($parts -contains $Dir) { return $false }
+  [Environment]::SetEnvironmentVariable('Path', (($parts + $Dir) -join ';'), 'User')
+  return $true
+}
+
 function Install-WinGetPackage {
   param($Id, $Label)
   if (-not (Test-Have 'winget')) { return $false }
@@ -106,6 +126,21 @@ if (Test-Have 'claude') {
   Sync-Path
   if (Test-Have 'claude') { Write-Ok "installed" }
   else { Write-Die "Claude Code installed but 'claude' still isn't found. Close this window, open a new one, and re-run." }
+}
+
+# Claude Code installs to ~\.local\bin and tells you to add it to PATH by hand
+# through System Properties. Do it here instead, so `claude` still works tomorrow
+# morning in a terminal that isn't this one.
+$localBin = Join-Path $HOME '.local\bin'
+$added = @()
+if (Test-Path $localBin) { if (Add-ToUserPath $localBin) { $added += '~\.local\bin' } }
+$npmBin = Join-Path $env:APPDATA 'npm'
+if (Test-Path $npmBin) { if (Add-ToUserPath $npmBin) { $added += '%APPDATA%\npm' } }
+
+if ($added.Count -gt 0) {
+  Write-Ok "added to your PATH for future terminals: $($added -join ', ')"
+} else {
+  Write-Ok "already on your PATH"
 }
 
 # ------------------------------------------------------- 3 git for windows ---
