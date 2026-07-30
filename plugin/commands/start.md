@@ -87,11 +87,12 @@ No CLI logins are needed, and never run `vercel login` or `supabase login`:
 
 ## Step 6 — Summary and first build step
 
-Show a compact status table for the five services — Vercel, Supabase, n8n, Resend, AgentMail. A service present in `services` is **Ready**; one marked `incomplete` is **Almost ready** (name its `pending_parts` and say `/insurwreck:status` can refresh it later); one in `pending` is **Pending — the AI pod is provisioning it**. For ready services, mention in one line what the credential is for:
+Show a compact status table for the six services — Vercel, Supabase, n8n, Resend, AgentMail, Google sign-in. A service present in `services` is **Ready**; one marked `incomplete` is **Almost ready** (name its `pending_parts` and say `/insurwreck:status` can refresh it later); one in `pending` is **Pending — the AI pod is provisioning it**. For ready services, mention in one line what the credential is for:
 
 - Vercel — their own project on the Insurwreck team plus a personal access token; deploys go live with `vercel deploy --token`.
 - Supabase — their own dedicated project (URL, anon key, service_role key, DB password).
 - Resend — sending-only key on the shared hackathon domain.
+- Google sign-in — Plum Workspace login for their app, restricted to `@plumhq.com`; run `/insurwreck:add-google-auth` when they want it wired in.
 
 Then read their idea brief back to them and propose ONE concrete first build step tailored to it:
 
@@ -103,5 +104,6 @@ Then read their idea brief back to them and propose ONE concrete first build ste
 Close with the housekeeping commands, exactly:
 
 - `/insurwreck:status` — show this summary again
+- `/insurwreck:add-google-auth` — add Plum Workspace sign-in to your app
 - `/insurwreck:update` — pull the newest kit
 - `/insurwreck:uninstall` — remove the kit and stored credentials

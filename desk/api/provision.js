@@ -1,11 +1,18 @@
-import { sb, sha256, nowIso, readBody } from "./_lib.js";
-import { mintResend, mintVercel, mintSupabase } from "./_minters.js";
+import { sb, sha256, nowIso, readBody, isAdmin, normalizeEmail } from "./_lib.js";
+import { mintResend, mintVercel, mintSupabase, mintGoogleAuth } from "./_minters.js";
 
-const SERVICES = ["vercel", "supabase", "n8n", "resend", "agentmail"];
+const SERVICES = ["vercel", "supabase", "n8n", "resend", "agentmail", "google_auth"];
 
-// Live minters. n8n and agentmail have no minter yet — organizers pre-insert
-// their credentials rows, and they surface here automatically once present.
-const MINTERS = { resend: mintResend, vercel: mintVercel, supabase: mintSupabase };
+// Live minters, run in this order — google_auth is last because it needs the
+// participant's Supabase project ref and Vercel project name. n8n and
+// agentmail have no minter yet: organizers pre-insert their credentials rows,
+// and they surface here automatically once present.
+const MINTERS = {
+  resend: mintResend,
+  vercel: mintVercel,
+  supabase: mintSupabase,
+  google_auth: mintGoogleAuth,
+};
 
 async function sessionEmail(req) {
   const auth = req.headers.authorization || "";
@@ -21,12 +28,16 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
 
   try {
-    const email = await sessionEmail(req);
+    const body = readBody(req);
+    // Organizers can repair a participant's setup without making them
+    // re-verify: admin key plus the participant's email.
+    const email = isAdmin(req) && body.email
+      ? normalizeEmail(body.email)
+      : await sessionEmail(req);
     if (!email) {
       return res.status(401).json({ error: "invalid or expired session — verify your email again" });
     }
 
-    const body = readBody(req);
     const patch = { provisioned_at: nowIso() };
     if (body.name) patch.name = String(body.name).slice(0, 120);
     if (body.idea_brief) patch.idea_brief = String(body.idea_brief).slice(0, 2000);
@@ -50,7 +61,10 @@ export default async function handler(req, res) {
       const row = byService.get(service);
       if (row && !row.payload?.incomplete) continue;
       try {
-        const payload = await minter(email, row?.payload || {});
+        const context = Object.fromEntries(
+          [...byService.values()].map((entry) => [entry.service, entry.payload])
+        );
+        const payload = await minter(email, row?.payload || {}, context);
         if (row) {
           await sb(
             `credentials?participant_email=eq.${encodeURIComponent(email)}&service=eq.${service}`,
