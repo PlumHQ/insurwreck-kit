@@ -23,6 +23,10 @@
     {
       "source": "/go",
       "destination": "/go.sh"
+    },
+    {
+      "source": "/api/llm/:path*",
+      "destination": "/api/llm/[...path]"
     }
   ],
   "headers": [
@@ -39,5 +43,8 @@
         }
       ]
     }
+  ],
+  "regions": [
+    "bom1"
   ]
 }

@@ -69,6 +69,9 @@ export default async function handler(req, res) {
     headers: {
       "x-api-key": process.env.METABASE_API_KEY || "",
       "Content-Type": "application/json",
+      ...(process.env.METABASE_GATE_SECRET
+        ? { "X-Insurwreck-Gate": process.env.METABASE_GATE_SECRET }
+        : {}),
     },
     body: JSON.stringify({ parameters: [] }),
   });

@@ -27,7 +27,12 @@ export default async function handler(req, res) {
       // surfaces here rather than as a broken tool in someone's session.
       const probe = await fetch(
         `${(process.env.METABASE_URL || "https://stats2.plumhq.com").replace(/\/+$/, "")}/api/card/${cardId}`,
-        { headers: { "x-api-key": process.env.METABASE_API_KEY || "" } }
+        { headers: {
+          "x-api-key": process.env.METABASE_API_KEY || "",
+          ...(process.env.METABASE_GATE_SECRET
+            ? { "X-Insurwreck-Gate": process.env.METABASE_GATE_SECRET }
+            : {}),
+        } }
       );
       if (!probe.ok) {
         return res.status(400).json({
