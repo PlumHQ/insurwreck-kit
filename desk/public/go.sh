@@ -4,9 +4,13 @@
 #
 #   curl -fsSL https://insurwreck-desk.preview.plumhq.com/go | bash
 #
-# Installs Ghostty, installs Claude Code, repairs PATH, installs node and the
+# Installs Ghostty, installs Claude Code, repairs PATH, installs Node 22+ and the
 # Salesforce CLI the bundled MCP servers need, installs the insurwreck plugin,
 # scaffolds a project folder, and launches you into it.
+#
+# Supports macOS, Linux, and Windows via WSL2. Native Windows shells (Git Bash,
+# MSYS, Cygwin) are rejected with instructions, because WSL2 is the only path
+# that works. Nothing here requires root.
 #
 # Safe to re-run. Every step checks before it acts, so a half-finished run
 # just picks up where it stopped.
@@ -21,6 +25,8 @@ PROJECT_DIR="${INSURWRECK_DIR:-$HOME/insurwreck}"
 GHOSTTY_DMG_FALLBACK="https://release.files.ghostty.org/1.3.1/Ghostty.dmg"
 GHOSTTY_CONFIG_MAC="$HOME/Library/Application Support/com.mitchellh.ghostty/config"
 GHOSTTY_CONFIG_XDG="${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/config"
+# Highest floor among the bundled MCP servers (@kula-ai/mcp-server needs 22).
+MIN_NODE=22
 
 WITH_GHOSTTY=1
 LAUNCH=1
@@ -167,6 +173,14 @@ install_ghostty_macos() {
 
 install_ghostty_linux() {
   if have ghostty; then skip "Ghostty already installed"; return 0; fi
+
+  # Every path below needs root, and the output is redirected to a log - so a
+  # sudo password prompt would be invisible and the script would look frozen.
+  # Check for passwordless sudo up front and bail out loudly instead.
+  if ! sudo -n true 2>/dev/null; then
+    skip "Ghostty needs sudo - install it later from https://ghostty.org/download"
+    return 0
+  fi
 
   local distro=""
   [ -r /etc/os-release ] && distro="$(. /etc/os-release && echo "${ID:-}")"
@@ -316,15 +330,6 @@ fi
 
 step "Setting up the Salesforce and Kula tools"
 
-install_node_linux() {
-  if have apt-get; then
-    sudo apt-get update -qq >/dev/null 2>&1 \
-      && sudo apt-get install -y -qq nodejs npm >/dev/null 2>&1
-  else
-    return 1
-  fi
-}
-
 # Official prebuilt tarball into ~/.local — same place claude lives, already on
 # PATH from step 4, and needs no sudo or package manager.
 install_node_tarball() {
@@ -350,15 +355,31 @@ install_node_tarball() {
   have node
 }
 
-if have node && have npx; then
+# @kula-ai/mcp-server declares node >=22 and @salesforce/mcp declares >=20, so
+# an older node leaves those two servers dead with no obvious cause. Ubuntu
+# 24.04 - which is what WSL2 installs by default - ships node 18.19.1 from apt,
+# already end-of-life upstream. So the version is checked, not just the presence,
+# and the official tarball is the only install path: it is current, needs no
+# sudo, and behaves identically on macOS and Linux.
+node_major() {
+  local v
+  v="$(node --version 2>/dev/null)" || return 1
+  v="${v#v}"; printf '%s' "${v%%.*}"
+}
+
+if have node && have npx && [ "$(node_major || echo 0)" -ge "$MIN_NODE" ] 2>/dev/null; then
   ok "node $(node --version 2>/dev/null)"
 else
-  info "installing node…"
-  if { [ "$PLATFORM" != "macos" ] && install_node_linux; } || install_node_tarball; then
+  if have node; then
+    info "node $(node --version 2>/dev/null) is too old for the Salesforce and Kula servers; installing $MIN_NODE+…"
+  else
+    info "installing node…"
+  fi
+  if install_node_tarball; then
     ok "node $(node --version 2>/dev/null)"
   else
     warn "couldn't install node automatically"
-    info "install the LTS from https://nodejs.org, then run: iw-doctor"
+    info "install Node $MIN_NODE or newer from https://nodejs.org, then run: iw-doctor"
   fi
 fi
 

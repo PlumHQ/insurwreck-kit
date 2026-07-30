@@ -91,6 +91,34 @@ else
   bad "plugin not installed"
 fi
 
+# The floor that matters: @kula-ai/mcp-server declares node >=22 and
+# @salesforce/mcp declares >=20. Ubuntu's apt ships 18, so "node exists" is not
+# the same as "the MCP servers will start" - assert the version.
+NODE_V="$(node --version 2>/dev/null || echo none)"
+NODE_MAJOR="${NODE_V#v}"; NODE_MAJOR="${NODE_MAJOR%%.*}"
+if [ "${NODE_MAJOR:-0}" -ge 22 ] 2>/dev/null; then
+  ok "node $NODE_V satisfies the MCP servers (>=22)"
+else
+  bad "node $NODE_V is below the >=22 the Kula MCP server requires"
+fi
+
+# A bundled MCP server must actually start on this box. Cheapest end-to-end
+# proof that node, npx and the package all agree.
+if printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"r","version":"1"}}}' \
+   | timeout 180 npx -y @kula-ai/mcp-server 2>/dev/null | head -1 | grep -q '"result"'; then
+  ok "the kula MCP server starts and answers initialize"
+else
+  bad "the kula MCP server did not answer initialize on this node"
+fi
+
+# The script must never need root. sudo here needs a password, so a step that
+# shells out to it without checking would hang - this proves none does.
+if grep -c 'insurwreck 4.0' "$HOME/.bashrc" >/dev/null 2>&1; then
+  ok "completed without passwordless sudo"
+else
+  bad "setup did not complete on a box whose sudo needs a password"
+fi
+
 # bin/ lands on PATH only inside a Claude session, so check the files instead.
 for exe in iw-deploy iw-doctor; do
   [ -x "/home/leader/kit/plugin/bin/$exe" ] \

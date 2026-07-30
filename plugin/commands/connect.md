@@ -14,6 +14,8 @@ The Salesforce MCP server never takes a password. It reads orgs the `sf` CLI has
    - Production, only if an organizer said so: `sf org login web --alias insurwreck --set-default`
    
    A browser opens; they sign in as themselves and approve. Nothing is typed into Claude Code.
+
+   **On Windows (WSL):** WSL cannot open a Windows browser by itself, so `sf` prints the URL instead of launching it. That is not a failure — copy the URL into their Windows browser, complete the login there, and `sf` picks up the callback. If they would rather it opened by itself, `sudo apt-get install -y wslu` provides `wslview` and `sf` will use it. `iw-doctor` flags this before they hit it.
 3. Confirm the org is the default: `sf org display --target-org insurwreck`. Show the username and instance URL it prints, so they can see which identity the agent will use.
 4. Verify end to end by calling `run_soql_query` on the `salesforce` MCP server with something small, e.g. `SELECT Id, Name FROM Account LIMIT 3`. No restart is needed — the server resolves `DEFAULT_TARGET_ORG` on every tool call, not at startup.
 
