@@ -102,40 +102,6 @@
         </div>
       </section>
 
-      <!-- before you start ------------------------------------------------->
-      <section class="section orient-section mist">
-        <div class="wrap">
-          <div class="section-heading">
-            <p class="eyebrow">Before you start</p>
-            <h2>Two things to check.</h2>
-            <p>
-              You don't need to know git, the terminal, or what an environment variable is. You will not
-              be asked to copy a single password.
-            </p>
-          </div>
-          <div class="pair-grid">
-            <article class="panel">
-              <span class="panel-icon"><svg aria-hidden="true"><use href="#icon-terminal"></use></svg></span>
-              <h3>On a Mac</h3>
-              <p>You're ready. Nothing to install first. We'll open Terminal in a moment.</p>
-            </article>
-            <article class="panel panel-signal">
-              <span class="panel-icon"><svg aria-hidden="true"><use href="#icon-shield"></use></svg></span>
-              <h3>On Windows — do this first</h3>
-              <p>
-                You need WSL, and it needs a restart. Open PowerShell as administrator, run the command
-                below, restart your laptop, then open <strong>Ubuntu</strong> from the Start menu and
-                carry on there.
-              </p>
-              <div class="term term-inline">
-                <div class="term-bar"><span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="term-title">PowerShell (Administrator)</span></div>
-                <pre><span class="t-prompt">PS&gt;</span> wsl --install</pre>
-              </div>
-            </article>
-          </div>
-        </div>
-      </section>
-
       <!-- setup ------------------------------------------------------------>
       <section class="section orient-section" id="setup">
         <div class="wrap">
@@ -174,6 +140,27 @@
 <span class="t-ok">✓</span> Project folder at <span class="t-dim">~/insurwreck</span>
 </pre>
                 </div>
+                <p>
+                  On a Windows laptop press the <kbd>Windows</kbd> button, type <em>Terminal</em>, hit
+                  enter. Then paste this and press enter.
+                </p>
+                <div class="term">
+                  <div class="term-bar">
+                    <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                    <span class="term-title">Terminal</span>
+                    <button class="term-copy" type="button" data-copy="cmd-install-win">
+                      <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+                    </button>
+                  </div>
+                  <pre><span class="t-prompt">$</span> <span id="cmd-install-win">irm https://insurwreck-desk.preview.plumhq.com/win | iex</span>
+
+<span class="t-ok">✓</span> Ghostty installed
+<span class="t-ok">✓</span> Claude Code installed
+<span class="t-ok">✓</span> node and Salesforce CLI ready
+<span class="t-ok">✓</span> Insurwreck toolkit installed
+<span class="t-ok">✓</span> Project folder at <span class="t-dim">~/insurwreck</span>
+</pre>
+                </div>
                 <p class="step-note">
                   Three to five minutes, with a tick per step. If it asks for your Mac password, that's
                   the installer needing permission to install software — type it and carry on. Safe to
@@ -189,7 +176,9 @@
               <div class="step-body">
                 <p>
                   The installer ends by printing a line to paste, finishing in
-                  <code>claude --permission-mode auto</code>. Paste that. When the agent starts, type:
+                  <code>claude --permission-mode auto</code>. Paste that. Nothing happens on its own
+                  after that — once the agent starts, remember to type <code>/insurwreck:start</code> in
+                  the same terminal:
                 </p>
                 <div class="term">
                   <div class="term-bar">

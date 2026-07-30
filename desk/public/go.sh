@@ -605,7 +605,7 @@ fi
 if [ ! -t 0 ]; then
   # Piped from curl, so stdin isn't a terminal and we can't hand over an
   # interactive session. Tell them the one line to paste instead.
-  printf "  ${B}Paste this to begin:${R}\n\n      cd %s && %s\n\n" "$PROJECT_DIR" "$CLAUDE_LAUNCH"
+  printf "  ${B}Paste this to begin:${R}\n\n      cd %s && %s\n\n  ${DIM}Once Claude Code starts, type${R} ${B}/insurwreck:start${R}\n\n" "$PROJECT_DIR" "$CLAUDE_LAUNCH"
   exit 0
 fi
 
