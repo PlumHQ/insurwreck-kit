@@ -13,6 +13,11 @@
       "name": "insurwreck",
       "source": "./plugin",
       "description": "Onboarding for Insurwreck 4.0: terminal intro, registration, email verification, and credential setup for Vercel, Supabase, n8n, Resend, and AgentMail."
+    },
+    {
+      "name": "insurwreck-organizer",
+      "source": "./organizer",
+      "description": "Organizer-only: publish a new Plum data slice to participants in a couple of minutes, no deploy. Needs the Metabase admin key and the desk ADMIN_KEY."
     }
   ]
 }

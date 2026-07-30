@@ -49,7 +49,36 @@ create table if not exists public.credentials (
   unique (participant_email, service)
 );
 
+-- Model spend per participant, written by /api/llm on every call it relays.
+-- Anthropic can't mint per-participant API keys, so the desk proxies the one
+-- real key and meters here instead; the sum per participant is the budget check.
+create table if not exists public.llm_usage (
+  id uuid primary key default gen_random_uuid(),
+  participant_email text not null,
+  model text,
+  input_tokens integer not null default 0,
+  output_tokens integer not null default 0,
+  cost_usd numeric(10, 6) not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists llm_usage_participant_idx
+  on public.llm_usage (participant_email, created_at desc);
+
+-- Which Metabase saved questions participants can reach through /api/mcp.
+-- Lives in the database, not an env var, so an organizer can publish a new
+-- slice during the event without redeploying the desk.
+create table if not exists public.data_slices (
+  card_id     integer primary key,
+  name        text,
+  note        text,
+  enabled     boolean not null default true,
+  created_at  timestamptz not null default now()
+);
+
 alter table public.participants enable row level security;
 alter table public.otp_codes enable row level security;
 alter table public.sessions enable row level security;
 alter table public.credentials enable row level security;
+alter table public.llm_usage enable row level security;
+alter table public.data_slices enable row level security;

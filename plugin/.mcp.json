@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "insurwreck-data": {
+      "type": "http",
+      "url": "https://insurwreck-desk.preview.plumhq.com/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${INSURWRECK_TOKEN}"
+      }
+    },
+    "n8n": {
+      "type": "http",
+      "url": "https://workflow-stg.plumhq.com/mcp-server/http",
+      "headers": {
+        "Authorization": "Bearer ${N8N_TOKEN}"
+      }
+    }
+  }
+}

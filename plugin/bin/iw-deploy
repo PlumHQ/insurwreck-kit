@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Deploy the current folder to your Insurwreck Vercel project.
+#
+#   iw-deploy            deploy to production
+#   iw-deploy --preview  deploy a preview URL instead
+#
+# Reads your credentials so you never have to handle the token yourself.
+
+set -euo pipefail
+
+CREDS="$HOME/.insurwreck/credentials.json"
+[ -f "$CREDS" ] || { echo "No credentials yet — run /insurwreck:start first." >&2; exit 1; }
+
+field() {
+  node -e '
+    const c = require(process.argv[1]).services?.vercel ?? {};
+    process.stdout.write(String(c[process.argv[2]] ?? ""));
+  ' "$CREDS" "$1" 2>/dev/null || true
+}
+
+TOKEN="$(field token)"
+PROJECT="$(field project_name)"
+SCOPE="$(field team_slug)"
+[ -n "$SCOPE" ] || SCOPE="insurwreck"
+
+if [ -z "$TOKEN" ]; then
+  cat >&2 <<'MSG'
+Your Vercel deploy token isn't in your credentials yet.
+
+Run /insurwreck:status inside Claude Code — it re-requests the missing pieces.
+If it still doesn't appear, tell an organizer: the desk needs VERCEL_USER_TOKEN set.
+MSG
+  exit 1
+fi
+
+command -v vercel >/dev/null 2>&1 || { echo "Installing the Vercel CLI…"; npm i -g vercel >/dev/null 2>&1; }
+
+# Link on first run so Vercel knows which project this folder belongs to.
+if [ ! -f .vercel/project.json ]; then
+  echo "Linking this folder to $PROJECT…"
+  vercel link --yes --project "$PROJECT" --scope "$SCOPE" --token "$TOKEN" >/dev/null
+fi
+
+TARGET="--prod"
+[ "${1:-}" = "--preview" ] && TARGET=""
+
+echo "Deploying…"
+URL="$(vercel deploy $TARGET --yes --token "$TOKEN" 2>/dev/null | tail -1)"
+
+if [ -z "$URL" ]; then
+  echo "Deploy failed. Ask Claude: \"my deploy failed, run iw-doctor and fix it\"" >&2
+  exit 1
+fi
+
+echo
+echo "  Live at: $URL"
+echo

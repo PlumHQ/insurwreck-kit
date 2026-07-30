@@ -1,0 +1,127 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Insurwreck 4.0 · data slices</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg:#fbfbfa; --fg:#1a1a19; --dim:#6b6b68; --line:#e4e4e1;
+    --card:#fff; --ok:#1a7f4b; --bad:#b3261e; --accent:#2f6ae0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#161615; --fg:#eeeeec; --dim:#9a9a96; --line:#2e2e2c;
+            --card:#1e1e1d; --ok:#4ec27f; --bad:#f2685c; --accent:#7aa2f7; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--fg); max-width:860px;
+         font:14px/1.55 ui-sans-serif,-apple-system,"Segoe UI",sans-serif; }
+  h1 { font-size:1.15rem; margin:0 0 2px; }
+  .sub { color:var(--dim); font-size:.85rem; margin-bottom:18px; }
+  .steps { background:var(--card); border:1px solid var(--line); border-radius:9px;
+           padding:12px 16px 12px 30px; margin-bottom:18px; font-size:.85rem; color:var(--dim); }
+  .steps li { margin:3px 0; }
+  .steps b { color:var(--fg); }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+  input, button { font:inherit; padding:7px 11px; border:1px solid var(--line);
+                  border-radius:7px; background:var(--card); color:var(--fg); }
+  button { cursor:pointer; font-weight:600; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  table { border-collapse:collapse; width:100%; background:var(--card);
+          border:1px solid var(--line); border-radius:9px; overflow:hidden; }
+  th, td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); }
+  th { font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:var(--dim); }
+  tr:last-child td { border-bottom:0; }
+  .id { font-family:ui-monospace,monospace; font-size:.82rem; }
+  .off { opacity:.45; }
+  .msg { padding:10px 0; font-size:.85rem; }
+  .msg.err { color:var(--bad); }
+  .msg.ok { color:var(--ok); }
+  code { font-family:ui-monospace,monospace; font-size:.82rem;
+         background:color-mix(in srgb,var(--fg) 8%,transparent); padding:1px 5px; border-radius:4px; }
+</style>
+
+<h1>Data slices</h1>
+<div class="sub">What participants can query through the <code>insurwreck-data</code> MCP server. Changes are live immediately - no deploy.</div>
+
+<ol class="steps">
+  <li>Write the query in Metabase and <b>save it</b> into the Insurwreck collection.</li>
+  <li>Copy the number from its URL - <code>/question/<b>1234</b>-my-slice</code>.</li>
+  <li>Paste it below. The desk checks the service account can read it before publishing.</li>
+</ol>
+
+<div class="bar">
+  <input id="key" type="password" placeholder="admin key" size="24" autocomplete="off" />
+  <input id="card" type="number" placeholder="card id" size="10" />
+  <input id="note" placeholder="what it's for (optional)" size="30" />
+  <button class="primary" id="add">Publish</button>
+  <button id="reload">Refresh</button>
+</div>
+<div id="msg" class="msg"></div>
+
+<table>
+  <thead><tr><th>Card</th><th>Name</th><th>Note</th><th>State</th><th></th></tr></thead>
+  <tbody id="rows"><tr><td colspan="5" class="msg">Enter the admin key and refresh.</td></tr></tbody>
+</table>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const key = () => $("key").value.trim();
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  function say(text, cls = "") { $("msg").className = "msg " + cls; $("msg").textContent = text; }
+
+  async function api(method, body) {
+    const res = await fetch("/api/slices", {
+      method,
+      headers: { "x-admin-key": key(), "content-type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  }
+
+  async function load() {
+    if (!key()) return say("Enter the admin key.", "err");
+    localStorage.setItem("iw_admin_key", key());
+    try {
+      const { slices } = await api("GET");
+      $("rows").innerHTML = slices.length
+        ? slices.map((s) => `
+            <tr class="${s.enabled ? "" : "off"}">
+              <td class="id">${s.card_id}</td>
+              <td>${esc(s.name)}</td>
+              <td>${esc(s.note || "-")}</td>
+              <td>${s.enabled ? "live" : "withdrawn"}</td>
+              <td>${s.enabled ? `<button data-off="${s.card_id}">Withdraw</button>` : ""}</td>
+            </tr>`).join("")
+        : '<tr><td colspan="5" class="msg">Nothing published yet. Participants will see an empty list.</td></tr>';
+      document.querySelectorAll("button[data-off]").forEach((b) => {
+        b.onclick = async () => {
+          try { await api("DELETE", { card_id: Number(b.dataset.off) }); say("Withdrawn.", "ok"); load(); }
+          catch (e) { say(e.message, "err"); }
+        };
+      });
+      say("");
+    } catch (e) { say(e.message, "err"); }
+  }
+
+  $("add").onclick = async () => {
+    const card_id = Number($("card").value);
+    if (!card_id) return say("Enter a card id.", "err");
+    say("Checking with Metabase…");
+    try {
+      const r = await api("POST", { card_id, note: $("note").value || null });
+      say(`Published "${r.metabase_name}" - live now.`, "ok");
+      $("card").value = ""; $("note").value = "";
+      load();
+    } catch (e) { say(e.message, "err"); }
+  };
+
+  $("reload").onclick = load;
+  $("key").onkeydown = (e) => { if (e.key === "Enter") load(); };
+
+  const saved = localStorage.getItem("iw_admin_key");
+  if (saved) { $("key").value = saved; load(); }
+</script>

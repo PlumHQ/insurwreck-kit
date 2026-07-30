@@ -1,0 +1,164 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Insurwreck 4.0 · roster</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #fbfbfa; --fg: #1a1a19; --dim: #6b6b68; --line: #e4e4e1;
+    --card: #fff; --ok: #1a7f4b; --warn: #a86a00; --bad: #b3261e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#161615; --fg:#eeeeec; --dim:#9a9a96; --line:#2e2e2c;
+            --card:#1e1e1d; --ok:#4ec27f; --warn:#e0a33a; --bad:#f2685c; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--fg);
+         font:14px/1.5 ui-sans-serif,-apple-system,"Segoe UI",sans-serif; }
+  h1 { font-size:1.15rem; margin:0 0 2px; letter-spacing:-.01em; }
+  .sub { color:var(--dim); font-size:.85rem; margin-bottom:18px; }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
+  input, button { font:inherit; padding:7px 11px; border:1px solid var(--line);
+                  border-radius:7px; background:var(--card); color:var(--fg); }
+  button { cursor:pointer; font-weight:600; }
+  .stats { display:flex; gap:18px; flex-wrap:wrap; margin-bottom:16px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:9px;
+          padding:10px 14px; min-width:90px; }
+  .stat b { display:block; font-size:1.5rem; line-height:1.1; }
+  .stat span { color:var(--dim); font-size:.75rem; text-transform:uppercase;
+               letter-spacing:.06em; }
+  .scroll { overflow-x:auto; border:1px solid var(--line); border-radius:9px;
+            background:var(--card); }
+  table { border-collapse:collapse; width:100%; min-width:820px; }
+  th, td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--line);
+           vertical-align:top; }
+  th { font-size:.72rem; text-transform:uppercase; letter-spacing:.06em;
+       color:var(--dim); position:sticky; top:0; background:var(--card); cursor:pointer; }
+  tbody tr:last-child td { border-bottom:0; }
+  tr.stuck { background:color-mix(in srgb, var(--bad) 8%, transparent); }
+  .who { font-weight:600; }
+  .em { color:var(--dim); font-size:.8rem; }
+  .idea { max-width:340px; color:var(--dim); font-size:.82rem; }
+  .pill { display:inline-block; padding:1px 7px; border-radius:20px; font-size:.7rem;
+          font-weight:700; margin-right:3px; border:1px solid transparent; }
+  .p-ok   { color:var(--ok);   border-color:color-mix(in srgb,var(--ok) 40%,transparent); }
+  .p-warn { color:var(--warn); border-color:color-mix(in srgb,var(--warn) 40%,transparent); }
+  .msg { padding:22px; color:var(--dim); }
+</style>
+
+<h1>Insurwreck 4.0 · roster</h1>
+<div class="sub">Who's registered, who's stuck. Refreshes every 30s.</div>
+
+<div class="bar">
+  <input id="key" type="password" placeholder="admin key" size="30" autocomplete="off" />
+  <button id="go">Load</button>
+  <label class="em"><input type="checkbox" id="only" /> only show stuck</label>
+</div>
+
+<div class="stats" id="stats" hidden>
+  <div class="stat"><b id="s-total">0</b><span>registered</span></div>
+  <div class="stat"><b id="s-ready">0</b><span>fully ready</span></div>
+  <div class="stat"><b id="s-stuck">0</b><span>stuck</span></div>
+  <div class="stat"><b id="s-idea">0</b><span>have an idea</span></div>
+  <div class="stat"><b id="s-spend">$0</b><span>model spend</span></div>
+</div>
+
+<div class="scroll"><table>
+  <thead><tr>
+    <th data-k="name">Person</th>
+    <th data-k="missing">Services</th>
+    <th data-k="idea_brief">Idea</th>
+    <th data-k="spend">Spend</th>
+    <th data-k="provisioned_at">Provisioned</th>
+  </tr></thead>
+  <tbody id="rows"><tr><td colspan="5" class="msg">Enter the admin key to load.</td></tr></tbody>
+</table></div>
+
+<script>
+  const SERVICES = ["vercel", "supabase", "resend", "anthropic", "agentmail", "n8n"];
+  const $ = (id) => document.getElementById(id);
+  let data = [], sortKey = "missing", desc = true;
+
+  const missingFor = (p) => SERVICES.filter((s) => !(p.services || {})[s]);
+
+  async function load() {
+    const key = $("key").value.trim();
+    if (!key) return;
+    localStorage.setItem("iw_admin_key", key);
+    $("rows").innerHTML = '<tr><td colspan="5" class="msg">Loading…</td></tr>';
+    try {
+      const res = await fetch("/api/roster", { headers: { "x-admin-key": key } });
+      if (!res.ok) throw new Error(res.status === 401 ? "Wrong admin key." : `HTTP ${res.status}`);
+      const body = await res.json();
+
+      // /api/roster returns participants and credentials as separate lists;
+      // fold the credentials onto each person so a row shows their services.
+      const held = new Map();
+      for (const c of body.credentials || []) {
+        if (!held.has(c.participant_email)) held.set(c.participant_email, new Set());
+        held.get(c.participant_email).add(c.service);
+      }
+      const spendBy = new Map((body.spend || []).map((s) => [s.participant_email, s]));
+      data = (body.participants || []).map((p) => ({
+        ...p,
+        services: Object.fromEntries([...(held.get(p.email) || [])].map((s) => [s, true])),
+        spend: spendBy.get(p.email)?.cost_usd || 0,
+        calls: spendBy.get(p.email)?.calls || 0,
+      }));
+      render();
+    } catch (err) {
+      $("rows").innerHTML = `<tr><td colspan="5" class="msg">${err.message}</td></tr>`;
+    }
+  }
+
+  function render() {
+    const onlyStuck = $("only").checked;
+    const rows = data
+      .map((p) => ({ ...p, missing: missingFor(p) }))
+      .filter((p) => !onlyStuck || p.missing.length)
+      .sort((a, b) => {
+        const av = sortKey === "missing" ? a.missing.length : (a[sortKey] || "");
+        const bv = sortKey === "missing" ? b.missing.length : (b[sortKey] || "");
+        return (av < bv ? -1 : av > bv ? 1 : 0) * (desc ? -1 : 1);
+      });
+
+    $("stats").hidden = false;
+    $("s-total").textContent = data.length;
+    $("s-stuck").textContent = data.filter((p) => missingFor(p).length).length;
+    $("s-ready").textContent = data.filter((p) => !missingFor(p).length).length;
+    $("s-idea").textContent = data.filter((p) => (p.idea_brief || "").trim().length > 8).length;
+    $("s-spend").textContent = "$" + data.reduce((t, p) => t + (p.spend || 0), 0).toFixed(2);
+
+    $("rows").innerHTML = rows.length
+      ? rows.map((p) => `
+          <tr class="${p.missing.length ? "stuck" : ""}">
+            <td><div class="who">${esc(p.name || "—")}</div><div class="em">${esc(p.email || "")}</div></td>
+            <td>${SERVICES.map((s) =>
+                  `<span class="pill ${p.missing.includes(s) ? "p-warn" : "p-ok"}">${s}</span>`
+                ).join("")}</td>
+            <td class="idea">${esc((p.idea_brief || "—").slice(0, 180))}</td>
+            <td class="em">${p.spend ? `$${p.spend.toFixed(2)} <span style="opacity:.6">(${p.calls})</span>` : "—"}</td>
+            <td class="em">${p.provisioned_at ? new Date(p.provisioned_at).toLocaleString() : "—"}</td>
+          </tr>`).join("")
+      : '<tr><td colspan="5" class="msg">Nobody matches.</td></tr>';
+  }
+
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  $("go").onclick = load;
+  $("only").onchange = render;
+  $("key").onkeydown = (e) => { if (e.key === "Enter") load(); };
+  document.querySelectorAll("th[data-k]").forEach((th) => {
+    th.onclick = () => {
+      const k = th.dataset.k;
+      desc = sortKey === k ? !desc : true;
+      sortKey = k;
+      render();
+    };
+  });
+
+  const saved = localStorage.getItem("iw_admin_key");
+  if (saved) { $("key").value = saved; load(); }
+  setInterval(() => { if (data.length) load(); }, 30000);
+</script>

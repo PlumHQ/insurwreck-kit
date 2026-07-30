@@ -1,16 +1,27 @@
-import { sb, sha256, nowIso, readBody, isAdmin, normalizeEmail } from "./_lib.js";
-import { mintResend, mintVercel, mintSupabase, mintGoogleAuth } from "./_minters.js";
+import { sb, sha256, nowIso, readBody } from "./_lib.js";
+import {
+  mintResend,
+  mintVercel,
+  mintSupabase,
+  mintAgentmail,
+  mintAnthropic,
+  mintN8n,
+  mintGoogleAuth,
+} from "./_minters.js";
 
-const SERVICES = ["vercel", "supabase", "n8n", "resend", "agentmail", "google_auth"];
+const SERVICES = ["vercel", "supabase", "n8n", "resend", "agentmail", "anthropic", "google_auth"];
 
-// Live minters, run in this order — google_auth is last because it needs the
-// participant's Supabase project ref and Vercel project name. n8n and
-// agentmail have no minter yet: organizers pre-insert their credentials rows,
-// and they surface here automatically once present.
+// Every service has a minter now. One that throws - usually a missing env var -
+// leaves that service pending and the next provision call repairs it.
+// google_auth runs last: it needs the participant's Supabase project ref and
+// Vercel project name, so both of those must have minted first.
 const MINTERS = {
   resend: mintResend,
   vercel: mintVercel,
   supabase: mintSupabase,
+  agentmail: mintAgentmail,
+  anthropic: mintAnthropic,
+  n8n: mintN8n,
   google_auth: mintGoogleAuth,
 };
 
