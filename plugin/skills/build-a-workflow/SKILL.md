@@ -33,6 +33,31 @@ That yields something like `iw-harish-n-cb6a`. Use it as their prefix.
 5. **Deactivate rather than delete** when something is no longer wanted. Deletion
    on a shared instance is unrecoverable and may not be theirs to make.
 
+## The order the server actually requires
+
+This is n8n's official MCP server, and it enforces a sequence. Skipping a step
+gets your workflow rejected, so don't improvise:
+
+1. `get_workflow_best_practices` - a required planning step.
+2. `get_sdk_reference` - **required before you write any SDK code.** The server
+   says so in its own instructions; guessing the SDK shape wastes turns.
+3. `search_nodes` / `get_node_types` to find the right nodes and their exact
+   parameter names, and `validate_node_config` as you write each one.
+4. `validate_workflow` - **required before create or update.**
+5. `create_workflow_from_code`, then `test_workflow` with pin data before
+   `publish_workflow`.
+
+`prepare_test_pin_data` and `test_workflow` let you prove a workflow works
+without hitting real external services. Use them - a workflow that only "works"
+when published is a demo that fails live.
+
+There are no team projects on this instance (`teamProjectsEnabled: false`), so
+create workflows without a `projectId` and they land in the shared personal
+project. That is exactly why the naming rules above matter.
+
+`list_credentials` shows credentials the shared user can reach. Read it to find
+an existing credential ID; never create one containing a participant's own keys.
+
 ## Building
 
 Ask what should *start* it - a schedule, an inbound email, a webhook, or a manual
