@@ -3,6 +3,7 @@ import { resendFrom } from "./_lib.js";
 
 const VERCEL_API = "https://api.vercel.com";
 const SUPABASE_API = "https://api.supabase.com/v1";
+const AGENTMAIL_API = "https://api.agentmail.to/v0";
 const TOKEN_TTL_DAYS = 45;
 
 // Deterministic per-participant resource name: iw-<local-part>-<hash4>.
@@ -194,4 +195,97 @@ export async function mintSupabase(email, existing = {}) {
   }
 
   return finalize(payload, payload.service_role_key ? [] : ["api_keys"]);
+}
+
+// ------------------------------------------------------------- agentmail ---
+
+// AgentMail has no per-inbox API key: POST /v0/api-keys scopes by permission,
+// not by inbox. So every participant shares one org key (kept to the minimum
+// permission set) and gets their own inbox under it. `client_id` is the
+// idempotency handle — re-provisioning returns the same inbox, never a second.
+export async function mintAgentmail(email, existing = {}) {
+  const key = process.env.AGENTMAIL_API_KEY;
+  if (!key) throw new Error("AGENTMAIL_API_KEY not set");
+
+  const payload = { ...existing };
+  const slug = slugFor(email);
+  const headers = { Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
+
+  if (!payload.inbox_id) {
+    const res = await fetch(`${AGENTMAIL_API}/inboxes`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        username: slug,
+        client_id: slug,
+        display_name: `Insurwreck · ${email.split("@")[0]}`,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(`agentmail inbox create failed: ${res.status} ${JSON.stringify(data)}`);
+    }
+    payload.inbox_id = data.inbox_id;
+    payload.address = data.email;
+    payload.api_key = key;
+    payload.api_base = AGENTMAIL_API;
+    payload.note =
+      "Shared hackathon key, your own inbox. Send: POST {api_base}/inboxes/{inbox_id}/messages/send";
+  }
+
+  return finalize(payload, payload.inbox_id ? [] : ["inbox"]);
+}
+
+// ------------------------------------------------------------- anthropic ---
+
+// Anthropic's Admin API cannot create API keys — "new API keys can only be
+// created through the Claude Console for security reasons". So instead of a
+// real key, each participant gets a proxy token for the desk's /api/llm
+// endpoint, which holds the one real key and meters usage per participant.
+//
+// The token is a drop-in for the Anthropic SDK: point baseURL at api_base and
+// pass the token as the API key. Nothing else in their code changes.
+export async function mintAnthropic(email, existing = {}) {
+  const payload = { ...existing };
+
+  if (!payload.api_key) {
+    const token = `iwk-${randomBytes(24).toString("base64url")}`;
+    payload.api_key = token;
+    payload.token_hash = createHash("sha256").update(token).digest("hex");
+    payload.api_base = `${deskBaseUrl()}/api/llm`;
+    payload.models = ["claude-sonnet-5", "claude-opus-5"];
+    payload.budget_usd = Number(process.env.LLM_BUDGET_USD || 15);
+    payload.note =
+      "Use with the Anthropic SDK: new Anthropic({ apiKey, baseURL: api_base }). Metered per participant.";
+  }
+
+  return finalize(payload, []);
+}
+
+// ------------------------------------------------------------------ n8n ---
+
+// n8n is a shared, organizer-hosted instance rather than one per participant,
+// so there is nothing to create - the "mint" just hands out the shared endpoint
+// and token. Doing it here beats hand-inserting 25 credentials rows, and means
+// /insurwreck:status repairs it automatically once the env var is set.
+export async function mintN8n(email, existing = {}) {
+  const token = process.env.N8N_TOKEN;
+  if (!token) throw new Error("N8N_TOKEN not set");
+
+  const payload = { ...existing };
+  payload.token = token;
+  payload.mcp_url =
+    process.env.N8N_MCP_URL || "https://workflow-stg.plumhq.com/mcp-server/http";
+  payload.shared = true;
+  payload.workflow_prefix = slugFor(email);
+  payload.note =
+    "Shared hackathon n8n, reachable as the `n8n` MCP server in Claude Code. Everyone writes to the same " +
+    "workspace, so name every workflow with your workflow_prefix and never edit one that isn't yours.";
+  return finalize(payload, []);
+}
+
+function deskBaseUrl() {
+  return (
+    process.env.DESK_BASE_URL || "https://insurwreck-desk.preview.plumhq.com"
+  ).replace(/\/+$/, "");
 }

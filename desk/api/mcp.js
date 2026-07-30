@@ -1,0 +1,328 @@
+import { sb, sha256 } from "./_lib.js";
+
+// Read-only Plum data for participants, as an MCP server backed by Metabase.
+//
+// The boundary is the TOOL SURFACE, not Metabase. stats2 runs the Enterprise
+// binary with no licence, so sandboxing, column masking and Blocked are all
+// unavailable, and Metabase doesn't parse SQL — so anything that can run
+// arbitrary SQL against database 2 can read all 850 tables. This server
+// therefore never exposes arbitrary SQL. It can only execute saved questions
+// whose IDs an organizer put on the allowlist, and the check is integer
+// membership in a fixed set, not a filter over attacker-controlled text.
+//
+// Defence in depth, and its measured limit. METABASE_API_KEY is a key bound to
+// the `insurwreck` group, which has no "create-queries" permission. Verified on
+// the live instance: that key gets 403 from /api/dataset, so it cannot run a
+// query of its own - only saved cards.
+//
+// What it does NOT buy us: Metabase permissions are a union, and every API key's
+// backing user is automatically a member of "All Users". All Users holds read or
+// write on 22 collections, so the key can also read and run cards there despite
+// the insurwreck group being set to `none` on all of them. Collection scoping is
+// therefore NOT a containment boundary here - only the allowlist below is, which
+// is why participants never receive this key and every path checks the id.
+
+const PROTOCOL_VERSION = "2025-06-18";
+const ROW_CAP = 500;
+
+const MB = () => (process.env.METABASE_URL || "https://stats2.plumhq.com").replace(/\/+$/, "");
+const deskBase = () =>
+  (process.env.DESK_BASE_URL || "https://insurwreck-desk.preview.plumhq.com").replace(/\/+$/, "");
+const MB_KEY = () => process.env.METABASE_API_KEY || "";
+
+// The allowlist. Nothing outside it is reachable, ever.
+//
+// Read from the database rather than an env var so organizers can publish a new
+// slice mid-event without a redeploy. MCP_CARD_IDS still works as a seed and as
+// a fallback if the table hasn't been created yet.
+const envAllowlist = () =>
+  String(process.env.MCP_CARD_IDS || "")
+    .split(",")
+    .map((id) => parseInt(id.trim(), 10))
+    .filter(Number.isInteger);
+
+async function allowlist() {
+  const ids = new Set(envAllowlist());
+  try {
+    const rows = await sb("data_slices?select=card_id&enabled=is.true");
+    for (const row of rows) {
+      const id = parseInt(row.card_id, 10);
+      if (Number.isInteger(id)) ids.add(id);
+    }
+  } catch (error) {
+    // Table missing or unreachable: fall back to the env seed rather than
+    // cutting everyone off mid-build.
+    console.error("data_slices unavailable, using env allowlist:", error.message);
+  }
+  return ids;
+}
+
+// ------------------------------------------------------------------ auth ---
+
+async function participantFor(req) {
+  const auth = req.headers.authorization || "";
+  const header = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+  const token = header || String(req.headers["x-api-key"] || "").trim();
+  if (!token) return null;
+  const rows = await sb(
+    `credentials?service=eq.anthropic&revoked_at=is.null` +
+      `&payload->>token_hash=eq.${sha256(token)}` +
+      `&select=participant_email&limit=1`
+  );
+  return rows.length ? rows[0].participant_email : null;
+}
+
+// -------------------------------------------------------------- metabase ---
+
+async function mb(path, { method = "GET", body } = {}) {
+  const res = await fetch(`${MB()}/api/${path}`, {
+    method,
+    headers: { "x-api-key": MB_KEY(), "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`metabase ${res.status}: ${text.slice(0, 300)}`);
+  return text ? JSON.parse(text) : null;
+}
+
+// Reject anything not on the allowlist before a request is even shaped.
+function requireAllowed(id, allowed) {
+  const cardId = parseInt(id, 10);
+  if (!Number.isInteger(cardId) || !allowed.has(cardId)) {
+    throw new Error(
+      `Dataset ${id} isn't available to you. Call list_datasets to see what is.`
+    );
+  }
+  return cardId;
+}
+
+const summarize = (card) => ({
+  id: card.id,
+  name: card.name,
+  description: card.description || null,
+  columns: (card.result_metadata || []).map((c) => ({
+    name: c.name,
+    type: String(c.base_type || "").replace(/^type\//, ""),
+  })),
+  parameters: (card.parameters || []).map((p) => ({
+    name: p.slug,
+    type: p.type,
+    required: Boolean(p.required),
+  })),
+});
+
+// Metabase wants each parameter bound to its template tag. Build that from the
+// card definition so participants pass plain {name: value} pairs.
+function bindParameters(card, supplied) {
+  const tags = card?.dataset_query?.native?.["template-tags"] || {};
+  const byName = new Map(Object.values(tags).map((t) => [t.name, t]));
+  return Object.entries(supplied || {})
+    .filter(([, value]) => value !== undefined && value !== null && value !== "")
+    .map(([name, value]) => {
+      const tag = byName.get(name);
+      if (!tag) throw new Error(`Unknown parameter "${name}" for this dataset.`);
+      return {
+        type: tag.type === "date" ? "date/single" : "category",
+        value: String(value),
+        target: ["variable", ["template-tag", name]],
+      };
+    });
+}
+
+function toRows(result) {
+  if (result?.status === "failed") {
+    // Never surface Metabase's raw SQL error - it can echo the query text.
+    throw new Error("That query failed to run. Try different parameters.");
+  }
+  const cols = (result?.data?.cols || []).map((c) => c.display_name || c.name);
+  const rows = (result?.data?.rows || []).slice(0, ROW_CAP);
+  return { cols, rows, truncated: (result?.data?.rows || []).length > ROW_CAP };
+}
+
+// ----------------------------------------------------------------- tools ---
+
+const TOOLS = [
+  {
+    name: "list_datasets",
+    description:
+      "List the Plum data slices you can query, with their columns and any filters they accept. Start here.",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "describe_dataset",
+    description:
+      "Show one dataset's columns, the filters it accepts, and three sample rows, so you know what you're working with.",
+    inputSchema: {
+      type: "object",
+      properties: { dataset_id: { type: "integer", description: "id from list_datasets" } },
+      required: ["dataset_id"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "run_dataset",
+    description:
+      "Run a dataset and get its rows back. Pass filters as a plain object, e.g. {\"org\": \"ACME\"}. " +
+      `Returns at most ${ROW_CAP} rows - aggregate or filter rather than pulling everything.`,
+    inputSchema: {
+      type: "object",
+      properties: {
+        dataset_id: { type: "integer", description: "id from list_datasets" },
+        filters: {
+          type: "object",
+          description: "Filter name to value, using names from describe_dataset",
+          additionalProperties: { type: ["string", "number", "boolean"] },
+        },
+      },
+      required: ["dataset_id"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "export_dataset",
+    description:
+      "Get the FULL dataset - every row, not the 500-row preview - as a file the participant's app can load. " +
+      "Use this whenever they need the whole set rather than a look at it: seeding their Supabase, charts over " +
+      "everything, or any analysis where a sample would mislead.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        dataset_id: { type: "integer", description: "id from list_datasets" },
+        format: { type: "string", enum: ["csv", "json"], description: "defaults to csv" },
+      },
+      required: ["dataset_id"],
+      additionalProperties: false,
+    },
+  },
+];
+
+async function callTool(name, args, email) {
+  if (!MB_KEY()) {
+    return "The data connection isn't switched on yet. Tell an organizer that METABASE_API_KEY is unset on the desk.";
+  }
+  const allowed = await allowlist();
+  if (!allowed.size) {
+    return "No data slices have been published yet. Tell an organizer that MCP_CARD_IDS is empty.";
+  }
+
+  switch (name) {
+    case "list_datasets": {
+      const cards = await Promise.all(
+        [...allowed].map((id) => mb(`card/${id}`).catch(() => null))
+      );
+      const live = cards.filter(Boolean).map(summarize);
+      if (!live.length) return "No datasets are reachable right now. Tell an organizer.";
+      return JSON.stringify(live, null, 2);
+    }
+
+    case "describe_dataset": {
+      const id = requireAllowed(args?.dataset_id, allowed);
+      const card = await mb(`card/${id}`);
+      const result = await mb(`card/${id}/query`, { method: "POST", body: { parameters: [] } })
+        .catch(() => null);
+      const sample = result ? toRows(result) : { cols: [], rows: [] };
+      return JSON.stringify(
+        { ...summarize(card), sample_rows: sample.rows.slice(0, 3), sample_columns: sample.cols },
+        null,
+        2
+      );
+    }
+
+    case "run_dataset": {
+      const id = requireAllowed(args?.dataset_id, allowed);
+      const card = await mb(`card/${id}`);
+      const parameters = bindParameters(card, args?.filters);
+      console.log(`mcp run card=${id} by ${email} params=${parameters.length}`);
+      const result = await mb(`card/${id}/query`, { method: "POST", body: { parameters } });
+      const { cols, rows, truncated } = toRows(result);
+      return JSON.stringify(
+        { dataset: card.name, columns: cols, row_count: rows.length, truncated, rows },
+        null,
+        2
+      );
+    }
+
+    case "export_dataset": {
+      const id = requireAllowed(args?.dataset_id, allowed);
+      const format = args?.format === "json" ? "json" : "csv";
+      const card = await mb(`card/${id}`);
+      const url = `${deskBase()}/api/data/${id}.${format}`;
+      return [
+        `Full export of "${card.name}" is at:`,
+        `  ${url}`,
+        "",
+        "Download it with the participant's own token, then load it into their Supabase:",
+        "",
+        `  curl -H "Authorization: Bearer $INSURWRECK_TOKEN" ${url} -o data.${format}`,
+        "",
+        "There is no row cap on this route - it returns every row. Don't read the file",
+        "into context; write code that streams it into their database and query it there.",
+      ].join("\n");
+    }
+
+    default:
+      throw new Error(`unknown tool: ${name}`);
+  }
+}
+
+// --------------------------------------------------------------- handler ---
+
+const rpcError = (id, code, message) => ({ jsonrpc: "2.0", id, error: { code, message } });
+const rpcOk = (id, result) => ({ jsonrpc: "2.0", id, result });
+
+export default async function handler(req, res) {
+  if (req.method === "GET") {
+    return res.status(200).json({ ok: true, server: "insurwreck-data", protocol: PROTOCOL_VERSION });
+  }
+  if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
+
+  let email;
+  try {
+    email = await participantFor(req);
+  } catch (error) {
+    return res.status(500).json(rpcError(null, -32603, String(error.message || error)));
+  }
+  if (!email) return res.status(401).json(rpcError(null, -32001, "Invalid or missing token."));
+
+  const message = typeof req.body === "object" ? req.body : JSON.parse(req.body || "{}");
+  const { id = null, method, params } = message || {};
+
+  if (method && method.startsWith("notifications/")) return res.status(202).end();
+
+  try {
+    switch (method) {
+      case "initialize":
+        return res.status(200).json(
+          rpcOk(id, {
+            protocolVersion: PROTOCOL_VERSION,
+            capabilities: { tools: {} },
+            serverInfo: { name: "insurwreck-data", version: "1.0.0" },
+            instructions:
+              "Read-only Plum data slices for the hackathon. Call list_datasets first. " +
+              "This is confidential company data: don't screenshot it into Slack or put it on a slide.",
+          })
+        );
+
+      case "tools/list":
+        return res.status(200).json(rpcOk(id, { tools: TOOLS }));
+
+      case "tools/call": {
+        const text = await callTool(params?.name, params?.arguments || {}, email);
+        return res.status(200).json(rpcOk(id, { content: [{ type: "text", text }] }));
+      }
+
+      case "ping":
+        return res.status(200).json(rpcOk(id, {}));
+
+      default:
+        return res.status(200).json(rpcError(id, -32601, `Method not found: ${method}`));
+    }
+  } catch (error) {
+    if (method === "tools/call") {
+      return res.status(200).json(
+        rpcOk(id, { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true })
+      );
+    }
+    return res.status(200).json(rpcError(id, -32603, String(error.message || error)));
+  }
+}

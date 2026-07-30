@@ -1,11 +1,25 @@
 import { sb, sha256, nowIso, readBody } from "./_lib.js";
-import { mintResend, mintVercel, mintSupabase } from "./_minters.js";
+import {
+  mintResend,
+  mintVercel,
+  mintSupabase,
+  mintAgentmail,
+  mintAnthropic,
+  mintN8n,
+} from "./_minters.js";
 
-const SERVICES = ["vercel", "supabase", "n8n", "resend", "agentmail"];
+const SERVICES = ["vercel", "supabase", "n8n", "resend", "agentmail", "anthropic"];
 
-// Live minters. n8n and agentmail have no minter yet — organizers pre-insert
-// their credentials rows, and they surface here automatically once present.
-const MINTERS = { resend: mintResend, vercel: mintVercel, supabase: mintSupabase };
+// Every service now has a minter. A minter that throws (usually a missing env
+// var) leaves that service pending; the next provision call repairs it.
+const MINTERS = {
+  resend: mintResend,
+  vercel: mintVercel,
+  supabase: mintSupabase,
+  agentmail: mintAgentmail,
+  anthropic: mintAnthropic,
+  n8n: mintN8n,
+};
 
 async function sessionEmail(req) {
   const auth = req.headers.authorization || "";

@@ -2,6 +2,39 @@
   "functions": {
     "api/provision.js": {
       "maxDuration": 300
+    },
+    "api/llm/[...path].js": {
+      "maxDuration": 300
+    },
+    "api/mcp.js": {
+      "maxDuration": 300
+    },
+    "api/data/[card].js": {
+      "maxDuration": 300
+    },
+    "api/slices.js": {
+      "maxDuration": 60
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/go",
+      "destination": "/go.sh"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/go.sh",
+      "headers": [
+        {
+          "key": "content-type",
+          "value": "text/plain; charset=utf-8"
+        },
+        {
+          "key": "cache-control",
+          "value": "no-store"
+        }
+      ]
+    }
+  ]
 }
