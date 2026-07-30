@@ -26,13 +26,17 @@
       "destination": "/go.sh"
     },
     {
+      "source": "/win",
+      "destination": "/go.ps1"
+    },
+    {
       "source": "/api/llm/:path*",
       "destination": "/api/llm/[...path]"
     }
   ],
   "headers": [
     {
-      "source": "/(go|go.sh)",
+      "source": "/(go|go.sh|win|go.ps1)",
       "headers": [
         {
           "key": "content-type",

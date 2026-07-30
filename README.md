@@ -22,7 +22,13 @@ It sets up everything on its own: a proper terminal, the AI assistant you will b
 
 Takes three to five minutes. Safe to run twice if something looks wrong; it skips whatever is already done.
 
-**On Windows?** Open PowerShell as administrator, run `wsl --install`, restart your laptop, then open "Ubuntu" from the Start menu and paste the same line there. Do this **tonight**, not tomorrow morning - it needs a restart.
+**On Windows?** You do not need WSL and you do not need to restart. Open PowerShell from the Start menu - a normal window, not administrator - and paste this instead:
+
+```
+irm https://insurwreck-desk.preview.plumhq.com/win | iex
+```
+
+It does the same job in the same terminal you already use. It installs Git for Windows on the way through, which is not optional: every safety check in this kit is a bash script, and without a bash on the machine they would silently stop running.
 
 ### 2. Sign in and get your toolkit
 
