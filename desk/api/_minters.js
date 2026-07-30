@@ -172,6 +172,26 @@ revoke execute on function public.insurwreck_restrict_signup_domain(jsonb) from 
 `;
 }
 
+// Google validates redirect_uri before anything else on the authorize
+// endpoint, so probing it tells us whether an organizer has registered this
+// callback yet — no API needed. Fails closed: any doubt counts as
+// unregistered, so a participant is never told sign-in works when it doesn't.
+export async function callbackRegistered(clientId, redirectUri) {
+  const url =
+    "https://accounts.google.com/o/oauth2/v2/auth" +
+    `?client_id=${encodeURIComponent(clientId)}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    "&response_type=code&scope=email+profile&state=probe";
+  try {
+    const res = await fetch(url, { redirect: "follow" });
+    const body = await res.text();
+    if (/redirect_uri_mismatch/i.test(body)) return false;
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function mintGoogleAuth(email, existing = {}, context = {}) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -230,8 +250,16 @@ export async function mintGoogleAuth(email, existing = {}, context = {}) {
       `options: { queryParams: { hd: '${domain}' } } })`;
   }
 
-  // Google has no API for authorized redirect URIs, so an organizer registers
-  // callbacks in the console in batches and marks them via /api/google-callbacks.
+  // Google has no API for authorized redirect URIs, so an organizer pastes
+  // callbacks into the console. We detect that ourselves rather than trusting
+  // manual bookkeeping, so the flag clears on its own once the paste happens.
+  if (!payload.console_registered) {
+    if (await callbackRegistered(clientId, payload.callback_url)) {
+      payload.console_registered = true;
+      payload.registered_at = new Date().toISOString();
+    }
+  }
+
   return finalize(payload, payload.console_registered ? [] : ["google_console_registration"]);
 }
 

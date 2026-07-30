@@ -1,4 +1,5 @@
 import { sb, isAdmin, nowIso } from "./_lib.js";
+import { callbackRegistered } from "./_minters.js";
 
 // Google has no public API for an OAuth client's authorized redirect URIs, so
 // organizers paste them into the console in batches. GET produces the list;
@@ -13,16 +14,36 @@ export default async function handler(req, res) {
     );
 
     if (req.method === "GET") {
+      const clientId = process.env.GOOGLE_CLIENT_ID;
       const all = [];
       const unregistered = [];
-      for (const row of rows) {
-        const uri = row.payload?.callback_url;
-        if (!uri) continue;
-        all.push(uri);
-        if (!row.payload?.console_registered) {
-          unregistered.push({ email: row.participant_email, redirect_uri: uri });
+
+      // Probe Google live rather than trusting the stored flag, and persist
+      // anything that has since been registered.
+      const checked = await Promise.all(
+        rows.map(async (row) => {
+          const uri = row.payload?.callback_url;
+          if (!uri) return null;
+          if (row.payload?.console_registered) return { row, uri, live: true };
+          const live = await callbackRegistered(clientId, uri);
+          if (live) {
+            const payload = { ...row.payload, console_registered: true, registered_at: nowIso() };
+            delete payload.incomplete;
+            delete payload.pending_parts;
+            await sb(`credentials?id=eq.${row.id}`, { method: "PATCH", body: { payload } });
+          }
+          return { row, uri, live };
+        })
+      );
+
+      for (const entry of checked) {
+        if (!entry) continue;
+        all.push(entry.uri);
+        if (!entry.live) {
+          unregistered.push({ email: entry.row.participant_email, redirect_uri: entry.uri });
         }
       }
+
       return res.status(200).json({
         total: all.length,
         unregistered_count: unregistered.length,
