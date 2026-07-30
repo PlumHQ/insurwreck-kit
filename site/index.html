@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta
+      name="description"
+      content="Prepare for Plum's 2026 Leadership Hackathon: bring one real problem and leave with a working AI-assisted workflow."
+    />
+    <meta property="og:title" content="Leadership Hackathon · Insurwreck 4.0" />
+    <meta
+      property="og:description"
+      content="Bring one real problem. Leave with a working workflow."
+    />
+    <meta property="og:type" content="website" />
+    <title>Leadership Hackathon · Insurwreck 4.0</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Inter:wght@400;500;600&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <svg class="svg-sprite" aria-hidden="true">
+      <symbol id="icon-arrow" viewBox="0 0 24 24">
+        <path d="M5 12h14M14 7l5 5-5 5" />
+      </symbol>
+      <symbol id="icon-spark" viewBox="0 0 24 24">
+        <path d="M12 3l1.3 4.2a5 5 0 0 0 3.4 3.4L21 12l-4.3 1.4a5 5 0 0 0-3.4 3.4L12 21l-1.3-4.2a5 5 0 0 0-3.4-3.4L3 12l4.3-1.4a5 5 0 0 0 3.4-3.4L12 3Z" />
+      </symbol>
+      <symbol id="icon-route" viewBox="0 0 24 24">
+        <circle cx="5" cy="6" r="2" />
+        <circle cx="19" cy="18" r="2" />
+        <path d="M7 6h4a3 3 0 0 1 3 3v6a3 3 0 0 0 3 3" />
+      </symbol>
+      <symbol id="icon-user-check" viewBox="0 0 24 24">
+        <circle cx="9" cy="8" r="3" />
+        <path d="M3.5 19c.6-3.2 2.4-5 5.5-5s4.9 1.8 5.5 5M15.5 10.5l2 2 3.5-4" />
+      </symbol>
+      <symbol id="icon-box" viewBox="0 0 24 24">
+        <path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z" />
+        <path d="m4 7.5 8 4.5 8-4.5M12 12v9" />
+      </symbol>
+      <symbol id="icon-calendar" viewBox="0 0 24 24">
+        <rect x="3.5" y="5" width="17" height="15" rx="2" />
+        <path d="M7 3v4M17 3v4M3.5 10h17" />
+      </symbol>
+      <symbol id="icon-loop" viewBox="0 0 24 24">
+        <path d="M7 7h9.5a4.5 4.5 0 0 1 0 9H8" />
+        <path d="m10 12-4 4 4 4M17 3l3 4-3 4" />
+      </symbol>
+      <symbol id="icon-clock" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M12 7v5l3.5 2" />
+      </symbol>
+      <symbol id="icon-shield" viewBox="0 0 24 24">
+        <path d="M12 3.5 19 6v5.5c0 4.4-2.6 7.6-7 9-4.4-1.4-7-4.6-7-9V6l7-2.5Z" />
+        <path d="m8.5 12 2.2 2.2 4.8-5" />
+      </symbol>
+      <symbol id="icon-copy" viewBox="0 0 24 24">
+        <rect x="8" y="8" width="11" height="12" rx="2" />
+        <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h2" />
+      </symbol>
+      <symbol id="icon-check" viewBox="0 0 24 24">
+        <path d="m5 12.5 4.2 4L19 7" />
+      </symbol>
+    </svg>
+
+    <header class="site-nav">
+      <div class="wrap nav-inner">
+        <a class="brand" href="#top" aria-label="Insurwreck 4.0 home">
+          <img class="brand-logo" src="assets/plum-logo.svg" alt="Plum" />
+          <span class="brand-divider" aria-hidden="true"></span>
+          <span class="brand-event">Insurwreck 4.0</span>
+        </a>
+        <nav class="nav-links" aria-label="Page navigation">
+          <a href="#build-kit">Build kit</a>
+          <a href="#ideas">Find an idea</a>
+          <a href="#prepare">Prepare</a>
+        </nav>
+        <a class="date-pill" href="#prepare">
+          <svg aria-hidden="true"><use href="#icon-calendar"></use></svg>
+          31 Jul
+        </a>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero wrap">
+        <div class="hero-copy">
+          <p class="eyebrow">Insurwreck 4.0 · 31 July 2026</p>
+          <h1>Leadership<br />Hackathon</h1>
+          <p class="hero-promise">Bring one real problem. Leave with a working prototype.</p>
+          <p class="hero-lede">
+            This is not a day of talks or watching someone else demo AI. Each of us will take a
+            recurring problem we understand, build around it, test it, and run it end to end.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#ideas">
+              Start with your ideas
+              <svg aria-hidden="true"><use href="#icon-arrow"></use></svg>
+            </a>
+            <a class="button button-secondary" href="#build-kit">See your build kit</a>
+          </div>
+          <p class="hero-note">
+            No coding required. No fully formed solution required. You remain the builder and owner.
+          </p>
+        </div>
+
+        <div class="leadership-card" aria-label="Leadership Hackathon: leaders go first, 31 July 2026">
+          <div class="leadership-card-top">
+            <span>Plum leadership</span>
+            <span>Insurwreck 4.0</span>
+          </div>
+          <div class="leadership-card-mark" aria-hidden="true">
+            <span>LEADERS</span>
+            <span>GO FIRST</span>
+          </div>
+          <div class="leadership-card-bottom">
+            <div><strong>31</strong><span>July<br />2026</span></div>
+            <p>One day to turn a problem you know into something that works.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="stat-strip" aria-label="Event details">
+        <div class="wrap stat-grid">
+          <div class="stat-cell">
+            <svg aria-hidden="true"><use href="#icon-calendar"></use></svg>
+            <div><strong>31 July 2026</strong><span>Leadership Hackathon</span></div>
+          </div>
+          <div class="stat-cell">
+            <svg aria-hidden="true"><use href="#icon-route"></use></svg>
+            <div><strong>One working prototype</strong><span>Running end to end</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section intro-section">
+        <div class="wrap statement-grid">
+          <div>
+            <p class="eyebrow">What we are building</p>
+            <h2>A working system,<br />not an AI demo.</h2>
+          </div>
+          <div class="statement-copy">
+            <p>
+              You will learn by building a prototype that completes real work. It can be a personal
+              workflow, an application, or a multi-step system. Complexity does not win; usefulness does.
+            </p>
+            <div class="principle-list">
+              <div><span>01</span><p>Choose a recurring problem you understand deeply.</p></div>
+              <div><span>02</span><p>Use the smallest combination of tools that can solve it.</p></div>
+              <div><span>03</span><p>Show a live run, its failure modes, and the next owner.</p></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section build-kit-section" id="build-kit">
+        <div class="wrap">
+          <div class="section-heading">
+            <p class="eyebrow">Your build kit</p>
+            <h2>The setup is handled.<br />You focus on the problem.</h2>
+            <p>
+              You will not need every tool. We will help you choose a workflow-first or code-first
+              path and have the environment ready before the day.
+            </p>
+          </div>
+
+          <div class="stack-map" aria-label="Hackathon technology stack">
+            <div class="stack-row">
+              <div class="stack-role"><span>Build</span><small>Your AI building partners</small></div>
+              <div class="tool-pair">
+                <article class="tool-card featured">
+                  <span class="tool-logo-wrap"><img class="tool-logo" src="assets/logo-hermes.svg" alt="" /></span>
+                  <div><strong>Hermes</strong><small>GPT-powered agent workspace</small></div>
+                </article>
+                <article class="tool-card">
+                  <span class="tool-logo-wrap"><img class="tool-logo" src="assets/logo-claude.svg" alt="" /></span>
+                  <div><strong>Claude Code</strong><small>Code-native building agent</small></div>
+                </article>
+              </div>
+            </div>
+            <div class="stack-spine" aria-hidden="true"><span></span></div>
+            <div class="stack-row">
+              <div class="stack-role"><span>Orchestrate</span><small>Connect steps and approvals</small></div>
+              <div class="tool-pair single">
+                <article class="tool-card">
+                  <span class="tool-logo-wrap"><img class="tool-logo" src="assets/logo-n8n.svg" alt="" /></span>
+                  <div><strong>n8n</strong><small>Triggers, steps and approvals</small></div>
+                </article>
+              </div>
+            </div>
+            <div class="stack-spine" aria-hidden="true"><span></span></div>
+            <div class="stack-row">
+              <div class="stack-role"><span>Database</span><small>Store data and state</small></div>
+              <div class="tool-pair single">
+                <article class="tool-card">
+                  <span class="tool-logo-wrap"><img class="tool-logo" src="assets/logo-supabase.svg" alt="" /></span>
+                  <div><strong>Supabase</strong><small>Data, authentication and history</small></div>
+                </article>
+              </div>
+            </div>
+            <div class="stack-spine" aria-hidden="true"><span></span></div>
+            <div class="stack-row">
+              <div class="stack-role"><span>Ship</span><small>Preview and deployment</small></div>
+              <div class="tool-pair single">
+                <article class="tool-card">
+                  <span class="tool-logo-wrap"><img class="tool-logo" src="assets/logo-vercel.svg" alt="" /></span>
+                  <div><strong>Vercel</strong><small>Turn the prototype into a live preview</small></div>
+                </article>
+              </div>
+            </div>
+            <div class="stack-spine" aria-hidden="true"><span></span></div>
+            <div class="stack-row optional-row">
+              <div class="stack-role"><span>Reach people</span><small>Optional, approval-gated</small></div>
+              <div class="tool-pair triple">
+                <article class="tool-card optional">
+                  <span class="tool-logo-wrap tool-logo-text" aria-hidden="true">#</span>
+                  <div><strong>Slack</strong><small>Team workflows</small></div>
+                </article>
+                <article class="tool-card optional">
+                  <span class="tool-logo-wrap"><img class="tool-logo" src="assets/logo-resend.svg" alt="" /></span>
+                  <div><strong>Resend</strong><small>Email delivery</small></div>
+                </article>
+                <article class="tool-card optional">
+                  <span class="tool-monogram">W</span>
+                  <div><strong>WhatsApp</strong><small>Allowlisted tests</small></div>
+                </article>
+              </div>
+            </div>
+          </div>
+          <p class="stack-footnote">
+            Named accounts, central credits, isolated projects, preview environments, and safe test data are part of the setup.
+          </p>
+        </div>
+      </section>
+
+      <section class="section shape-section">
+        <div class="wrap">
+          <div class="section-heading centered">
+            <p class="eyebrow">The problem test</p>
+            <h2>A good idea has a clear shape.</h2>
+            <p>Use these six checks before you fall in love with a solution.</p>
+          </div>
+          <div class="shape-grid">
+            <article><span>01</span><svg aria-hidden="true"><use href="#icon-user-check"></use></svg><h3>A clear user</h3><p>Someone specific needs the result.</p></article>
+            <article><span>02</span><svg aria-hidden="true"><use href="#icon-loop"></use></svg><h3>A recurring trigger</h3><p>The work happens often enough to matter.</p></article>
+            <article><span>03</span><svg aria-hidden="true"><use href="#icon-box"></use></svg><h3>Safe inputs</h3><p>Useful data exists and can be accessed responsibly.</p></article>
+            <article><span>04</span><svg aria-hidden="true"><use href="#icon-spark"></use></svg><h3>A judgment</h3><p>Something is classified, transformed, or decided.</p></article>
+            <article><span>05</span><svg aria-hidden="true"><use href="#icon-arrow"></use></svg><h3>A visible action</h3><p>The output moves real work forward.</p></article>
+            <article><span>06</span><svg aria-hidden="true"><use href="#icon-clock"></use></svg><h3>A measurable change</h3><p>Time, quality, error rate, or experience improves.</p></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section ideas-section" id="ideas">
+        <div class="wrap">
+          <div class="ideas-header">
+            <div class="section-heading compact">
+              <p class="eyebrow">Where to look</p>
+              <h2>Bring two ideas.<br />We will help you choose one.</h2>
+            </div>
+            <div class="idea-tabs" role="tablist" aria-label="Idea type">
+              <button id="tab-personal" class="idea-tab active" role="tab" aria-selected="true" aria-controls="panel-personal" data-panel="personal">
+                Personal productivity
+              </button>
+              <button id="tab-company" class="idea-tab" role="tab" aria-selected="false" aria-controls="panel-company" data-panel="company">
+                Company workflow
+              </button>
+            </div>
+          </div>
+
+          <div class="idea-panel" id="panel-personal" role="tabpanel" aria-labelledby="tab-personal">
+            <div class="prompt-card">
+              <span class="card-number">01</span>
+              <h3>Look for work that keeps returning to you.</h3>
+              <ul>
+                <li>What requires collecting information from several places?</li>
+                <li>What do you postpone because it takes too much context switching?</li>
+                <li>Which recurring decision uses roughly the same inputs?</li>
+                <li>What could AI prepare while you retain the final call?</li>
+              </ul>
+            </div>
+            <div class="idea-deck" data-idea-deck>
+              <div class="idea-deck-head">
+                <span class="mono-label">Ideas to borrow</span>
+                <div class="idea-deck-controls">
+                  <button type="button" data-deck-prev aria-label="Previous personal productivity idea"><svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
+                  <span data-deck-count aria-live="polite">1 / 8</span>
+                  <button type="button" data-deck-next aria-label="Next personal productivity idea"><svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
+                </div>
+              </div>
+              <div class="idea-carousel" tabindex="0" aria-label="Personal productivity idea examples">
+                <article class="example-card"><p class="mono-label">Weekly leadership brief</p><blockquote>Collect team metrics, open decisions, customer signals, and missed commitments. Prepare a one-page brief that highlights what needs attention next week.</blockquote><div class="example-metric"><span>Success</span><strong>90 min → 15 min</strong></div></article>
+                <article class="example-card"><p class="mono-label">Meeting follow-through</p><blockquote>After every important meeting, turn notes into decisions, owners, deadlines, and follow-up drafts for my approval.</blockquote><div class="example-metric"><span>Success</span><strong>Follow-ups out the same day</strong></div></article>
+                <article class="example-card"><p class="mono-label">Decision inbox</p><blockquote>Group messages that need my judgment, bring in the missing context, and prepare a short recommendation without replying on my behalf.</blockquote><div class="example-metric"><span>Success</span><strong>One focused review queue</strong></div></article>
+                <article class="example-card"><p class="mono-label">Calendar preparation</p><blockquote>Before each external or leadership meeting, assemble the relationship history, latest metrics, unresolved questions, and a suggested agenda.</blockquote><div class="example-metric"><span>Success</span><strong>Prepared before every meeting</strong></div></article>
+                <article class="example-card"><p class="mono-label">Commitment review</p><blockquote>Every Friday, find commitments I made across meetings and messages, show what is open, and prepare the next follow-up.</blockquote><div class="example-metric"><span>Success</span><strong>No important loose ends</strong></div></article>
+                <article class="example-card"><p class="mono-label">Metrics exception brief</p><blockquote>Watch the metrics I care about, explain unusual movement, and bring me only the exceptions that need investigation or a decision.</blockquote><div class="example-metric"><span>Success</span><strong>Attention goes to exceptions</strong></div></article>
+                <article class="example-card"><p class="mono-label">Research digest</p><blockquote>Turn saved articles, reports, and competitor updates into a weekly digest with implications, open questions, and ideas worth testing.</blockquote><div class="example-metric"><span>Success</span><strong>2 hr → 20 min</strong></div></article>
+                <article class="example-card"><p class="mono-label">Recurring communication</p><blockquote>Use current metrics, decisions, and project updates to prepare the first draft of my weekly team note in my usual structure.</blockquote><div class="example-metric"><span>Success</span><strong>First draft ready on time</strong></div></article>
+              </div>
+              <p class="swipe-hint">Swipe the card or use the arrows</p>
+            </div>
+          </div>
+
+          <div class="idea-panel" id="panel-company" role="tabpanel" aria-labelledby="tab-company" hidden>
+            <div class="prompt-card">
+              <span class="card-number">02</span>
+              <h3>Look for work that slows down at a handoff.</h3>
+              <ul>
+                <li>Where is information repeatedly copied between systems?</li>
+                <li>Where do people classify, validate, reconcile, or chase status?</li>
+                <li>Where does quality depend on one person remembering the process?</li>
+                <li>Where could AI recommend an action while a human approves?</li>
+              </ul>
+            </div>
+            <div class="idea-deck" data-idea-deck>
+              <div class="idea-deck-head">
+                <span class="mono-label">Ideas to borrow</span>
+                <div class="idea-deck-controls">
+                  <button type="button" data-deck-prev aria-label="Previous company workflow idea"><svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
+                  <span data-deck-count aria-live="polite">1 / 8</span>
+                  <button type="button" data-deck-next aria-label="Next company workflow idea"><svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
+                </div>
+              </div>
+              <div class="idea-carousel" tabindex="0" aria-label="Company workflow idea examples">
+                <article class="example-card"><p class="mono-label">Escalation routing</p><blockquote>When a high-risk escalation arrives, gather the case context, group the root cause, recommend an owner, and draft a status update for approval.</blockquote><div class="example-metric"><span>Success</span><strong>No high-risk case missed</strong></div></article>
+                <article class="example-card"><p class="mono-label">Claims reliability watch</p><blockquote>Detect stalled or inconsistent claims, explain the likely failure point, and create an investigation queue with the right owner.</blockquote><div class="example-metric"><span>Success</span><strong>Issues found before complaints</strong></div></article>
+                <article class="example-card"><p class="mono-label">Renewal risk briefing</p><blockquote>Combine usage, service, relationship, and commercial signals to identify accounts at risk and prepare the next-best action for review.</blockquote><div class="example-metric"><span>Success</span><strong>Every risk has an owner</strong></div></article>
+                <article class="example-card"><p class="mono-label">Benefits onboarding</p><blockquote>Turn a signed customer handoff into a complete launch plan, missing-information checklist, owner map, and employee communication drafts.</blockquote><div class="example-metric"><span>Success</span><strong>Fewer launch-day surprises</strong></div></article>
+                <article class="example-card"><p class="mono-label">Hiring feedback loop</p><blockquote>Collect interview notes, flag missing evidence, prepare a role-specific summary, and route the final decision to the hiring owner.</blockquote><div class="example-metric"><span>Success</span><strong>Decision within 24 hours</strong></div></article>
+                <article class="example-card"><p class="mono-label">Incident communication</p><blockquote>When an incident begins, assemble verified facts, maintain a timeline, and prepare audience-specific updates with explicit approval gates.</blockquote><div class="example-metric"><span>Success</span><strong>Clear updates without guesswork</strong></div></article>
+                <article class="example-card"><p class="mono-label">Implementation handoff</p><blockquote>Translate sales commitments and customer context into milestones, risks, dependencies, and a kickoff brief the delivery team can use.</blockquote><div class="example-metric"><span>Success</span><strong>No context lost at handoff</strong></div></article>
+                <article class="example-card"><p class="mono-label">Reconciliation exceptions</p><blockquote>Compare records across systems, isolate mismatches, suggest likely causes, and send only unresolved exceptions to an operator.</blockquote><div class="example-metric"><span>Success</span><strong>Humans review exceptions only</strong></div></article>
+              </div>
+              <p class="swipe-hint">Swipe the card or use the arrows</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section prepare-section" id="prepare">
+        <div class="wrap">
+          <div class="prepare-grid">
+            <div class="prepare-copy">
+            <p class="eyebrow">Before the day</p>
+            <h2>Start with the problem,<br />not the tools.</h2>
+            <p>
+              Over the next few days, write down one personal-productivity idea and one company-workflow idea. A rough description is enough.
+            </p>
+            <div class="idea-formula" id="idea-formula">
+              <p class="mono-label">Idea formula</p>
+              <p>
+                Whenever <strong>this happens</strong>, use <strong>these inputs</strong> to prepare
+                <strong>this decision</strong>, take <strong>this action</strong>, and ask a human to
+                approve <strong>this part</strong>. It works if <strong>this metric improves</strong>.
+              </p>
+              <button class="copy-button" type="button" data-copy-target="idea-formula">
+                <svg aria-hidden="true"><use href="#icon-copy"></use></svg>
+                <span>Copy the template</span>
+              </button>
+            </div>
+          </div>
+
+            <div class="workflow-stage" aria-label="Example useful workflow: a trigger leads to inputs, AI judgment, human approval, and an action">
+              <div class="workflow-heading">
+                <span class="mono-label">A useful workflow</span>
+                <span class="live-dot"><i></i> one complete run</span>
+              </div>
+              <div class="workflow-rail">
+                <div class="workflow-node node-trigger"><span class="node-index">01</span><svg aria-hidden="true"><use href="#icon-loop"></use></svg><div><strong>Trigger</strong><small>Something happens</small></div></div>
+                <div class="workflow-connector"><span></span></div>
+                <div class="workflow-node"><span class="node-index">02</span><svg aria-hidden="true"><use href="#icon-box"></use></svg><div><strong>Inputs</strong><small>Useful context arrives</small></div></div>
+                <div class="workflow-connector"><span></span></div>
+                <div class="workflow-node node-ai"><span class="node-index">03</span><svg aria-hidden="true"><use href="#icon-spark"></use></svg><div><strong>AI judgment</strong><small>Prepare a decision</small></div></div>
+                <div class="workflow-connector"><span></span></div>
+                <div class="workflow-node node-human"><span class="node-index">04</span><svg aria-hidden="true"><use href="#icon-user-check"></use></svg><div><strong>Human check</strong><small>You stay in control</small></div></div>
+                <div class="workflow-connector"><span></span></div>
+                <div class="workflow-node node-action"><span class="node-index">05</span><svg aria-hidden="true"><use href="#icon-arrow"></use></svg><div><strong>Action</strong><small>Work moves forward</small></div></div>
+              </div>
+              <div class="workflow-caption"><span>Start small</span><span>Measure the change</span></div>
+            </div>
+          </div>
+
+          <div class="checklist-card checklist-card-wide">
+            <div class="checklist-heading">
+              <div><p class="mono-label">Your preparation</p><h3>Ready is enough.</h3></div>
+              <span class="check-count" aria-live="polite"><b>0</b>/6</span>
+            </div>
+            <div class="checklist" data-checklist="leadership-prep">
+              <label><input type="checkbox" value="personal" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>One personal-productivity idea</span></label>
+              <label><input type="checkbox" value="company" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>One company-workflow idea</span></label>
+              <label><input type="checkbox" value="today" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>How the work happens today</span></label>
+              <label><input type="checkbox" value="user" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>Who needs the outcome</span></label>
+              <label><input type="checkbox" value="systems" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>Data and systems involved</span></label>
+              <label><input type="checkbox" value="metric" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>The improvement worth making</span></label>
+            </div>
+            <p class="saved-note">Saved on this device</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="closing-section">
+        <div class="wrap closing-inner">
+          <p class="eyebrow">What you leave with</p>
+          <h2>A prototype that does real work.<br />And a clear next step.</h2>
+          <p>
+            By the end of the day, you should be able to run the system live, show where human judgment remains, and decide whether to improve it, adopt it, or stop.
+          </p>
+          <div class="signoff"><span>AI pod at Plum</span><small>Building alongside you</small></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-inner">
+        <span>Plum · Insurwreck 4.0</span>
+        <span>Leadership Hackathon · 31 July 2026</span>
+      </div>
+    </footer>
+  </body>
+</html>
