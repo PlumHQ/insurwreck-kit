@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+#
+# Insurwreck 4.0 — render the participant's setup from their stored bundle.
+#
+# Exists so the status table is identical every time instead of being
+# re-improvised by the agent on each run. Prints plain text when stdout is not
+# a TTY (which is the case inside Claude Code, where ANSI arrives as literal
+# "[2K" junk), and colour when run directly in a terminal.
+#
+# Never prints a secret. Keys are reduced to a last-4 fingerprint.
+
+set -euo pipefail
+
+BUNDLE="${INSURWRECK_BUNDLE:-$HOME/.insurwreck/credentials.json}"
+
+if [ ! -f "$BUNDLE" ]; then
+  echo "No setup found yet at $BUNDLE"
+  echo "Run /insurwreck:start first — it takes about three minutes."
+  exit 1
+fi
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "node isn't on PATH, so I can't format your setup."
+  echo "Your bundle is at $BUNDLE"
+  exit 1
+fi
+
+USE_COLOR=0
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then USE_COLOR=1; fi
+
+BUNDLE="$BUNDLE" IW_COLOR="$USE_COLOR" node <<'NODE'
+const fs = require("fs");
+
+const colour = process.env.IW_COLOR === "1";
+const C = colour
+  ? { plum: "\x1b[35m", dim: "\x1b[2m", bold: "\x1b[1m", ok: "\x1b[32m", warn: "\x1b[33m", off: "\x1b[0m" }
+  : { plum: "", dim: "", bold: "", ok: "", warn: "", off: "" };
+
+let bundle;
+try {
+  bundle = JSON.parse(fs.readFileSync(process.env.BUNDLE, "utf8"));
+} catch (error) {
+  console.log("Your bundle exists but couldn't be read as JSON.");
+  console.log("Run /insurwreck:status and ask for it to be refreshed.");
+  process.exit(1);
+}
+
+// What each service actually buys the participant, in their terms.
+const SERVICES = [
+  ["vercel", "Vercel", "a public URL for whatever you build"],
+  ["supabase", "Supabase", "your own database"],
+  ["anthropic", "Anthropic", "model access, metered to your budget"],
+  ["agentmail", "AgentMail", "an inbox that sends and receives"],
+  ["resend", "Resend", "outbound email"],
+  ["n8n", "n8n", "schedules and workflows"],
+  ["google_auth", "Google sign-in", "Plum-only login for your app"],
+  ["kula", "Kula", "read-only recruiting data"],
+];
+
+const services = bundle.services || {};
+const pending = new Set(bundle.pending || []);
+
+function state(key) {
+  const entry = services[key];
+  if (!entry) return { label: "pending", mark: "·", tone: C.dim, note: "the AI pod is provisioning this" };
+  if (entry.incomplete) {
+    const parts = (entry.pending_parts || []).join(", ") || "finishing off";
+    return { label: "almost", mark: "◐", tone: C.warn, note: `waiting on ${parts}` };
+  }
+  return { label: "ready", mark: "✓", tone: C.ok, note: null };
+}
+
+const p = bundle.participant || {};
+const width = 66;
+const rule = "─".repeat(width);
+
+console.log("");
+console.log(`  ${C.plum}${C.bold}INSURWRECK 4.0${C.off}${C.dim} · your setup${C.off}`);
+console.log("");
+if (p.name || p.email) {
+  console.log(`  ${C.bold}${p.name || "—"}${C.off}${C.dim}  ${p.email || ""}${C.off}`);
+}
+if (p.idea_brief) {
+  const brief = p.idea_brief.length > width - 10 ? `${p.idea_brief.slice(0, width - 13)}…` : p.idea_brief;
+  console.log(`  ${C.dim}Building:${C.off} ${brief}`);
+}
+console.log("");
+console.log(`  ${rule}`);
+
+let ready = 0;
+let almost = 0;
+let waiting = 0;
+
+for (const [key, label, gives] of SERVICES) {
+  const s = state(key);
+  if (s.label === "ready") ready += 1;
+  else if (s.label === "almost") almost += 1;
+  else waiting += 1;
+
+  const name = label.padEnd(15);
+  const status = `${s.mark} ${s.label}`.padEnd(11);
+  console.log(`  ${s.tone}${status}${C.off}${name}${C.dim}${s.note || gives}${C.off}`);
+}
+
+console.log(`  ${rule}`);
+console.log("");
+
+const tally = [
+  `${ready} ready`,
+  almost ? `${almost} almost there` : null,
+  waiting ? `${waiting} pending` : null,
+]
+  .filter(Boolean)
+  .join(C.dim + " · " + C.off);
+console.log(`  ${tally}`);
+
+if (almost || waiting) {
+  console.log("");
+  console.log(`  ${C.dim}Anything not ready repairs itself — run /insurwreck:status again.${C.off}`);
+} else {
+  console.log("");
+  console.log(`  ${C.plum}Everything is ready.${C.off} ${C.dim}Say what you want to build.${C.off}`);
+}
+console.log("");
+NODE
