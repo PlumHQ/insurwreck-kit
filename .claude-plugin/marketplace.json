@@ -1,12 +1,12 @@
 {
   "name": "insurwreck-kit",
   "owner": {
-    "name": "Plum PS team",
+    "name": "AI pod at Plum",
     "url": "https://github.com/PlumHQ"
   },
   "metadata": {
     "description": "Insurwreck 4.0 build kit — Leadership Hackathon onboarding and setup",
-    "version": "0.2.0"
+    "version": "0.2.1"
   },
   "plugins": [
     {

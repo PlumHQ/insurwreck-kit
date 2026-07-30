@@ -41,7 +41,7 @@ curl -s -X POST $DESK/api/otp -H "Content-Type: application/json" -d '{"email":"
 
 - On `{"ok":true,...}`: tell them a six-digit code is on its way from `insurwreck@badge.plumhq.com` (check spam the first time), and ask for the code.
 - On HTTP 403: the address isn't allowed — ask for their Plum address and retry.
-- On any other error: show the `error` field and offer to retry once before suggesting they ping the PS team.
+- On any other error: show the `error` field and offer to retry once before suggesting they ping the AI pod.
 
 When they give you the code:
 
@@ -87,7 +87,7 @@ No CLI logins are needed, and never run `vercel login` or `supabase login`:
 
 ## Step 6 — Summary and first build step
 
-Show a compact status table for the five services — Vercel, Supabase, n8n, Resend, AgentMail. A service present in `services` is **Ready**; one marked `incomplete` is **Almost ready** (name its `pending_parts` and say `/insurwreck:status` can refresh it later); one in `pending` is **Pending — the PS team is provisioning it**. For ready services, mention in one line what the credential is for:
+Show a compact status table for the five services — Vercel, Supabase, n8n, Resend, AgentMail. A service present in `services` is **Ready**; one marked `incomplete` is **Almost ready** (name its `pending_parts` and say `/insurwreck:status` can refresh it later); one in `pending` is **Pending — the AI pod is provisioning it**. For ready services, mention in one line what the credential is for:
 
 - Vercel — their own project on the Insurwreck team plus a personal access token; deploys go live with `vercel deploy --token`.
 - Supabase — their own dedicated project (URL, anon key, service_role key, DB password).
