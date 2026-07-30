@@ -34,6 +34,43 @@ for tool in node npm git claude; do
   fi
 done
 
+# --- the kit itself --------------------------------------------------------
+# A stale kit is invisible from the inside: commands and MCP servers that were
+# added after the participant extracted the tarball are simply absent, which
+# looks like breakage rather than an old version. Worse, `claude plugin update`
+# reports "already at the latest version" against a directory source, because
+# there is nothing for it to fetch. So compare what is installed against what
+# the marketplace directory on disk actually contains, and against main.
+INSTALLED="$(claude plugin list 2>/dev/null \
+  | awk '/insurwreck@insurwreck-kit/{f=1;next} f&&/Version:/{print $2;exit}')"
+KIT_MANIFEST="$HOME/.insurwreck/kit/insurwreck-kit-main/plugin/.claude-plugin/plugin.json"
+ON_DISK="$(node -e 'try{process.stdout.write(require(process.argv[1]).version)}catch{}' \
+  "$KIT_MANIFEST" 2>/dev/null)"
+
+if [ -z "$INSTALLED" ]; then
+  warn "could not read the installed kit version"
+  note "run: claude plugin list"
+else
+  LATEST="$(curl -fsSL --max-time 10 \
+    https://raw.githubusercontent.com/PlumHQ/insurwreck-kit/main/plugin/.claude-plugin/plugin.json 2>/dev/null \
+    | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{process.stdout.write(JSON.parse(d).version)}catch{}})' 2>/dev/null)"
+
+  if [ -n "$LATEST" ] && [ "$INSTALLED" != "$LATEST" ]; then
+    bad "your kit is out of date (have $INSTALLED, latest is $LATEST)"
+    note "run /insurwreck:update inside Claude Code, then restart it"
+    note "commands and MCP servers added after $INSTALLED are missing until you do"
+  elif [ -n "$ON_DISK" ] && [ "$INSTALLED" != "$ON_DISK" ]; then
+    # Re-fetched but not reinstalled: the usual half-finished update.
+    warn "kit $ON_DISK is downloaded but $INSTALLED is still installed"
+    note "run: claude plugin update insurwreck@insurwreck-kit, then restart Claude Code"
+  elif [ -n "$LATEST" ]; then
+    ok "kit $INSTALLED (latest)"
+  else
+    ok "kit $INSTALLED"
+    note "could not reach GitHub to check for a newer one"
+  fi
+fi
+
 # --- credentials -----------------------------------------------------------
 if [ ! -f "$CREDS" ]; then
   bad "no credentials found"
