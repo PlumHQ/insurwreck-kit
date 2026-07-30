@@ -107,6 +107,7 @@ Run the check with `bash plugin/hooks/scripts/test-block-kula-writes.sh`.
 - `plugin/` — the `insurwreck` plugin (commands only, no secrets, no code execution beyond curl to the desk).
 - `plugin/.mcp.json` — MCP servers shipped with the plugin. Keys come from the participant's environment, never this repo.
 - `desk/` — the credential desk: dependency-free Vercel functions deployed as the `insurwreck-desk` project. Base URL: `https://insurwreck-desk.preview.plumhq.com`.
+- `site/` — the public attendee event site, deployed as the separate `insurwreck-4` project at `https://insurwreck-4.preview.plumhq.com` (`/` attendee page, `/concept` brand exploration, `/build-kit-prep` systems prep). `site/DESIGN.md` is the source of truth for its visual system and the copy voice used across event communication.
 - `desk/schema.sql` — source of truth for the Supabase credential-store schema (project `insurwreck-desk`, ref `mlbnpqoderetgzvjgeam`).
 
 ## Desk endpoints
@@ -141,7 +142,7 @@ Test the plugin from your local checkout without pushing:
 
 Edit command files, then `/insurwreck:update` (or `/plugin marketplace update insurwreck-kit` + reinstall) and restart the session to pick up command changes. `/insurwreck:uninstall` removes everything for a clean retry.
 
-**The desk deploys on push to `main` — never run `vercel deploy`.** The Vercel project is git-connected (`PlumHQ/insurwreck-kit` → `main` → Root Directory `desk`), so `git pull --rebase && git push` is the deploy. A manual deploy uploads your local tree over everyone else's work and silently removes endpoints you don't have locally; it caused a brief production outage on 2026-07-30. Check what shipped with `vercel ls insurwreck-desk --scope plum`. Full rules for contributors are in [AGENTS.md](AGENTS.md).
+**Both projects deploy on push to `main` — never run `vercel deploy`.** This repo feeds two git-connected Vercel projects: `insurwreck-desk` (Root Directory `desk`) and `insurwreck-4` (Root Directory `site`). `git pull --rebase && git push` is the deploy. Each `vercel.json` carries an `ignoreCommand` so a desk-only commit doesn't redeploy the public event site, and vice versa. A manual deploy uploads your local tree over everyone else's work and silently removes endpoints you don't have locally; it caused a brief production outage on 2026-07-30. Check what shipped with `vercel ls insurwreck-desk --scope plum`. Full rules for contributors are in [AGENTS.md](AGENTS.md).
 
 Environment variables are documented in `desk/.env.example` — the credential store (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`), mail (`RESEND_API_KEY`, `RESEND_FROM`), minting (`VERCEL_API_TOKEN`, `VERCEL_TEAM_ID`, `VERCEL_TEAM_SLUG`, `VERCEL_USER_TOKEN`, `SUPABASE_MGMT_TOKEN`, `SUPABASE_ORG_ID`, `SUPABASE_REGION`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_PROJECT_ID`), and access control (`ADMIN_KEY`, `ALLOWED_DOMAIN`, `ALLOWED_EMAILS`).
 
