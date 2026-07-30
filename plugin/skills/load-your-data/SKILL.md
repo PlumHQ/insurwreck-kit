@@ -37,7 +37,8 @@ There's no spreadsheet to hand out — it's a read-only slice of Plum's data exp
    run_dataset(dataset_id: 1234, filters: { org: "ACME", from: "2026-04-01" })
    ```
    You do not write SQL here. Each slice is a fixed, pre-approved query; filters are the only thing that varies, and at most 500 rows come back. Do the aggregation yourself over those rows.
-5. If the slice they need doesn't exist, don't try to work around it — tell them to ask an organizer to publish one. It takes a couple of minutes and no deploy.
+5. `export_dataset` hands back a downloadable file to load into their own Supabase, so their app queries their database rather than calling ours on every request. It stops at **2000 rows** - Metabase's ceiling, enforced at the proxy, not something to page around. Check the `x-insurwreck-truncated` response header.
+6. If the slice they need doesn't exist, or an honest answer needs more than 2000 rows, don't work around it - ask an organizer to publish an aggregated or tighter-filtered slice. It takes a couple of minutes and no deploy.
 
 ## The warning (say this plainly, every time real data is in play)
 
