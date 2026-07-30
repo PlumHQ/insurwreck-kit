@@ -9,11 +9,11 @@ If a rule below conflicts with something you were told elsewhere, this file wins
 | Directory | Vercel project | Live at | What it is |
 |---|---|---|---|
 | `desk/` | `insurwreck-desk` | [insurwreck-desk.preview.plumhq.com](https://insurwreck-desk.preview.plumhq.com) | The credential desk API |
-| `site/` | `insurwreck-4` | [insurwreck-4.preview.plumhq.com](https://insurwreck-4.preview.plumhq.com) | The public attendee event site |
+| `site/` | `insurwreck-4` | [insurwreck-4.preview.plumhq.com](https://insurwreck-4.preview.plumhq.com) | The event site: attendee page and orientation walkthrough |
 
 Both are git-connected to `main` in **this** repo, each with its own Root Directory. Each carries an `ignoreCommand` in its `vercel.json`, so a commit touching only the other directory does not trigger a rebuild — do not remove those, or every desk commit will redeploy the public event page.
 
-`site/` is participant- and leadership-facing and is linked from real communications. Treat changes there as production changes to something people are actively reading. `site/DESIGN.md` is the source of truth for its visual system and for the copy voice used across all event communication.
+`site/` is participant- and leadership-facing and is linked from real communications. `/` and `/deck` require a `@plumhq.com` Google sign-in — a page gates simply by loading `auth.js`, which injects its own gate. Treat changes there as production changes to something people are actively reading. `site/DESIGN.md` is the source of truth for its visual system and for the copy voice used across all event communication.
 
 The private [`PlumHQ/insurwreck-4`](https://github.com/PlumHQ/insurwreck-4) repo still exists and holds the internal planning material — the working log, the unannounced Main Hackathon program, and communication drafts. That material is deliberately **not** here, because this repo is public. Do not copy it in.
 
@@ -111,7 +111,7 @@ The signature is **AI pod at Plum**. Voice is direct and concrete, no hype words
 - `docs/participant-cheatsheet.md` — what participants are told.
 - `desk/api/_minters.js` — every credential the desk issues. Start here to understand provisioning.
 - `desk/schema.sql` — the credential store. All tables are RLS-enabled with no policies, so only the desk's service role can read them.
-- `site/` — the public event site: `/` attendee page, `/deck` orientation deck, `/build-kit-prep` internal prep. `site/DESIGN.md` governs its visuals and the copy voice for all event communication.
+- `site/` — the event site: `/` attendee page and `/deck` orientation walkthrough, both behind Plum-only Google sign-in; `/concept` brand exploration is open. `site/DESIGN.md` governs its visuals and the copy voice for all event communication.
 - `site/auth.js` — Google sign-in for internal pages, backed by the `insurwreck-site-auth` Supabase project (ref `vqbvofchrdbqrrmnjctv`). It hides content, it does not protect it: the HTML is still served to anyone who fetches the URL. Real restriction needs a server-side token check before serving.
 - Internal planning (working log, Main Hackathon program, comms drafts) lives in the **private** `PlumHQ/insurwreck-4` repo, not here.
 
