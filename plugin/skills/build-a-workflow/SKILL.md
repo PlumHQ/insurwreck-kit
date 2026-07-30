@@ -51,9 +51,12 @@ gets your workflow rejected, so don't improvise:
 without hitting real external services. Use them - a workflow that only "works"
 when published is a demo that fails live.
 
-There are no team projects on this instance (`teamProjectsEnabled: false`), so
-create workflows without a `projectId` and they land in the shared personal
-project. That is exactly why the naming rules above matter.
+This is a dedicated hackathon n8n instance, so nothing here can disturb Plum's
+production automations. But team projects are off on it
+(`teamProjectsEnabled: false`) and there is exactly one project, so every
+participant's workflows land in the same place, created by the same account.
+Create workflows without a `projectId`. The naming rules above are the only
+boundary between 25 people.
 
 `list_credentials` shows credentials the shared user can reach. Read it to find
 an existing credential ID; never create one containing a participant's own keys.
