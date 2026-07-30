@@ -1,319 +1,347 @@
 <!doctype html>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Insurwreck 4.0 · organizer console</title>
+<title>Insurwreck 4.0 · ops</title>
 <style>
+  /* Colour carries exactly one meaning here: status. Nothing is tinted for
+     decoration, so a red mark on this page always means someone is stuck.
+     The neutrals are biased cool toward the accent rather than left as plain
+     grey, and the accent itself is reserved for things you can click. */
   :root {
     color-scheme: light dark;
-    --bg:#fbfbfa; --fg:#1a1a19; --dim:#6b6b68; --line:#e4e4e1; --card:#fff;
-    --ok:#1a7f4b; --warn:#a86a00; --bad:#b3261e; --accent:#2f6ae0;
+    --ground:#f7f8f8; --surface:#fff; --sunk:#eef0f1;
+    --ink:#14181b; --ink-2:#4a5257; --ink-3:#858e94; --rule:#dfe3e5;
+    --crit:#d13438; --warn:#b06d00; --ok:#127a4a; --accent:#3563d6;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+    --sans: ui-sans-serif, -apple-system, "Segoe UI", Inter, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#141413; --fg:#eeeeec; --dim:#9a9a96; --line:#2e2e2c; --card:#1d1d1c;
-            --ok:#4ec27f; --warn:#e0a33a; --bad:#f2685c; --accent:#7aa2f7; }
+    :root {
+      --ground:#0e1012; --surface:#16191c; --sunk:#1b1f23;
+      --ink:#e8eaec; --ink-2:#a8b1b7; --ink-3:#79838a; --rule:#272c31;
+      --crit:#f26d70; --warn:#e0a33a; --ok:#48c78e; --accent:#7fa3f5;
+    }
   }
   * { box-sizing:border-box; }
-  body { margin:0; padding:22px; background:var(--bg); color:var(--fg);
-         font:14px/1.5 ui-sans-serif,-apple-system,"Segoe UI",sans-serif; }
-  header { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:4px; }
-  h1 { font-size:1.15rem; margin:0; letter-spacing:-.01em; }
-  .sub { color:var(--dim); font-size:.84rem; margin-bottom:16px; }
-  .bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
-  input, button, select, textarea { font:inherit; padding:7px 11px; border:1px solid var(--line);
-                          border-radius:7px; background:var(--card); color:var(--fg); }
-  textarea { font-family:ui-monospace,monospace; font-size:.8rem; width:100%; }
+  html { -webkit-text-size-adjust:100%; }
+  /* .row sets display:flex, which outranks the [hidden] attribute and leaves
+     every sign-in bar on screen at once. Make hidden mean hidden. */
+  [hidden] { display:none !important; }
+  body { margin:0; background:var(--ground); color:var(--ink);
+         font:14px/1.5 var(--sans); }
+  .wrap { max-width:1180px; margin:0 auto; padding:18px 20px 64px; }
+
+  /* ── masthead ─────────────────────────────────────────────────────────── */
+  .top { display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+         padding-bottom:12px; border-bottom:1px solid var(--rule); margin-bottom:16px; }
+  .mark { font:700 13px/1 var(--mono); letter-spacing:.14em; text-transform:uppercase; }
+  .mark span { color:var(--ink-3); font-weight:500; }
+  .top .right { margin-left:auto; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .tick { font:500 12px/1 var(--mono); color:var(--ink-3); font-variant-numeric:tabular-nums; }
+
+  /* The signature: everyone as one row of marks. Readable across a room, and
+     the only place the whole cohort is visible at once. */
+  .pulse { display:flex; gap:3px; align-items:flex-end; height:18px; }
+  .pulse i { width:7px; border-radius:1px; background:var(--rule); height:9px;
+             transition:height .2s ease, background .2s ease; }
+  .pulse i.ready { background:var(--ok); height:9px; }
+  .pulse i.warn  { background:var(--warn); height:14px; }
+  .pulse i.crit  { background:var(--crit); height:18px; }
+  .pulse-key { font:500 11px/1 var(--mono); color:var(--ink-3); letter-spacing:.04em; }
+
+  /* ── controls ─────────────────────────────────────────────────────────── */
+  input, button, select, textarea { font:inherit; color:var(--ink);
+    background:var(--surface); border:1px solid var(--rule); border-radius:6px; padding:7px 10px; }
+  textarea { font:12px/1.6 var(--mono); width:100%; resize:vertical; }
   button { cursor:pointer; font-weight:600; }
+  button:hover:not([disabled]) { border-color:var(--accent); color:var(--accent); }
   button.p { background:var(--accent); border-color:var(--accent); color:#fff; }
-  button.sm { padding:3px 9px; font-size:.78rem; font-weight:600; }
-  button[disabled] { opacity:.45; cursor:not-allowed; }
-  .tabs { display:flex; gap:4px; flex-wrap:wrap; border-bottom:1px solid var(--line); margin-bottom:16px; }
-  .tabs button { border:0; background:none; border-bottom:2px solid transparent; border-radius:0;
-                 padding:8px 13px; color:var(--dim); font-weight:600; }
-  .tabs button.on { color:var(--fg); border-bottom-color:var(--accent); }
-  .tabs .badge { display:inline-block; margin-left:5px; padding:0 6px; border-radius:20px;
-                 font-size:.68rem; background:var(--bad); color:#fff; }
-  .grid { display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); margin-bottom:16px; }
-  .panel { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px; }
-  .panel h2 { font-size:.74rem; text-transform:uppercase; letter-spacing:.07em;
-              color:var(--dim); margin:0 0 10px; font-weight:700; }
-  .panel h3 { font-size:.9rem; margin:14px 0 6px; }
-  .stats { display:flex; gap:14px; flex-wrap:wrap; }
-  .stat b { display:block; font-size:1.6rem; line-height:1.1; }
-  .stat span { color:var(--dim); font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; }
-  .chk { display:flex; justify-content:space-between; gap:10px; padding:3px 0;
-         border-bottom:1px solid var(--line); font-size:.84rem; }
-  .chk:last-child { border-bottom:0; }
-  .chk em { font-style:normal; color:var(--dim); font-size:.76rem; }
-  .yes { color:var(--ok); font-weight:700; }
-  .no  { color:var(--bad); font-weight:700; }
-  .scroll { overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--card); }
-  table { border-collapse:collapse; width:100%; min-width:720px; }
-  th,td { text-align:left; padding:8px 11px; border-bottom:1px solid var(--line); vertical-align:middle; }
-  th { font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:var(--dim); cursor:pointer; }
+  button.p:hover { filter:brightness(1.08); color:#fff; }
+  button.sm { padding:3px 9px; font-size:12px; border-radius:5px; }
+  button[disabled] { opacity:.4; cursor:not-allowed; }
+  a { color:var(--accent); }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+  /* ── the worklist, which is the point of the page ─────────────────────── */
+  h2 { font:600 11px/1 var(--sans); letter-spacing:.11em; text-transform:uppercase;
+       color:var(--ink-3); margin:0 0 10px; display:flex; align-items:center; gap:8px; }
+  h2 .n { font-family:var(--mono); font-variant-numeric:tabular-nums; }
+
+  .work { display:flex; flex-direction:column; gap:1px; background:var(--rule);
+          border:1px solid var(--rule); border-radius:8px; overflow:hidden; margin-bottom:26px; }
+  .task { display:flex; align-items:center; gap:12px; padding:11px 14px 11px 0;
+          background:var(--surface); border-left:3px solid var(--rule); }
+  .task.crit { border-left-color:var(--crit); }
+  .task.warn { border-left-color:var(--warn); }
+  .task .who { font-weight:600; padding-left:14px; min-width:0; }
+  .task .what { color:var(--ink-2); min-width:0; }
+  .task .what b { font-family:var(--mono); font-weight:600; color:var(--ink); }
+  .task .act { margin-left:auto; display:flex; gap:6px; flex-shrink:0; }
+  .clear { background:var(--surface); padding:18px 14px; color:var(--ink-3);
+           border-left:3px solid var(--ok); }
+
+  /* ── data ─────────────────────────────────────────────────────────────── */
+  .board { border:1px solid var(--rule); border-radius:8px; background:var(--surface);
+           overflow-x:auto; margin-bottom:10px; }
+  table { border-collapse:collapse; width:100%; min-width:700px; }
+  th, td { text-align:left; padding:9px 14px; border-bottom:1px solid var(--rule); }
+  th { font:600 10px/1 var(--sans); letter-spacing:.09em; text-transform:uppercase;
+       color:var(--ink-3); cursor:pointer; user-select:none; white-space:nowrap; }
+  th:hover { color:var(--ink); }
   tbody tr:last-child td { border-bottom:0; }
-  tr.stuck { background:color-mix(in srgb,var(--bad) 8%,transparent); }
-  .who { font-weight:600; }
-  .em { color:var(--dim); font-size:.79rem; }
-  .pill { display:inline-block; padding:1px 6px; border-radius:20px; font-size:.68rem;
-          font-weight:700; margin:1px 2px 1px 0; border:1px solid transparent; }
-  .p-ok { color:var(--ok); border-color:color-mix(in srgb,var(--ok) 40%,transparent); }
-  .p-no { color:var(--warn); border-color:color-mix(in srgb,var(--warn) 40%,transparent); }
-  .msg { padding:9px 0; font-size:.84rem; min-height:20px; }
-  .msg.err { color:var(--bad); } .msg.ok { color:var(--ok); } .msg.warn { color:var(--warn); }
-  .chip-full { display:inline-block; margin-left:4px; padding:1px 6px; border-radius:20px;
-               font-size:.66rem; font-weight:700; color:var(--warn);
-               border:1px solid color-mix(in srgb,var(--warn) 45%,transparent); }
-  code { font-family:ui-monospace,monospace; font-size:.8rem;
-         background:color-mix(in srgb,var(--fg) 8%,transparent); padding:1px 5px; border-radius:4px; }
-  pre { font-family:ui-monospace,monospace; font-size:.78rem; overflow-x:auto; margin:6px 0;
-        background:color-mix(in srgb,var(--fg) 6%,transparent); padding:10px 12px; border-radius:7px; }
-  .bars { display:flex; flex-direction:column; gap:6px; }
-  .bar-row { display:grid; grid-template-columns:150px 1fr 74px; gap:8px; align-items:center; font-size:.8rem; }
-  .track { height:7px; background:color-mix(in srgb,var(--fg) 10%,transparent); border-radius:4px; overflow:hidden; }
-  .fill { height:100%; background:var(--accent); }
-  .fill.hot { background:var(--bad); }
-  .note { border-left:3px solid var(--accent); padding:8px 12px; margin:10px 0;
-          background:color-mix(in srgb,var(--accent) 6%,transparent); border-radius:0 7px 7px 0; font-size:.84rem; }
-  .note.warn { border-left-color:var(--warn); background:color-mix(in srgb,var(--warn) 7%,transparent); }
-  .note.bad  { border-left-color:var(--bad);  background:color-mix(in srgb,var(--bad) 7%,transparent); }
-  .attn { display:flex; flex-direction:column; gap:5px; }
-  .attn div { font-size:.84rem; padding:4px 0; border-bottom:1px solid var(--line); }
-  .attn div:last-child { border-bottom:0; }
-  dl { margin:0; } dt { font-weight:650; margin-top:12px; } dd { margin:2px 0 0; color:var(--dim); }
+  tbody tr:hover { background:var(--sunk); }
+  td { vertical-align:middle; }
+  /* Never put display:flex on a <td> - it detaches the cell from the row's
+     height and the last column drifts out of line with the rest. */
+  .acts { display:flex; gap:5px; flex-wrap:wrap; align-items:center; }
+  .id { font:500 12px/1.4 var(--mono); color:var(--ink-3); }
+  .num { font-family:var(--mono); font-variant-numeric:tabular-nums; }
+
+  /* Service state reads as a strip of marks, same language as the pulse. */
+  .svc { display:inline-flex; gap:3px; }
+  .svc b { width:26px; height:4px; border-radius:2px; background:var(--crit); }
+  .svc b.on { background:var(--ok); }
+  .svc-key { font:500 10px/1 var(--mono); color:var(--ink-3); letter-spacing:.05em; }
+
+  .meter { display:inline-flex; align-items:center; gap:7px; }
+  .meter .t { width:52px; height:4px; border-radius:2px; background:var(--rule); overflow:hidden; }
+  .meter .f { display:block; height:100%; background:var(--accent); }
+  .meter .f.hot { background:var(--crit); }
+
+  .tag { display:inline-block; padding:1px 6px; border-radius:3px; font:600 10px/1.6 var(--mono);
+         letter-spacing:.04em; border:1px solid; }
+  .tag.full { color:var(--warn); border-color:var(--warn); }
+
+  /* ── folded sections ──────────────────────────────────────────────────── */
+  details { border:1px solid var(--rule); border-radius:8px; background:var(--surface);
+            margin-bottom:10px; }
+  summary { cursor:pointer; padding:12px 15px; font-weight:600; list-style:none;
+            display:flex; align-items:center; gap:9px; }
+  summary::-webkit-details-marker { display:none; }
+  summary::before { content:"›"; font:700 15px/1 var(--mono); color:var(--ink-3);
+                    transition:transform .15s ease; }
+  details[open] summary::before { transform:rotate(90deg); }
+  summary .hint { margin-left:auto; font:500 12px/1 var(--sans); color:var(--ink-3); }
+  .body { padding:0 15px 15px; }
+
+  .health { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:1px 16px; }
+  .health div { display:flex; justify-content:space-between; gap:8px; padding:4px 0;
+                border-bottom:1px solid var(--rule); font-size:13px; }
+  .health b { font:600 11px/1.5 var(--mono); }
+  .health b.y { color:var(--ok); } .health b.n { color:var(--crit); }
+
+  .fact { border-left:2px solid var(--rule); padding:7px 0 7px 13px; margin:11px 0; font-size:13px;
+          color:var(--ink-2); }
+  .fact.crit { border-left-color:var(--crit); }
+  .fact.warn { border-left-color:var(--warn); }
+  .fact.ok   { border-left-color:var(--ok); }
+  .fact b { color:var(--ink); }
+  code { font:500 12px/1.5 var(--mono); background:var(--sunk); padding:1px 5px; border-radius:3px; }
+  pre { font:500 12px/1.65 var(--mono); background:var(--sunk); padding:11px 13px;
+        border-radius:6px; overflow-x:auto; color:var(--ink-2); margin:8px 0; }
+  dl { margin:0; } dt { font-weight:600; margin-top:14px; }
+  dd { margin:3px 0 0; color:var(--ink-2); font-size:13px; }
+  ul.tight { margin:0; padding-left:17px; color:var(--ink-2); font-size:13px; }
+  ul.tight li { margin:4px 0; }
+
+  #msg { min-height:19px; font-size:13px; padding:7px 0; }
+  #msg.err { color:var(--crit); } #msg.ok { color:var(--ok); } #msg.warn { color:var(--warn); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+  @media (max-width: 620px) {
+    .task { flex-wrap:wrap; }
+    .task .act { margin-left:14px; width:100%; }
+  }
 </style>
 
-<header>
-  <h1>Insurwreck 4.0 · organizer console</h1>
-  <span class="em" id="clock"></span>
-</header>
-<div class="sub">Everything for the day, in one page. Refreshes every 30s.</div>
+<div class="wrap">
 
-<div class="bar" id="login">
+<div class="top">
+  <div class="mark">INSURWRECK 4.0 <span>ops</span></div>
+  <div class="right">
+    <div class="pulse" id="pulse" title="one mark per participant"></div>
+    <span class="pulse-key" id="pulse-key"></span>
+    <span class="tick" id="clock"></span>
+  </div>
+</div>
+
+<div class="row" id="login">
   <input id="email" type="email" placeholder="your @plumhq.com address" size="26" autocomplete="username" />
   <button class="p" id="send">Email me a code</button>
   <input id="code" placeholder="6-digit code" size="10" inputmode="numeric" hidden />
   <button class="p" id="verify" hidden>Sign in</button>
-  <button id="usekey">use admin key instead</button>
+  <button id="usekey">Use admin key</button>
 </div>
-<div class="bar" id="keybar" hidden>
+<div class="row" id="keybar" hidden>
   <input id="key" type="password" placeholder="admin key" size="26" autocomplete="off" />
-  <button class="p" id="go">Load</button>
-  <button id="useotp">back to email sign-in</button>
+  <button class="p" id="go">Sign in</button>
+  <button id="useotp">Use email instead</button>
 </div>
-<div class="bar" id="signedin" hidden>
-  <span class="em">signed in as <b id="whoami"></b> <span id="mode" class="em"></span></span>
-  <button id="signout">sign out</button>
-  <button id="refresh">Refresh now</button>
+<div class="row" id="signedin" hidden>
+  <span class="id" id="whoami"></span>
+  <button class="sm" id="refresh">Refresh</button>
+  <button class="sm" id="signout">Sign out</button>
 </div>
-<div id="msg" class="msg"></div>
+<div id="msg"></div>
 
-<div class="tabs" id="tabs">
-  <button data-tab="now" class="on">Now</button>
-  <button data-tab="people">People</button>
-  <button data-tab="slices">Data slices</button>
-  <button data-tab="google">Google sign-in</button>
-  <button data-tab="runbook">Runbook</button>
+<!-- The worklist leads. Everything else on this page is reference. -->
+<h2>Needs you <span class="n" id="work-n"></span></h2>
+<div class="work" id="work">
+  <div class="clear">Sign in to see who is stuck.</div>
 </div>
 
-<!-- ─────────────────────────────────────────────────────────── NOW ── -->
-<section data-pane="now">
-  <div class="grid">
-    <div class="panel">
-      <h2>Where everyone is</h2>
-      <div class="stats">
-        <div class="stat"><b id="s-total">-</b><span>registered</span></div>
-        <div class="stat"><b id="s-ready">-</b><span>fully ready</span></div>
-        <div class="stat"><b id="s-stuck">-</b><span>stuck</span></div>
-        <div class="stat"><b id="s-spend">-</b><span>model spend</span></div>
-      </div>
-    </div>
-    <div class="panel">
-      <h2>System health</h2>
-      <div id="health"><span class="em">sign in to check</span></div>
-    </div>
-    <div class="panel">
-      <h2>Budget burn</h2>
-      <div class="bars" id="bars"><span class="em">nobody has spent anything yet</span></div>
-    </div>
-  </div>
-  <div class="panel">
-    <h2>Needs attention</h2>
-    <div class="attn" id="attn"><span class="em">sign in to load</span></div>
-  </div>
-</section>
-
-<!-- ──────────────────────────────────────────────────────── PEOPLE ── -->
-<section data-pane="people" hidden>
-  <div class="bar">
-    <label class="em"><input type="checkbox" id="only" /> only show people who are stuck</label>
-  </div>
-  <div class="scroll"><table>
+<h2>Everyone <span class="n" id="tally"></span></h2>
+<div class="board">
+  <table>
     <thead><tr>
-      <th data-k="name">Person</th><th data-k="missing">Services</th>
-      <th data-k="spend">Spend</th><th>Actions</th>
+      <th data-k="name">Person</th>
+      <th data-k="missing">Services <span class="svc-key">vercel supabase resend model mail n8n</span></th>
+      <th data-k="spend">Model spend</th>
+      <th>Actions</th>
     </tr></thead>
-    <tbody id="rows"><tr><td colspan="4" class="msg">Sign in to load.</td></tr></tbody>
-  </table></div>
-  <div class="note" id="repair-note" hidden>
-    <b>Repair setup</b> needs the shared admin key, not an email sign-in - it calls
-    <code>/api/provision</code> on someone else's behalf, which only accepts <code>x-admin-key</code>.
-    Sign in with the key if you need it.
-  </div>
-</section>
+    <tbody id="rows"><tr><td colspan="4" class="id">Sign in to load.</td></tr></tbody>
+  </table>
+</div>
+<div class="row" style="margin-bottom:26px">
+  <label class="id"><input type="checkbox" id="only" /> only people who are stuck</label>
+</div>
 
-<!-- ──────────────────────────────────────────────────────── SLICES ── -->
-<section data-pane="slices" hidden>
-  <div class="panel">
-    <h2>Published right now</h2>
-    <div class="scroll"><table style="min-width:520px">
-      <thead><tr><th>Card</th><th>Name</th><th>Why</th><th></th></tr></thead>
-      <tbody id="slice-rows"><tr><td colspan="4" class="msg">Sign in to load.</td></tr></tbody>
-    </table></div>
-    <p class="em" style="margin:10px 0 0">
-      Participants see a change on their next <code>list_datasets</code> call. No redeploy, no restart.
-    </p>
-  </div>
+<details id="d-health">
+  <summary>System health <span class="hint" id="health-hint"></span></summary>
+  <div class="body"><div class="health" id="health"><span class="id">Sign in to check.</span></div></div>
+</details>
 
-  <div class="panel">
-    <h2>Publish a slice</h2>
-    <div class="bar">
+<details id="d-slices">
+  <summary>Data slices <span class="hint" id="slice-hint"></span></summary>
+  <div class="body">
+    <div class="board" style="margin-bottom:14px">
+      <table style="min-width:520px">
+        <thead><tr><th>Card</th><th>Name</th><th>Why it exists</th><th></th></tr></thead>
+        <tbody id="slice-rows"><tr><td colspan="4" class="id">Sign in to load.</td></tr></tbody>
+      </table>
+    </div>
+    <div class="row" style="margin-bottom:8px">
       <input id="sc-id" placeholder="card id" size="10" inputmode="numeric" />
-      <input id="sc-note" placeholder="who asked, and why" size="34" />
+      <input id="sc-note" placeholder="who asked, and why" size="32" />
       <button class="p" id="sc-add">Publish</button>
     </div>
-    <p class="em" style="margin:0">
-      The card must live in Metabase collection <b>968</b> ("Insurwreck 4.0"). The desk checks
-      the hackathon key can actually read it before publishing, so a typo fails here rather than
-      in someone's session.
+    <p class="id" style="margin:0 0 6px">
+      Participants pick it up on their next <code>list_datasets</code> call. No redeploy, nobody restarts.
+      The card must sit in Metabase collection <b>968</b>; the desk checks it is readable before publishing,
+      so a typo fails here instead of in someone's session.
     </p>
-  </div>
 
-  <div class="panel">
-    <h2>Known gaps — measured, not guessed</h2>
-    <div class="note bad">
-      <b>GPA/GTL claims have no data.</b> <code>claims_summary</code> returns
-      <code>gmc</code> 277, <code>health-expenses</code> 214, <code>gmc-parent-only</code> 8,
-      <code>gpa</code> <b>1</b>, <code>gtl</code> <b>0</b>. Smart Claims Management is a GPA/GTL
-      idea with effectively nothing to build on. ~1,800 GPA+GTL claims exist in the warehouse -
-      a benefit-type-filtered slice fixes it.
+    <h2 style="margin-top:20px">Gaps, measured</h2>
+    <div class="fact crit">
+      <b>GPA/GTL has no data.</b> <code>claims_summary</code> is <code>gmc</code> 277,
+      <code>health-expenses</code> 214, <code>gmc-parent-only</code> 8, <code>gpa</code> 1,
+      <code>gtl</code> 0. Smart Claims Management is a GPA/GTL idea with nothing under it.
+      About 1,800 GPA+GTL claims exist in the warehouse, so a benefit-type-filtered slice fixes it.
     </div>
-    <div class="note bad">
-      <b>NPS has no verbatims.</b> <code>nps_responses</code> is
-      <code>claim_channel, org, nps_score, response_status, responded_on</code> - no comment column.
-      VoxIntelligence's premise is root-cause analysis on detractor comments. NPS verbatim columns
-      are on the never-select list, so this needs a decision, not a query.
+    <div class="fact crit">
+      <b>NPS has no comments.</b> <code>nps_responses</code> is
+      <code>claim_channel, org, nps_score, response_status, responded_on</code>.
+      VoxIntelligence reasons over detractor comments, and verbatim columns are on the never-select
+      list. This needs a decision, not a query.
     </div>
-    <div class="note warn">
-      <b>Asked for, not yet published.</b> Insurer/TPA contact directory (SwiftClaim), and an
-      org-level pre-aggregated rollup so peer comparison isn't starved by the row cap.
+    <div class="fact warn">
+      <b>Asked for, not published.</b> Insurer and TPA contact directory for SwiftClaim, and an
+      org-level rollup so peer comparison isn't starved by the row cap.
     </div>
-    <div class="note">
-      <b>Already fine, checked directly:</b> <code>account_health</code> carries
-      <code>segment</code>, <code>service_tier</code>, <code>active_employees</code> and
-      <code>next_renewal_month</code>; <code>lives_roster</code> carries <code>joined_on</code>.
+    <div class="fact ok">
+      <b>Checked and fine.</b> <code>account_health</code> has <code>segment</code>,
+      <code>service_tier</code>, <code>active_employees</code>, <code>next_renewal_month</code>.
+      <code>lives_roster</code> has <code>joined_on</code>.
     </div>
-    <h3>Writing a new one</h3>
-    <p class="em" style="margin:0 0 6px">
-      Ask Claude Code for the <code>publish-a-slice</code> skill. It carries the traps so nobody
-      rediscovers them, and it will not let you skip the PII tail-check.
+
+    <h2 style="margin-top:20px">Writing a new one</h2>
+    <p class="id" style="margin:0 0 4px">
+      Ask Claude Code for the <code>publish-a-slice</code> skill. It carries these so nobody
+      rediscovers them, and it will not let you skip the tail-check.
     </p>
     <pre>no Policy table - it is OrganisationBenefit + OrganisationBenefitGrade
 Claim.stage is the status column, not Claim.status
 EndorsementBatch columns are all-lowercase: premiumadd, lastcdbgbal
 ClaimMis has no ICD key - use InsurerClaim."icd10_code"
 NPS score is question2; every other question column is verbatim text
-avoid ClaimAudits (57.5M), ClaimComment (6.3M), AccountHealthMetric (88.5M)
-always bound by time: where "createdAt" >= now() - interval '18 months'</pre>
-    <div class="note warn">
-      Check the <b>tail</b> of any free-text-looking column, never the head. A card cleared human
-      review with <code>ClaimSettlementItemDeductions.description</code> in it - tidy enum in its
-      top 40 values, 460 free-text ops notes in its tail with invoice numbers and clinic names.
+avoid ClaimAudits 57.5M, ClaimComment 6.3M, AccountHealthMetric 88.5M
+bound it: where "createdAt" >= now() - interval '18 months'</pre>
+    <div class="fact warn">
+      <b>Check the tail of a free-text column, never the head.</b> A card cleared human review with
+      <code>ClaimSettlementItemDeductions.description</code> in it: a tidy enum in its top 40 values,
+      460 free-text ops notes in its tail carrying invoice numbers and clinic names.
       <pre>select "&lt;col&gt;", count(*) n from "&lt;Table&gt;" group by 1
 having count(*) = 1 order by random() limit 10</pre>
-      Reads like sentences? Drop the column. Reads like <code>COVERAGE_GROUP_NOT_FOUND</code>? Keep it.
+      Reads like sentences? Drop it. Reads like <code>COVERAGE_GROUP_NOT_FOUND</code>? Keep it.
     </div>
   </div>
-</section>
+</details>
 
-<!-- ──────────────────────────────────────────────────────── GOOGLE ── -->
-<section data-pane="google" hidden>
-  <div class="panel">
-    <h2>Authorized redirect URIs</h2>
-    <p class="em" style="margin:0 0 10px">
-      Google exposes no API for an OAuth client's redirect URIs, so each participant's callback has
-      to be pasted into the console by hand. Until it is, their sign-in button fails with
-      <code>redirect_uri_mismatch</code> and nothing else about their setup is affected.
-      Cap is ~100 URIs per client, so headcount is not a constraint.
+<details id="d-google">
+  <summary>Google sign-in <span class="hint" id="gc-hint"></span></summary>
+  <div class="body">
+    <p class="id" style="margin:0 0 10px">
+      Google exposes no API for an OAuth client's redirect URIs, so each participant's callback is
+      pasted in by hand. Until it is, their sign-in button fails with <code>redirect_uri_mismatch</code>
+      and nothing else about their setup is affected. The cap is about 100 URIs per client.
     </p>
-    <div class="bar">
+    <div class="row" style="margin-bottom:9px">
       <button class="p" id="gc-load">Load pending</button>
-      <button id="gc-copy">Copy all</button>
-      <button id="gc-done">Mark all registered</button>
-      <a id="gc-open" target="_blank" rel="noopener" hidden>open the Google console</a>
+      <button id="gc-copy">Copy</button>
+      <button id="gc-done">Mark registered</button>
+      <a id="gc-open" target="_blank" rel="noopener" hidden>Open the Google console</a>
     </div>
-    <textarea id="gc-list" rows="8" spellcheck="false" placeholder="Load pending to see the list."></textarea>
-    <div class="note warn" id="gc-note" hidden>
-      This needs the shared admin key, not an email sign-in.
-    </div>
+    <textarea id="gc-list" rows="7" spellcheck="false" placeholder="Load pending to see the list."></textarea>
+    <div class="fact warn" id="gc-note" hidden>Needs the shared admin key, not an email sign-in.</div>
   </div>
-</section>
+</details>
 
-<!-- ─────────────────────────────────────────────────────── RUNBOOK ── -->
-<section data-pane="runbook" hidden>
-  <div class="panel">
-    <h2>When someone says…</h2>
+<details id="d-runbook">
+  <summary>Runbook <span class="hint">what to do when someone says…</span></summary>
+  <div class="body">
     <dl>
-      <dt>"The Plum data server shows failed / red"</dt>
-      <dd>Expected before onboarding - the token doesn't exist yet. Have them run
-          <code>/insurwreck:start</code>, then <b>quit and restart Claude Code</b>. If it persists,
-          <code>iw-doctor</code> names which of three states they're in.</dd>
-
+      <dt>"The Plum data server shows failed"</dt>
+      <dd>Expected before onboarding — the token does not exist yet. Run <code>/insurwreck:start</code>,
+          then quit and restart Claude Code. Still failing? <code>iw-doctor</code> names which of three
+          states they are in.</dd>
       <dt>"I never got my code"</dt>
-      <dd><b>People</b> tab → <b>Get code</b>. Reads it back to you directly.</dd>
-
+      <dd><b>Get code</b> on their row reads it back to you.</dd>
       <dt>"I've run out of model budget"</dt>
-      <dd><b>People</b> tab → <b>Raise budget</b>. Applies on their next call, no restart.
-          For scale: a whole app built and deployed cost $0.105.</dd>
-
+      <dd><b>Raise</b> on their row. Applies on their next call, no restart. For scale: a whole app,
+          built and deployed, cost $0.105.</dd>
       <dt>"I need data none of the slices have"</dt>
-      <dd>First check it isn't a join they can do across two existing slices - that costs nothing.
-          Otherwise use the <code>publish-a-slice</code> skill and publish the card id on the
-          <b>Data slices</b> tab. Target five minutes.</dd>
-
+      <dd>First check it isn't a join across two existing slices — that costs nothing. Otherwise the
+          <code>publish-a-slice</code> skill, then publish the card id above. Five minutes.</dd>
       <dt>"A slice genuinely can't answer my question"</dt>
-      <dd><b>Grant full data</b> - raw read-only SQL over the whole warehouse, one person at a time,
-          logged, revocable. They must restart Claude Code to see the tool. Not a switch to leave on.</dd>
-
-      <dt>"My setup half-finished / a service says pending"</dt>
-      <dd><code>/insurwreck:status</code> repairs it from their side. If that fails,
-          <b>Repair setup</b> on the People tab does the same server-side (admin key only).</dd>
-
+      <dd><b>Grant full data</b>: raw read-only SQL over the warehouse, one person at a time, logged
+          and revocable. They restart Claude Code to see the tool. Not a switch to leave on.</dd>
+      <dt>"My setup half-finished"</dt>
+      <dd><code>/insurwreck:status</code> repairs it from their side. If that fails, <b>Repair</b> does
+          the same server-side.</dd>
       <dt>"Sign in with Google doesn't work"</dt>
-      <dd><b>Google sign-in</b> tab - their callback URI probably isn't registered yet.</dd>
-
+      <dd>Their callback URI is probably not registered yet — see the section above.</dd>
       <dt>"Salesforce won't connect"</dt>
-      <dd>First launch downloads the server and can time out; it works on the second. Needs
-          <code>sf org login web</code> per person, and the CLI does not install on Linux/WSL2.</dd>
-
+      <dd>The first launch downloads the server and can time out; the second works. Needs
+          <code>sf org login web</code> per person, and the CLI does not install on Linux or WSL2.</dd>
       <dt>"Kula tools all fail"</dt>
-      <dd>No API key has been issued. The server connects but every call fails. Nothing the
-          participant can fix.</dd>
+      <dd>No API key has been issued. The server connects, every call fails. Nothing they can fix.</dd>
     </dl>
-  </div>
 
-  <div class="panel">
-    <h2>Limits worth knowing before you promise anything</h2>
-    <ul class="em" style="margin:0; padding-left:18px">
-      <li><b>500 rows</b> through <code>run_dataset</code>, <b>2000</b> through bulk export. The
-          2000 is a Metabase ceiling and cannot be raised - the answer is an aggregated slice, not paging.</li>
-      <li>Everything is de-identified: no member names, ages banded, free-text diagnosis and ticket
-          bodies removed. Org brand names are fine.</li>
-      <li>A participant's own agent shell is sandboxed on macOS and may not reach the network.
-          Bulk downloads belong in their app code, or they run the curl themselves with <code>!</code>.</li>
-      <li>Data is confidential. No screenshots into Slack, nothing on a slide.</li>
+    <h2 style="margin-top:22px">Before you promise anything</h2>
+    <ul class="tight">
+      <li><b>500 rows</b> through <code>run_dataset</code>, <b>2000</b> through bulk export. The 2000 is a
+          Metabase ceiling and cannot be raised — the answer is an aggregated slice, never paging.</li>
+      <li>Everything is de-identified: no member names, ages banded, free-text diagnosis and ticket bodies
+          removed. Org brand names are fine.</li>
+      <li>A participant's agent shell is sandboxed on macOS and may not reach the network. Bulk downloads
+          belong in their app code, or they run the command themselves.</li>
+      <li>This is real member data. No screenshots into Slack, nothing on a slide.</li>
     </ul>
   </div>
-</section>
+</details>
+
+</div>
 
 <script>
   const SERVICES = ["vercel","supabase","resend","anthropic","agentmail","n8n"];
@@ -321,15 +349,13 @@ having count(*) = 1 order by random() limit 10</pre>
   const key = () => $("key").value.trim();
   let session = sessionStorage.getItem("iw_session") || "";
 
-  // Either credential works for most calls; the session is preferred so nobody has
-  // to hold the shared secret. Two endpoints (provision-on-behalf, google-callbacks)
-  // accept only the admin key, and the UI says so rather than failing opaquely.
   const authHeaders = () => session ? { Authorization: `Bearer ${session}` } : { "x-admin-key": key() };
-  const haveAdminKey = () => Boolean(key());
+  const haveKey = () => Boolean(key());
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-  let data = [], slices = [], sortKey = "missing", desc = true;
+  const money = (n) => "$" + Number(n || 0).toFixed(2);
+  let data = [], sortKey = "missing", desc = true;
 
-  const say = (t, c="") => { $("msg").className = "msg " + c; $("msg").textContent = t; };
+  const say = (t, c="") => { $("msg").className = c; $("msg").textContent = t; };
 
   async function api(path, init={}) {
     const r = await fetch(path, { ...init, headers: { ...authHeaders(), "content-type":"application/json", ...(init.headers||{}) } });
@@ -338,27 +364,60 @@ having count(*) = 1 order by random() limit 10</pre>
     return d;
   }
   const admin = (action, extra={}) => api("/api/admin", { method:"POST", body: JSON.stringify({ action, ...extra }) });
+  const missingFor = (p) => SERVICES.filter(s => !(p.services||{})[s]);
 
-  // --- tabs ------------------------------------------------------------------
-  document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
-    document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b));
-    document.querySelectorAll("section[data-pane]").forEach(s => s.hidden = s.dataset.pane !== b.dataset.tab);
-    if (b.dataset.tab === "slices") loadSlices();
-  });
+  function bind(attr, fn) {
+    document.querySelectorAll(`button[data-${attr}]`).forEach(b => b.onclick = async () => {
+      b.disabled = true;
+      try { await fn(b); } catch (e) { say(e.message, "err"); } finally { b.disabled = false; }
+    });
+  }
+
+  // --- actions, shared by the worklist and the table -------------------------
+  const act = {
+    async code(email) {
+      const r = await admin("resend_code", { email });
+      say(r.debug_code ? `Code for ${email} is ${r.debug_code}` : `Code sent to ${email}.`, "ok");
+    },
+    async budget(email) {
+      const v = prompt(`New model budget in dollars for ${email}:`, "40");
+      if (!v) return;
+      const r = await admin("set_budget", { email, budget_usd: Number(v) });
+      say(`${r.email} now has ${money(r.budget_usd)}. Applies on their next call.`, "ok");
+      load();
+    },
+    async full(email, on) {
+      if (!on && !confirm(
+        `Give ${email} read access to the whole warehouse?\n\n` +
+        `This bypasses the published slices — all 850 tables, including columns the slices ` +
+        `deliberately hide. Only when a slice genuinely can't answer their question. ` +
+        `Every query is logged.`)) return;
+      const r = await admin("set_full_access", { email, enabled: !on });
+      say(r.full_data_access
+        ? `${r.email} has full warehouse access. They restart Claude Code to see the tool.`
+        : `Full access revoked for ${r.email}.`, r.full_data_access ? "warn" : "ok");
+      load();
+    },
+    async repair(email) {
+      say(`Repairing ${email}. This takes up to a minute.`);
+      const r = await api("/api/provision", { method:"POST", body: JSON.stringify({ email }) });
+      const pending = (r.pending || []).join(", ");
+      say(pending ? `${email} still pending: ${pending}` : `${email} is fully provisioned.`, pending ? "warn" : "ok");
+      load();
+    },
+  };
 
   // --- load ------------------------------------------------------------------
   async function load() {
-    if (!session && !haveAdminKey()) return say("Sign in first.", "err");
-    // Deliberately sessionStorage, not localStorage: the admin key is a shared
-    // secret that unlocks every participant's setup, and it should not outlive
-    // the tab on a laptop that gets handed round a room.
-    if (haveAdminKey()) sessionStorage.setItem("iw_admin_key", key());
-    $("repair-note").hidden = haveAdminKey();
-    $("gc-note").hidden = haveAdminKey();
+    if (!session && !haveKey()) return say("Sign in first.", "err");
+    // sessionStorage, never localStorage: the admin key unlocks every
+    // participant's setup and should not outlive the tab on a shared laptop.
+    if (haveKey()) sessionStorage.setItem("iw_admin_key", key());
+    $("gc-note").hidden = haveKey();
     try {
       const body = await api("/api/roster").catch(e => {
         throw new Error(/401/.test(e.message)
-          ? "Not recognised as an organizer. Check ORGANIZER_EMAILS, or use the admin key."
+          ? "Not recognised as an organizer. Check ORGANIZER_EMAILS, or sign in with the admin key."
           : e.message);
       });
       const held = new Map();
@@ -379,53 +438,61 @@ having count(*) = 1 order by random() limit 10</pre>
       render();
       say("");
       admin("health").then(h => renderHealth(h.checks)).catch(()=>{});
+      if ($("d-slices").open) loadSlices();
     } catch (e) { say(e.message, "err"); }
   }
 
   function renderHealth(checks) {
-    const bad = checks.filter(c => !c.ok).length;
+    const bad = checks.filter(c => !c.ok);
     $("health").innerHTML = checks.map(c =>
-      `<div class="chk"><span>${esc(c.name)} ${c.detail ? `<em>${esc(c.detail)}</em>` : ""}</span>
-       <span class="${c.ok ? "yes" : "no"}">${c.ok ? "ok" : "no"}</span></div>`).join("");
-    badge("now", bad);
+      `<div><span>${esc(c.name)}</span><b class="${c.ok ? "y" : "n"}">${c.ok ? "ok" : "FAIL"}</b></div>`).join("");
+    $("health-hint").textContent = bad.length ? `${bad.length} failing` : "all clear";
+    $("health-hint").style.color = bad.length ? "var(--crit)" : "";
+    if (bad.length) $("d-health").open = true;
   }
 
-  // Keep the original label on the element, so repeated renders can't accumulate
-  // or eat it - textContent already includes any badge digits by the second call.
-  function badge(tab, n) {
-    const b = document.querySelector(`#tabs button[data-tab="${tab}"]`);
-    if (!b.dataset.label) b.dataset.label = b.textContent.trim();
-    b.innerHTML = esc(b.dataset.label) + (n > 0 ? ` <span class="badge">${n}</span>` : "");
-  }
-
-  function renderBars() {
-    const spenders = data.filter(p => p.spend > 0).sort((a,b) => b.spend - a.spend).slice(0, 8);
-    $("bars").innerHTML = spenders.length ? spenders.map(p => {
-      const pct = Math.min(100, (p.spend / 15) * 100);
-      return `<div class="bar-row"><span class="em">${esc((p.name||p.email).slice(0,20))}</span>
-        <span class="track"><span class="fill ${pct>75?"hot":""}" style="width:${pct}%"></span></span>
-        <span class="em">$${p.spend.toFixed(2)}</span></div>`;
-    }).join("") : '<span class="em">nobody has spent anything yet</span>';
-  }
-
-  const missingFor = p => SERVICES.filter(s => !(p.services||{})[s]);
-
-  function renderAttention() {
-    const items = [];
+  // --- the worklist ----------------------------------------------------------
+  // Ordered by what actually costs the day: unverified people can't start at
+  // all, missing services block a build, budget is a warning you can act on
+  // early, and full access is a standing risk worth seeing.
+  function renderWork() {
+    const tasks = [];
     for (const p of data) {
-      const m = missingFor(p);
-      if (!p.verified_at) items.push(`<b>${esc(p.name||p.email)}</b> has not verified their email yet`);
-      else if (m.length) items.push(`<b>${esc(p.name||p.email)}</b> is missing ${m.join(", ")}`);
-      if (p.spend > 12) items.push(`<b>${esc(p.name||p.email)}</b> is at $${p.spend.toFixed(2)} of $15 - raise it before they hit the wall`);
-      if (p.full) items.push(`<b>${esc(p.name||p.email)}</b> currently holds full warehouse access`);
+      const who = p.name || p.email, m = missingFor(p);
+      if (!p.verified_at)
+        tasks.push({ sev:"crit", who, what:"has not verified their email", btn:`<button class="sm" data-code="${esc(p.email)}">Get code</button>` });
+      else if (m.length)
+        tasks.push({ sev:"crit", who, what:`is missing <b>${m.join(" ")}</b>`,
+          btn:`<button class="sm" data-repair="${esc(p.email)}" ${haveKey()?"":"disabled title='needs the admin key'"}>Repair</button>` });
+      if (p.spend > 12)
+        tasks.push({ sev:"warn", who, what:`has spent <b>${money(p.spend)}</b> of $15`, btn:`<button class="sm" data-budget="${esc(p.email)}">Raise</button>` });
+      if (p.full)
+        tasks.push({ sev:"warn", who, what:"holds full warehouse access", btn:`<button class="sm" data-full="${esc(p.email)}" data-on="1">Revoke</button>` });
     }
-    $("attn").innerHTML = items.length
-      ? items.map(t => `<div>${t}</div>`).join("")
-      : '<span class="em">Nothing needs you right now.</span>';
-    badge("people", data.filter(p => missingFor(p).length).length);
+    tasks.sort((a,b) => (a.sev==="crit"?0:1) - (b.sev==="crit"?0:1));
+    $("work-n").textContent = tasks.length || "";
+    $("work").innerHTML = tasks.length
+      ? tasks.map(t => `<div class="task ${t.sev}"><span class="who">${esc(t.who)}</span>
+          <span class="what">${t.what}</span><span class="act">${t.btn}</span></div>`).join("")
+      : `<div class="clear">Nothing needs you. ${data.length} people, ${data.filter(p=>!missingFor(p).length).length} fully set up.</div>`;
+  }
+
+  function renderPulse() {
+    $("pulse").innerHTML = data.map(p => {
+      const cls = !p.verified_at || missingFor(p).length ? "crit" : (p.spend > 12 ? "warn" : "ready");
+      return `<i class="${cls}" title="${esc(p.name || p.email)}"></i>`;
+    }).join("");
+    const ready = data.filter(p => p.verified_at && !missingFor(p).length).length;
+    $("pulse-key").textContent = data.length ? `${ready}/${data.length} ready` : "";
   }
 
   function render() {
+    renderPulse();
+    renderWork();
+    $("tally").textContent = data.length
+      ? `${data.length} registered · ${money(data.reduce((t,p)=>t+(p.spend||0),0))} spent`
+      : "";
+
     const rows = data.map(p => ({...p, missing: missingFor(p)}))
       .filter(p => !$("only").checked || p.missing.length)
       .sort((a,b) => {
@@ -434,80 +501,44 @@ having count(*) = 1 order by random() limit 10</pre>
         return (av<bv?-1:av>bv?1:0) * (desc?-1:1);
       });
 
-    $("s-total").textContent = data.length;
-    $("s-stuck").textContent = data.filter(p => missingFor(p).length).length;
-    $("s-ready").textContent = data.filter(p => !missingFor(p).length).length;
-    $("s-spend").textContent = "$" + data.reduce((t,p)=>t+(p.spend||0),0).toFixed(2);
-    renderBars();
-    renderAttention();
+    $("rows").innerHTML = rows.length ? rows.map(p => {
+      const pct = Math.min(100, (p.spend / 15) * 100);
+      return `<tr>
+        <td><div style="font-weight:600">${esc(p.name || "—")}</div><div class="id">${esc(p.email)}</div>
+            ${p.verified_at ? "" : '<div class="id" style="color:var(--crit)">not verified</div>'}</td>
+        <td><span class="svc">${SERVICES.map(s =>
+              `<b class="${p.missing.includes(s)?"":"on"}" title="${s}"></b>`).join("")}</span></td>
+        <td><span class="meter"><span class="num">${p.spend ? money(p.spend) : "—"}</span>
+            ${p.spend ? `<span class="t"><span class="f ${pct>75?"hot":""}" style="width:${pct}%"></span></span>` : ""}
+            ${p.calls ? `<span class="id">${p.calls} calls</span>` : ""}</span></td>
+        <td><div class="acts">
+          <button class="sm" data-code="${esc(p.email)}">Code</button>
+          <button class="sm" data-budget="${esc(p.email)}">Budget</button>
+          <button class="sm" data-full="${esc(p.email)}" data-on="${p.full?1:0}">${p.full?"Revoke":"Full data"}</button>
+          <button class="sm" data-repair="${esc(p.email)}" ${haveKey()?"":"disabled title='needs the admin key'"}>Repair</button>
+          ${p.full ? '<span class="tag full">FULL</span>' : ""}
+        </div></td></tr>`;
+    }).join("") : '<tr><td colspan="4" class="id">Nobody matches.</td></tr>';
 
-    $("rows").innerHTML = rows.length ? rows.map(p => `
-      <tr class="${p.missing.length?"stuck":""}">
-        <td><div class="who">${esc(p.name||"-")}</div><div class="em">${esc(p.email)}</div>
-            ${p.verified_at ? "" : '<div class="em" style="color:var(--bad)">not verified</div>'}</td>
-        <td>${SERVICES.map(s => `<span class="pill ${p.missing.includes(s)?"p-no":"p-ok"}">${s}</span>`).join("")}</td>
-        <td class="em">${p.spend ? `$${p.spend.toFixed(2)} (${p.calls})` : "-"}</td>
-        <td>
-          <button class="sm" data-code="${esc(p.email)}">Get code</button>
-          <button class="sm" data-budget="${esc(p.email)}">Raise budget</button>
-          <button class="sm" data-full="${esc(p.email)}" data-on="${p.full ? 1 : 0}">${p.full ? "Revoke full data" : "Grant full data"}</button>
-          <button class="sm" data-repair="${esc(p.email)}" ${haveAdminKey() ? "" : "disabled"}>Repair setup</button>
-          ${p.full ? '<span class="chip-full">full warehouse</span>' : ""}
-        </td>
-      </tr>`).join("") : '<tr><td colspan="4" class="msg">Nobody matches.</td></tr>';
-
-    wire("code", async b => {
-      const r = await admin("resend_code", { email: b.dataset.code });
-      say(r.debug_code ? `Code for ${b.dataset.code}: ${r.debug_code}` : `Code sent to ${b.dataset.code}.`, "ok");
-    });
-    wire("budget", async b => {
-      const v = prompt(`New model budget in dollars for ${b.dataset.budget}:`, "40");
-      if (!v) return;
-      const r = await admin("set_budget", { email: b.dataset.budget, budget_usd: Number(v) });
-      say(`Budget for ${r.email} is now $${r.budget_usd}. Applies on their next call.`, "ok");
-    });
-    wire("full", async b => {
-      const on = b.dataset.on === "1";
-      if (!on && !confirm(
-        `Give ${b.dataset.full} arbitrary read access to the whole warehouse?\n\n` +
-        `This bypasses the published slices entirely - all 850 tables, including columns the ` +
-        `slices deliberately hide. Only do this when a slice genuinely can't answer their ` +
-        `question. Every query they run gets logged.`)) return;
-      const r = await admin("set_full_access", { email: b.dataset.full, enabled: !on });
-      say(r.full_data_access
-        ? `${r.email} now has full warehouse access. They must restart Claude Code to see the tool.`
-        : `Full access revoked for ${r.email}.`, r.full_data_access ? "warn" : "ok");
-      load();
-    });
-    wire("repair", async b => {
-      say(`Repairing ${b.dataset.repair}… this can take a minute.`);
-      const r = await api("/api/provision", { method:"POST", body: JSON.stringify({ email: b.dataset.repair }) });
-      const pending = (r.pending || []).join(", ");
-      say(pending ? `${b.dataset.repair}: still pending ${pending}.` : `${b.dataset.repair} is fully provisioned.`,
-          pending ? "warn" : "ok");
-      load();
-    });
-  }
-
-  function wire(attr, fn) {
-    document.querySelectorAll(`button[data-${attr}]`).forEach(b => b.onclick = async () => {
-      b.disabled = true;
-      try { await fn(b); } catch (e) { say(e.message, "err"); } finally { b.disabled = false; }
-    });
+    bind("code",   b => act.code(b.dataset.code));
+    bind("budget", b => act.budget(b.dataset.budget));
+    bind("full",   b => act.full(b.dataset.full, b.dataset.on === "1"));
+    bind("repair", b => act.repair(b.dataset.repair));
   }
 
   // --- slices ----------------------------------------------------------------
   async function loadSlices() {
-    if (!session && !haveAdminKey()) return;
+    if (!session && !haveKey()) return;
     try {
       const d = await api("/api/slices");
-      slices = d.slices || d || [];
+      const slices = d.slices || d || [];
+      $("slice-hint").textContent = `${slices.length} published`;
       $("slice-rows").innerHTML = slices.length ? slices.map(s => `
-        <tr><td><code>${esc(s.card_id)}</code></td><td>${esc(s.name)}</td>
-            <td class="em">${esc(s.note || "-")}</td>
+        <tr><td class="id">${esc(s.card_id)}</td><td style="font-weight:600">${esc(s.name)}</td>
+            <td class="id">${esc(s.note || "—")}</td>
             <td><button class="sm" data-off="${esc(s.card_id)}">Withdraw</button></td></tr>`).join("")
-        : '<tr><td colspan="4" class="msg">Nothing published.</td></tr>';
-      wire("off", async b => {
+        : '<tr><td colspan="4" class="id">Nothing published.</td></tr>';
+      bind("off", async b => {
         if (!confirm(`Withdraw card ${b.dataset.off}? Participants lose it on their next call.`)) return;
         await api(`/api/slices?card_id=${encodeURIComponent(b.dataset.off)}`, { method:"DELETE" });
         say(`Card ${b.dataset.off} withdrawn.`, "ok");
@@ -515,45 +546,43 @@ having count(*) = 1 order by random() limit 10</pre>
       });
     } catch (e) { say(e.message, "err"); }
   }
+  $("d-slices").addEventListener("toggle", () => { if ($("d-slices").open) loadSlices(); });
 
   $("sc-add").onclick = async () => {
     const card_id = $("sc-id").value.trim();
-    if (!card_id) return say("Card id?", "err");
+    if (!card_id) return say("Which card id?", "err");
     try {
       const r = await api("/api/slices", { method:"POST", body: JSON.stringify({ card_id, note: $("sc-note").value.trim() }) });
-      say(`Published "${r.metabase_name}" as card ${card_id}. Live on everyone's next list_datasets.`, "ok");
+      say(`Published ${r.metabase_name} as card ${card_id}. Live on everyone's next list_datasets.`, "ok");
       $("sc-id").value = ""; $("sc-note").value = "";
       loadSlices();
     } catch (e) { say(e.message, "err"); }
   };
 
-  // --- google callbacks ------------------------------------------------------
+  // --- google ----------------------------------------------------------------
   $("gc-load").onclick = async () => {
-    if (!haveAdminKey()) return say("This one needs the shared admin key.", "err");
+    if (!haveKey()) return say("This one needs the shared admin key.", "err");
     try {
+      // The endpoint probes Google live rather than trusting the stored flag,
+      // so `unregistered` is the real work list.
       const d = await api("/api/google-callbacks");
-      // The endpoint probes Google live rather than trusting the stored flag, so
-      // unregistered is the real work list; paste_block is every URI the client
-      // should end up holding.
       $("gc-list").value = d.unregistered_count
         ? d.unregistered.map(u => u.redirect_uri).join("\n")
         : (d.paste_block || "Nothing pending.");
       $("gc-open").href = d.console_url || "#";
       $("gc-open").hidden = !d.console_url;
+      $("gc-hint").textContent = d.unregistered_count ? `${d.unregistered_count} pending` : "all registered";
+      $("gc-hint").style.color = d.unregistered_count ? "var(--warn)" : "";
       say(d.unregistered_count
-        ? `${d.unregistered_count} of ${d.total} not registered yet: ${d.unregistered.map(u => u.email).join(", ")}`
-        : `All ${d.total} redirect URIs are registered.`,
-        d.unregistered_count ? "warn" : "ok");
-      badge("google", d.unregistered_count || 0);
+        ? `${d.unregistered_count} of ${d.total} not registered: ${d.unregistered.map(u => u.email).join(", ")}`
+        : `All ${d.total} redirect URIs are registered.`, d.unregistered_count ? "warn" : "ok");
     } catch (e) { say(e.message, "err"); }
   };
-  $("gc-copy").onclick = () => {
-    $("gc-list").select(); document.execCommand("copy"); say("Copied.", "ok");
-  };
+  $("gc-copy").onclick = () => { $("gc-list").select(); document.execCommand("copy"); say("Copied.", "ok"); };
   $("gc-done").onclick = async () => {
-    if (!haveAdminKey()) return say("This one needs the shared admin key.", "err");
+    if (!haveKey()) return say("This one needs the shared admin key.", "err");
     if (!confirm("Mark every pending redirect URI as registered in the Google console?")) return;
-    try { await api("/api/google-callbacks", { method:"POST", body:"{}" }); say("Marked registered.", "ok"); }
+    try { await api("/api/google-callbacks", { method:"POST", body:"{}" }); say("Marked registered.", "ok"); $("gc-load").click(); }
     catch (e) { say(e.message, "err"); }
   };
 
@@ -583,21 +612,27 @@ having count(*) = 1 order by random() limit 10</pre>
   };
   function showSignedIn() {
     $("login").hidden = true; $("keybar").hidden = true; $("signedin").hidden = false;
-    $("whoami").textContent = sessionStorage.getItem("iw_who") || "admin key";
-    $("mode").textContent = haveAdminKey() ? "· admin key, everything enabled" : "· email sign-in, repair and Google need the key";
+    const who = sessionStorage.getItem("iw_who");
+    $("whoami").textContent = haveKey()
+      ? "admin key · every action available"
+      : `${who} · Repair and Google need the admin key`;
   }
   $("signout").onclick = () => { sessionStorage.clear(); location.reload(); };
   $("refresh").onclick = () => load();
-  $("usekey").onclick = () => { $("login").hidden = true; $("keybar").hidden = false; };
+  $("usekey").onclick = () => { $("login").hidden = true; $("keybar").hidden = false; $("key").focus(); };
   $("useotp").onclick = () => { $("keybar").hidden = true; $("login").hidden = false; };
   $("go").onclick = () => { showSignedIn(); load(); };
   $("only").onchange = render;
   $("key").onkeydown = e => { if (e.key === "Enter") { showSignedIn(); load(); } };
   $("code").onkeydown = e => { if (e.key === "Enter") $("verify").click(); };
+  $("email").onkeydown = e => { if (e.key === "Enter") $("send").click(); };
   document.querySelectorAll("th[data-k]").forEach(th => th.onclick = () => {
-    const k = th.dataset.k; desc = sortKey===k ? !desc : true; sortKey = k; render();
+    const k = th.dataset.k; desc = sortKey === k ? !desc : true; sortKey = k; render();
   });
-  setInterval(() => { $("clock").textContent = new Date().toLocaleTimeString(); }, 1000);
+
+  setInterval(() => {
+    $("clock").textContent = new Date().toLocaleTimeString([], { hour12:false });
+  }, 1000);
   if (session) { showSignedIn(); load(); }
   else {
     const saved = sessionStorage.getItem("iw_admin_key");
