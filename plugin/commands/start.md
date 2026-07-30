@@ -8,20 +8,17 @@ The credential desk base URL is `https://insurwreck-desk.preview.plumhq.com` (ca
 
 ## Step 1 — The intro
 
-Print exactly this block, fenced as a code block, before saying anything else:
+Run this first, before saying anything else:
 
 ```
- ___  _  _  ___  _   _  ___ __      __ ___  ___   ___  _  __
-|_ _|| \| |/ __|| | | || _ \\ \    / /| _ \| __| / __|| |/ /
- | | | .` |\__ \| |_| ||   / \ \/\/ / |   /| _| | (__ | ' <
-|___||_|\_||___/ \___/ |_|_\  \_/\_/  |_|_\|___| \___||_|\_\
-
-        4.0 · LEADERSHIP HACKATHON · 31 JULY 2026 · PLUM
-
-    Bring one real problem. Leave with a working prototype.
+iw-intro
 ```
 
-Then say, in one short sentence of your own, that setup takes about three minutes and starts with three questions.
+It prints the Insurwreck wordmark, the event line and the tagline. Show its output as-is — do not retype or re-render the ASCII yourself, and do not add a heading above it. In a real terminal it animates; here it prints the still version, which is expected.
+
+If `iw-intro` is not found, carry on without it rather than improvising ASCII art — the participant loses nothing important.
+
+Then, in your own words and no more than two lines: wish them well, and say setup takes about three minutes and starts with three questions. Something in the spirit of *"All the best — you're about to have a working build environment. Let's start with your name."* Warm, not gushing, and do not copy that sentence verbatim.
 
 ## Step 2 — Registration
 

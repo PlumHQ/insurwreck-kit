@@ -610,4 +610,10 @@ if [ ! -t 0 ]; then
 fi
 
 cd "$PROJECT_DIR"
+# The one place we own a real TTY, so the intro can actually animate. Never
+# let a cosmetic script block the handover.
+if command -v iw-intro >/dev/null 2>&1; then
+  iw-intro || true
+fi
+
 exec claude --permission-mode auto
