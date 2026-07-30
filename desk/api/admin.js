@@ -29,6 +29,7 @@ async function health() {
     ["anthropic key set", "ANTHROPIC_API_KEY"],
     ["metabase key set", "METABASE_API_KEY"],
     ["agentmail key set", "AGENTMAIL_API_KEY"],
+    ["kula key set", "KULA_API_KEY"],
     ["n8n token set", "N8N_TOKEN"],
     ["resend key set", "RESEND_API_KEY"],
     ["vercel personal token set", "VERCEL_USER_TOKEN"],
