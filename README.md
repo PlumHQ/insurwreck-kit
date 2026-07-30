@@ -4,6 +4,8 @@ The Insurwreck 4.0 build kit: a Claude Code plugin that onboards Leadership Hack
 
 Private during the test phase; goes public before the event. **This repo must never contain secrets** — all master keys live in the desk's Vercel environment.
 
+> **Contributing?** Read [AGENTS.md](AGENTS.md) first. Two rules bite immediately: the desk deploys on push to `main` (never `vercel deploy`), and `git pull --rebase` before every push because several people ship here hourly.
+
 ## For participants
 
 Inside Claude Code:
@@ -92,7 +94,9 @@ Test the plugin from your local checkout without pushing:
 
 Edit command files, then `/insurwreck:update` (or `/plugin marketplace update insurwreck-kit` + reinstall) and restart the session to pick up command changes. `/insurwreck:uninstall` removes everything for a clean retry.
 
-Desk deploys from `desk/`: `vercel deploy --prod`. Environment variables are documented in `desk/.env.example` — the credential store (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`), mail (`RESEND_API_KEY`, `RESEND_FROM`), minting (`VERCEL_API_TOKEN`, `VERCEL_TEAM_ID`, `VERCEL_TEAM_SLUG`, `VERCEL_USER_TOKEN`, `SUPABASE_MGMT_TOKEN`, `SUPABASE_ORG_ID`, `SUPABASE_REGION`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_PROJECT_ID`), and access control (`ADMIN_KEY`, `ALLOWED_DOMAIN`, `ALLOWED_EMAILS`).
+**The desk deploys on push to `main` — never run `vercel deploy`.** The Vercel project is git-connected (`PlumHQ/insurwreck-kit` → `main` → Root Directory `desk`), so `git pull --rebase && git push` is the deploy. A manual deploy uploads your local tree over everyone else's work and silently removes endpoints you don't have locally; it caused a brief production outage on 2026-07-30. Check what shipped with `vercel ls insurwreck-desk --scope plum`. Full rules for contributors are in [AGENTS.md](AGENTS.md).
+
+Environment variables are documented in `desk/.env.example` — the credential store (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`), mail (`RESEND_API_KEY`, `RESEND_FROM`), minting (`VERCEL_API_TOKEN`, `VERCEL_TEAM_ID`, `VERCEL_TEAM_SLUG`, `VERCEL_USER_TOKEN`, `SUPABASE_MGMT_TOKEN`, `SUPABASE_ORG_ID`, `SUPABASE_REGION`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_PROJECT_ID`), and access control (`ADMIN_KEY`, `ALLOWED_DOMAIN`, `ALLOWED_EMAILS`).
 
 ## Security posture
 
