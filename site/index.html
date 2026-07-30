@@ -4,17 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#ffffff" />
+    <meta name="robots" content="noindex" />
     <meta
       name="description"
-      content="Prepare for Plum's 2026 Leadership Hackathon: bring one real problem and leave with a working AI-assisted workflow."
+      content="Insurwreck 4.0 orientation: set up your build environment, meet the harness, and see what to ask for."
     />
-    <meta property="og:title" content="Leadership Hackathon · Insurwreck 4.0" />
-    <meta
-      property="og:description"
-      content="Bring one real problem. Leave with a working workflow."
-    />
-    <meta property="og:type" content="website" />
-    <title>Leadership Hackathon · Insurwreck 4.0</title>
+    <title>Orientation · Insurwreck 4.0</title>
     <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -24,399 +19,471 @@
     />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="auth.css" />
+    <link rel="stylesheet" href="deck.css" />
     <script src="auth.js" defer></script>
-    <script src="script.js" defer></script>
+    <script src="deck.js" defer></script>
   </head>
   <body>
     <svg class="svg-sprite" aria-hidden="true">
-      <symbol id="icon-arrow" viewBox="0 0 24 24">
-        <path d="M5 12h14M14 7l5 5-5 5" />
-      </symbol>
-      <symbol id="icon-spark" viewBox="0 0 24 24">
-        <path d="M12 3l1.3 4.2a5 5 0 0 0 3.4 3.4L21 12l-4.3 1.4a5 5 0 0 0-3.4 3.4L12 21l-1.3-4.2a5 5 0 0 0-3.4-3.4L3 12l4.3-1.4a5 5 0 0 0 3.4-3.4L12 3Z" />
-      </symbol>
-      <symbol id="icon-route" viewBox="0 0 24 24">
-        <circle cx="5" cy="6" r="2" />
-        <circle cx="19" cy="18" r="2" />
-        <path d="M7 6h4a3 3 0 0 1 3 3v6a3 3 0 0 0 3 3" />
-      </symbol>
-      <symbol id="icon-user-check" viewBox="0 0 24 24">
-        <circle cx="9" cy="8" r="3" />
-        <path d="M3.5 19c.6-3.2 2.4-5 5.5-5s4.9 1.8 5.5 5M15.5 10.5l2 2 3.5-4" />
-      </symbol>
-      <symbol id="icon-box" viewBox="0 0 24 24">
-        <path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z" />
-        <path d="m4 7.5 8 4.5 8-4.5M12 12v9" />
-      </symbol>
-      <symbol id="icon-calendar" viewBox="0 0 24 24">
-        <rect x="3.5" y="5" width="17" height="15" rx="2" />
-        <path d="M7 3v4M17 3v4M3.5 10h17" />
-      </symbol>
-      <symbol id="icon-loop" viewBox="0 0 24 24">
-        <path d="M7 7h9.5a4.5 4.5 0 0 1 0 9H8" />
-        <path d="m10 12-4 4 4 4M17 3l3 4-3 4" />
-      </symbol>
-      <symbol id="icon-clock" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="8.5" />
-        <path d="M12 7v5l3.5 2" />
-      </symbol>
-      <symbol id="icon-shield" viewBox="0 0 24 24">
-        <path d="M12 3.5 19 6v5.5c0 4.4-2.6 7.6-7 9-4.4-1.4-7-4.6-7-9V6l7-2.5Z" />
-        <path d="m8.5 12 2.2 2.2 4.8-5" />
-      </symbol>
+      <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M5 12h14M14 7l5 5-5 5" /></symbol>
+      <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12.5 4.2 4L19 7" /></symbol>
       <symbol id="icon-copy" viewBox="0 0 24 24">
         <rect x="8" y="8" width="11" height="12" rx="2" />
         <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h2" />
       </symbol>
-      <symbol id="icon-check" viewBox="0 0 24 24">
-        <path d="m5 12.5 4.2 4L19 7" />
+      <symbol id="icon-terminal" viewBox="0 0 24 24">
+        <rect x="3" y="4.5" width="18" height="15" rx="2" />
+        <path d="m7 9.5 3 2.5-3 2.5M12.5 15H17" />
       </symbol>
+      <symbol id="icon-spark" viewBox="0 0 24 24"><path d="M12 3l1.3 4.2a5 5 0 0 0 3.4 3.4L21 12l-4.3 1.4a5 5 0 0 0-3.4 3.4L12 21l-1.3-4.2a5 5 0 0 0-3.4-3.4L3 12l4.3-1.4a5 5 0 0 0 3.4-3.4L12 3Z" /></symbol>
+      <symbol id="icon-box" viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z" /><path d="m4 7.5 8 4.5 8-4.5M12 12v9" /></symbol>
+      <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 3.5 19 6v5.5c0 4.4-2.6 7.6-7 9-4.4-1.4-7-4.6-7-9V6l7-2.5Z" /><path d="m8.5 12 2.2 2.2 4.8-5" /></symbol>
+      <symbol id="icon-loop" viewBox="0 0 24 24"><path d="M7 7h9.5a4.5 4.5 0 0 1 0 9H8" /><path d="m10 12-4 4 4 4M17 3l3 4-3 4" /></symbol>
+      <symbol id="icon-user-check" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3" /><path d="M3.5 19c.6-3.2 2.4-5 5.5-5s4.9 1.8 5.5 5M15.5 10.5l2 2 3.5-4" /></symbol>
+      <symbol id="icon-restart" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9" /><path d="M20 4v4h-4" /></symbol>
+      <symbol id="icon-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3.5 7.5 8.5 5.5 8.5-5.5" /></symbol>
+      <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 7v5l3.5 2" /></symbol>
     </svg>
 
     <header class="site-nav">
       <div class="wrap nav-inner">
-        <a class="brand" href="#top" aria-label="Insurwreck 4.0 home">
+        <a class="brand" href="/" aria-label="Insurwreck 4.0 home">
           <img class="brand-logo" src="assets/plum-logo.svg" alt="Plum" />
           <span class="brand-divider" aria-hidden="true"></span>
-          <span class="brand-event">Insurwreck 4.0</span>
+          <span class="brand-event">Orientation</span>
         </a>
-        <nav class="nav-links" aria-label="Page navigation">
-          <a href="#build-kit">Build kit</a>
-          <a href="#ideas">Find an idea</a>
-          <a href="#prepare">Prepare</a>
+        <nav class="nav-links" aria-label="Page sections">
+          <a href="#setup">Set up</a>
+          <a href="#built">What you get</a>
+          <a href="#harness">The harness</a>
+          <a href="#examples">Examples</a>
+          <a href="/landing">Event page</a>
         </nav>
         <span data-auth-slot></span>
-        <a class="date-pill" href="#prepare">
-          <svg aria-hidden="true"><use href="#icon-calendar"></use></svg>
-          31 Jul
-        </a>
       </div>
+      <div class="read-progress"><span data-progress></span></div>
     </header>
 
     <main id="top">
-      <section class="hero wrap">
-        <div class="hero-copy">
-          <p class="eyebrow">Insurwreck 4.0 · 31 July 2026</p>
-          <h1>Leadership<br />Hackathon</h1>
-          <p class="hero-promise">Bring one real problem. Leave with a working prototype.</p>
-          <p class="hero-lede">
-            This is not a day of talks or watching someone else demo AI. Each of us will take a
-            recurring problem we understand, build around it, test it, and run it end to end.
-          </p>
-          <div class="hero-actions">
-            <a class="button button-primary" href="#ideas">
-              Start with your ideas
-              <svg aria-hidden="true"><use href="#icon-arrow"></use></svg>
-            </a>
-            <a class="button button-secondary" href="#build-kit">See your build kit</a>
-          </div>
-          <p class="hero-note">
-            No coding required. No fully formed solution required. You remain the builder and owner.
-          </p>
-        </div>
-
-        <div class="leadership-card" aria-label="Leadership Hackathon: leaders go first, 31 July 2026">
-          <div class="leadership-card-top">
-            <span>Plum leadership</span>
-            <span>Insurwreck 4.0</span>
-          </div>
-          <div class="leadership-card-mark" aria-hidden="true">
-            <span>LEADERS</span>
-            <span>GO FIRST</span>
-          </div>
-          <div class="leadership-card-bottom">
-            <div><strong>31</strong><span>July<br />2026</span></div>
-            <p>One day to turn a problem you know into something that works.</p>
-          </div>
+      <!-- hero ------------------------------------------------------------->
+      <section class="wrap orient-hero">
+        <p class="eyebrow">Insurwreck 4.0 · Orientation · 31 July 2026</p>
+        <h1>Let's get your<br />hackathon running.</h1>
+        <p class="hero-promise">By the end of this page you have a working build environment.</p>
+        <p class="hero-lede">
+          Your own hosting, your own database, a real inbox that sends and receives, model access, and
+          read-only Plum data. All wired up, all verified. Follow along and tick each step as you go —
+          we move when everyone's ready.
+        </p>
+        <div class="hero-facts">
+          <div><svg aria-hidden="true"><use href="#icon-clock"></use></svg><div><strong>~20 minutes</strong><span>Most of it waiting</span></div></div>
+          <div><svg aria-hidden="true"><use href="#icon-terminal"></use></svg><div><strong>One command</strong><span>No config, no keys to paste</span></div></div>
         </div>
       </section>
 
-      <section class="stat-strip" aria-label="Event details">
-        <div class="wrap stat-grid">
-          <div class="stat-cell">
-            <svg aria-hidden="true"><use href="#icon-calendar"></use></svg>
-            <div><strong>31 July 2026</strong><span>Leadership Hackathon</span></div>
-          </div>
-          <div class="stat-cell">
-            <svg aria-hidden="true"><use href="#icon-route"></use></svg>
-            <div><strong>One working prototype</strong><span>Running end to end</span></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section intro-section">
+      <!-- how it works ----------------------------------------------------->
+      <section class="section orient-section">
         <div class="wrap statement-grid">
           <div>
-            <p class="eyebrow">What we are building</p>
-            <h2>A working system,<br />not an AI demo.</h2>
+            <p class="eyebrow">How this works</p>
+            <h2>Three stages.<br />Nobody left behind.</h2>
           </div>
           <div class="statement-copy">
             <p>
-              You will learn by building a prototype that completes real work. It can be a personal
-              workflow, an application, or a multi-step system. Complexity does not win; usefulness does.
+              We stop at each checkpoint and confirm out loud. If something's broken, say so at the
+              checkpoint — not at the end, when you've lost twenty minutes.
             </p>
             <div class="principle-list">
-              <div><span>01</span><p>Choose a recurring problem you understand deeply.</p></div>
-              <div><span>02</span><p>Use the smallest combination of tools that can solve it.</p></div>
-              <div><span>03</span><p>Show a live run, its failure modes, and the next owner.</p></div>
+              <div><span>01</span><p><strong>Set up.</strong> One command installs everything. Five steps, each with a tick.</p></div>
+              <div><span>02</span><p><strong>Meet the harness.</strong> What got built for you, and what you can now just ask for.</p></div>
+              <div><span>03</span><p><strong>Try one thing.</strong> Point it at a real problem and watch something get made.</p></div>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="section build-kit-section" id="build-kit">
+      <!-- before you start ------------------------------------------------->
+      <section class="section orient-section mist">
         <div class="wrap">
           <div class="section-heading">
-            <p class="eyebrow">Your build kit</p>
-            <h2>The setup is handled.<br />You focus on the problem.</h2>
+            <p class="eyebrow">Before you start</p>
+            <h2>Two things to check.</h2>
             <p>
-              You will not need every tool. We will help you choose a workflow-first or code-first
-              path and have the environment ready before the day.
+              You don't need to know git, the terminal, or what an environment variable is. You will not
+              be asked to copy a single password.
+            </p>
+          </div>
+          <div class="pair-grid">
+            <article class="panel">
+              <span class="panel-icon"><svg aria-hidden="true"><use href="#icon-terminal"></use></svg></span>
+              <h3>On a Mac</h3>
+              <p>You're ready. Nothing to install first. We'll open Terminal in a moment.</p>
+            </article>
+            <article class="panel panel-signal">
+              <span class="panel-icon"><svg aria-hidden="true"><use href="#icon-shield"></use></svg></span>
+              <h3>On Windows — do this first</h3>
+              <p>
+                You need WSL, and it needs a restart. Open PowerShell as administrator, run the command
+                below, restart your laptop, then open <strong>Ubuntu</strong> from the Start menu and
+                carry on there.
+              </p>
+              <div class="term term-inline">
+                <div class="term-bar"><span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="term-title">PowerShell (Administrator)</span></div>
+                <pre><span class="t-prompt">PS&gt;</span> wsl --install</pre>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- setup ------------------------------------------------------------>
+      <section class="section orient-section" id="setup">
+        <div class="wrap">
+          <div class="section-heading">
+            <p class="eyebrow">Stage one · Set up</p>
+            <h2>Five steps.<br />Tick each one.</h2>
+            <p>
+              Your ticks are saved on this device, so you can see your own progress while we go through
+              it together.
             </p>
           </div>
 
-          <div class="stack-map" aria-label="Hackathon technology stack">
-            <div class="stack-row">
-              <div class="stack-role"><span>Build</span><small>Your AI building partners</small></div>
-              <div class="tool-pair">
-                <article class="tool-card featured">
-                  <span class="tool-logo-wrap"><img class="tool-logo" src="assets/logo-hermes.svg" alt="" /></span>
-                  <div><strong>Hermes</strong><small>GPT-powered agent workspace</small></div>
-                </article>
-                <article class="tool-card">
-                  <span class="tool-logo-wrap"><img class="tool-logo" src="assets/logo-claude.svg" alt="" /></span>
-                  <div><strong>Claude Code</strong><small>Code-native building agent</small></div>
-                </article>
+          <ol class="steps" data-checklist="orientation">
+            <!-- 1 -->
+            <li class="step">
+              <div class="step-head"><span class="step-num">01</span><h3>Paste one line</h3></div>
+              <div class="step-body">
+                <p>
+                  On a Mac press <kbd>⌘</kbd><kbd>Space</kbd>, type <em>Terminal</em>, hit enter. Then
+                  paste this and press enter.
+                </p>
+                <div class="term">
+                  <div class="term-bar">
+                    <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                    <span class="term-title">Terminal</span>
+                    <button class="term-copy" type="button" data-copy="cmd-install">
+                      <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+                    </button>
+                  </div>
+                  <pre><span class="t-prompt">$</span> <span id="cmd-install">curl -fsSL https://insurwreck-desk.preview.plumhq.com/go | bash</span>
+
+<span class="t-ok">✓</span> Ghostty installed
+<span class="t-ok">✓</span> Claude Code installed
+<span class="t-ok">✓</span> node and Salesforce CLI ready
+<span class="t-ok">✓</span> Insurwreck toolkit installed
+<span class="t-ok">✓</span> Project folder at <span class="t-dim">~/insurwreck</span>
+</pre>
+                </div>
+                <p class="step-note">
+                  Three to five minutes, with a tick per step. If it asks for your Mac password, that's
+                  the installer needing permission to install software — type it and carry on. Safe to
+                  run twice; it skips whatever is already done.
+                </p>
+                <label class="gate"><input type="checkbox" value="install" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>My install finished and printed a command to run next</span></label>
               </div>
-            </div>
-            <div class="stack-spine" aria-hidden="true"><span></span></div>
-            <div class="stack-row">
-              <div class="stack-role"><span>Orchestrate</span><small>Connect steps and approvals</small></div>
-              <div class="tool-pair single">
-                <article class="tool-card">
-                  <span class="tool-logo-wrap"><img class="tool-logo" src="assets/logo-n8n.svg" alt="" /></span>
-                  <div><strong>n8n</strong><small>Triggers, steps and approvals</small></div>
-                </article>
+            </li>
+
+            <!-- 2 -->
+            <li class="step">
+              <div class="step-head"><span class="step-num">02</span><h3>Tell it who you are</h3></div>
+              <div class="step-body">
+                <p>
+                  The installer ends by printing a line to paste, finishing in
+                  <code>claude --permission-mode auto</code>. Paste that. When the agent starts, type:
+                </p>
+                <div class="term">
+                  <div class="term-bar">
+                    <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                    <span class="term-title">Claude Code</span>
+                    <button class="term-copy" type="button" data-copy="cmd-start">
+                      <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+                    </button>
+                  </div>
+                  <pre><span class="t-prompt">&gt;</span> <span id="cmd-start">/insurwreck:start</span>
+
+<span class="t-plum">?</span> Your name   <span class="t-dim">→</span>
+<span class="t-plum">?</span> Work email  <span class="t-dim">→ your @plumhq.com address</span>
+<span class="t-plum">?</span> Idea brief  <span class="t-dim">→ two sentences are enough</span>
+</pre>
+                </div>
+                <p>
+                  Then it emails you a six-digit code from
+                  <code>insurwreck@badge.plumhq.com</code>. Paste it back. Check spam the first time.
+                </p>
+                <p class="step-note">
+                  No idea yet? Say <em>"still exploring"</em>. It's a valid answer and we'll help you
+                  pick one later.
+                </p>
+                <label class="gate"><input type="checkbox" value="verified" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>I entered my code and it was accepted</span></label>
               </div>
-            </div>
-            <div class="stack-spine" aria-hidden="true"><span></span></div>
-            <div class="stack-row">
-              <div class="stack-role"><span>Database</span><small>Store data and state</small></div>
-              <div class="tool-pair single">
-                <article class="tool-card">
-                  <span class="tool-logo-wrap"><img class="tool-logo" src="assets/logo-supabase.svg" alt="" /></span>
-                  <div><strong>Supabase</strong><small>Data, authentication and history</small></div>
-                </article>
+            </li>
+
+            <!-- 3 -->
+            <li class="step">
+              <div class="step-head"><span class="step-num">03</span><h3>Wait while it builds your kit</h3></div>
+              <div class="step-body">
+                <p>
+                  This is the slow bit — a minute or two. It's creating real infrastructure in your name.
+                  Everything in the next section is being provisioned right now.
+                </p>
+                <div class="term">
+                  <div class="term-bar"><span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="term-title">Claude Code</span></div>
+                  <pre><span class="t-dim">Creating your Vercel project…</span>      <span class="t-ok">✓</span>
+<span class="t-dim">Creating your Supabase project…</span>    <span class="t-ok">✓</span>
+<span class="t-dim">Minting model access…</span>              <span class="t-ok">✓</span>
+<span class="t-dim">Opening your agent inbox…</span>          <span class="t-ok">✓</span>
+<span class="t-dim">Wiring Plum data, workflows, login…</span> <span class="t-ok">✓</span>
+
+<span class="t-plum">Ready.</span> Nothing for you to copy or paste.
+</pre>
+                </div>
+                <p class="step-note">
+                  If a service says <em>almost ready</em>, that's normal — <code>/insurwreck:status</code>
+                  finishes it off later. It never asks you for a key.
+                </p>
+                <label class="gate"><input type="checkbox" value="provisioned" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>It finished and showed me a summary of my services</span></label>
               </div>
-            </div>
-            <div class="stack-spine" aria-hidden="true"><span></span></div>
-            <div class="stack-row">
-              <div class="stack-role"><span>Ship</span><small>Preview and deployment</small></div>
-              <div class="tool-pair single">
-                <article class="tool-card">
-                  <span class="tool-logo-wrap"><img class="tool-logo" src="assets/logo-vercel.svg" alt="" /></span>
-                  <div><strong>Vercel</strong><small>Turn the prototype into a live preview</small></div>
-                </article>
+            </li>
+
+            <!-- 4 -->
+            <li class="step step-emphasis">
+              <div class="step-head"><span class="step-num">04</span><h3>Quit it. Start it again.</h3></div>
+              <div class="step-body">
+                <div class="emphasis-box">
+                  <span class="emphasis-icon"><svg aria-hidden="true"><use href="#icon-restart"></use></svg></span>
+                  <div>
+                    <p>Close the window. Reopen your terminal. Paste the same launch line the installer gave you.</p>
+                    <p><strong>This restart is what switches the Plum data on.</strong> Skip it and the data server will look broken — and you'll spend twenty minutes debugging something that isn't wrong.</p>
+                  </div>
+                </div>
+                <p class="step-note">
+                  Why: the data connections read your tokens when the agent starts, and your tokens only
+                  came into existence a minute ago. This is the step people skip.
+                </p>
+                <label class="gate"><input type="checkbox" value="restarted" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>I quit and relaunched</span></label>
               </div>
-            </div>
-            <div class="stack-spine" aria-hidden="true"><span></span></div>
-            <div class="stack-row optional-row">
-              <div class="stack-role"><span>Reach people</span><small>Optional, approval-gated</small></div>
-              <div class="tool-pair triple">
-                <article class="tool-card optional">
-                  <span class="tool-logo-wrap tool-logo-text" aria-hidden="true">#</span>
-                  <div><strong>Slack</strong><small>Team workflows</small></div>
-                </article>
-                <article class="tool-card optional">
-                  <span class="tool-logo-wrap"><img class="tool-logo" src="assets/logo-resend.svg" alt="" /></span>
-                  <div><strong>Resend</strong><small>Email delivery</small></div>
-                </article>
-                <article class="tool-card optional">
-                  <span class="tool-monogram">W</span>
-                  <div><strong>WhatsApp</strong><small>Allowlisted tests</small></div>
-                </article>
+            </li>
+
+            <!-- 5 -->
+            <li class="step">
+              <div class="step-head"><span class="step-num">05</span><h3>Prove it works</h3></div>
+              <div class="step-body">
+                <p>One command checks your whole setup and explains anything wrong in plain English.</p>
+                <div class="term">
+                  <div class="term-bar">
+                    <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                    <span class="term-title">Terminal</span>
+                    <button class="term-copy" type="button" data-copy="cmd-doctor">
+                      <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+                    </button>
+                  </div>
+                  <pre><span class="t-prompt">$</span> <span id="cmd-doctor">iw-doctor</span>
+
+<span class="t-ok">✓</span> Toolkit up to date
+<span class="t-ok">✓</span> Credentials found
+<span class="t-ok">✓</span> Plum data server responding
+<span class="t-ok">✓</span> Workflows connected
+<span class="t-ok">✓</span> Hosting ready
+
+<span class="t-plum">All good.</span> You're set up.
+</pre>
+                </div>
+                <div class="pair-grid tight">
+                  <article class="panel">
+                    <h3>All green?</h3>
+                    <p>You're done. Sit tight while we get everyone else there.</p>
+                  </article>
+                  <article class="panel">
+                    <h3>Something red?</h3>
+                    <p>
+                      Read what it says — it usually names the fix. "Restart" genuinely means restart. If
+                      it says a token was rejected, raise your hand; re-running won't help.
+                    </p>
+                  </article>
+                </div>
+                <label class="gate gate-final"><input type="checkbox" value="doctor" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span><strong>iw-doctor is green.</strong> I'm ready for stage two</span></label>
               </div>
-            </div>
+            </li>
+          </ol>
+
+          <div class="progress-card">
+            <div><p class="mono-label">Your setup</p><h3>Ready is enough.</h3></div>
+            <span class="check-count" aria-live="polite"><b>0</b>/5</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- what you get ----------------------------------------------------->
+      <section class="section orient-section mist" id="built">
+        <div class="wrap">
+          <div class="section-heading">
+            <p class="eyebrow">Stage two · What got built</p>
+            <h2>Eight things,<br />all yours.</h2>
+            <p>
+              You never see or paste a key. They're written into your project for you, scoped to you, and
+              revoked after the event.
+            </p>
+          </div>
+          <div class="kit-grid">
+            <article><span class="mono-label">Hosting</span><strong>Vercel</strong><p>Your own project. Deploys to a public URL you can share with anyone.</p></article>
+            <article><span class="mono-label">Database</span><strong>Supabase</strong><p>Your own Postgres, with keys, a dashboard, and a real connection string.</p></article>
+            <article><span class="mono-label">Model access</span><strong>Anthropic</strong><p>Metered against a per-person budget. No key to manage or lose.</p></article>
+            <article><span class="mono-label">Inbox</span><strong>AgentMail</strong><p>A real address that both sends and receives, so your build can do email.</p></article>
+            <article><span class="mono-label">Email out</span><strong>Resend</strong><p>Sending-only key on the shared hackathon domain.</p></article>
+            <article><span class="mono-label">Workflows</span><strong>n8n</strong><p>Schedules, triggers and multi-step automation.</p></article>
+            <article><span class="mono-label">Login</span><strong>Google</strong><p>Plum-only sign-in for whatever app you build. Two lines of code.</p></article>
+            <article><span class="mono-label">Recruiting</span><strong>Kula</strong><p>Read-only pipeline data, shared across everyone.</p></article>
+          </div>
+        </div>
+      </section>
+
+      <!-- the harness ------------------------------------------------------>
+      <section class="section orient-section" id="harness">
+        <div class="wrap">
+          <div class="section-heading">
+            <p class="eyebrow">The harness · Connections</p>
+            <h2>Five live systems,<br />already attached.</h2>
+          </div>
+          <div class="matrix-wrap">
+            <table class="matrix">
+              <thead><tr><th scope="col">Connection</th><th scope="col">Ask for things like</th><th scope="col">What you can see</th></tr></thead>
+              <tbody>
+                <tr><td>Plum data<small>insurwreck-data</small></td><td>"Show me claims by status" · "what's our NPS trend"</td><td>Ten read-only slices, de-identified</td></tr>
+                <tr><td>Salesforce</td><td>"What's this account's history?"</td><td><strong>Your own</strong> login and permissions — run <code>/insurwreck:connect</code></td></tr>
+                <tr><td>Kula</td><td>"Show the current hiring pipeline"</td><td>Read-only, same view for everyone</td></tr>
+                <tr><td>n8n</td><td>"Run this every morning at 9"</td><td>Shared workspace</td></tr>
+                <tr><td>Remotion</td><td>"Make a short video from this data"</td><td>Documentation only</td></tr>
+              </tbody>
+            </table>
           </div>
           <p class="stack-footnote">
-            Named accounts, central credits, isolated projects, preview environments, and safe test data are part of the setup.
+            Only Salesforce asks you to log in, because it acts as <em>you</em> — you see exactly what
+            you'd see in the Salesforce UI, and nothing more.
+          </p>
+
+          <div class="section-heading spaced">
+            <p class="eyebrow">The harness · Shortcuts</p>
+            <h2>Say what you want.<br />Not how to do it.</h2>
+            <p>You don't need the exact words. Describe the problem; it works out which recipe applies.</p>
+          </div>
+          <div class="matrix-wrap">
+            <table class="matrix">
+              <thead><tr><th scope="col">Say this — or anything like it</th><th scope="col">What happens</th></tr></thead>
+              <tbody>
+                <tr><td>"My site is down" · "it broke" · "blank page"</td><td>Runs a health check and fixes it. Usually your settings never reached hosting — it copies them over and redeploys.</td></tr>
+                <tr><td>"I don't know what to build"</td><td>Asks one question, picks a starting shape, scaffolds it, gets it running on your laptop.</td></tr>
+                <tr><td>"Connect my spreadsheet" · "here's a CSV"</td><td>Parses your file and seeds it into your own database.</td></tr>
+                <tr><td>"How do I use real Plum data"</td><td>Lists what's available, shows the columns, runs a sample query.</td></tr>
+                <tr><td>"Get ready to present"</td><td>Checks your URL loads, saves a backup screenshot, drafts a three-line pitch.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="section-heading spaced">
+            <p class="eyebrow">The harness · Safety nets</p>
+            <h2>Three things you<br />don't have to think about.</h2>
+          </div>
+          <div class="trio-grid">
+            <article class="panel">
+              <span class="panel-icon"><svg aria-hidden="true"><use href="#icon-loop"></use></svg></span>
+              <h3>Undo you never asked for</h3>
+              <p>Every file change is quietly checkpointed. Say <em>"go back to before that change"</em> and it will.</p>
+            </article>
+            <article class="panel">
+              <span class="panel-icon"><svg aria-hidden="true"><use href="#icon-shield"></use></svg></span>
+              <h3>Secrets stay out of code</h3>
+              <p>Paste a real key into a file and it stops you, explains why, and puts it somewhere safe instead.</p>
+            </article>
+            <article class="panel">
+              <span class="panel-icon"><svg aria-hidden="true"><use href="#icon-user-check"></use></svg></span>
+              <h3>No catastrophic commands</h3>
+              <p>Anything that would wipe your folder or throw away work asks what you actually meant.</p>
+            </article>
+          </div>
+          <p class="stack-footnote">
+            None of this blocks you. It's there so one wrong keystroke doesn't end your day.
           </p>
         </div>
       </section>
 
-      <section class="section shape-section">
+      <!-- data ------------------------------------------------------------->
+      <section class="section orient-section mist">
         <div class="wrap">
-          <div class="section-heading centered">
-            <p class="eyebrow">The problem test</p>
-            <h2>A good idea has a clear shape.</h2>
-            <p>Use these six checks before you fall in love with a solution.</p>
+          <div class="section-heading">
+            <p class="eyebrow">Your data</p>
+            <h2>Real Plum data.<br />Handled carefully.</h2>
           </div>
-          <div class="shape-grid">
-            <article><span>01</span><svg aria-hidden="true"><use href="#icon-user-check"></use></svg><h3>A clear user</h3><p>Someone specific needs the result.</p></article>
-            <article><span>02</span><svg aria-hidden="true"><use href="#icon-loop"></use></svg><h3>A recurring trigger</h3><p>The work happens often enough to matter.</p></article>
-            <article><span>03</span><svg aria-hidden="true"><use href="#icon-box"></use></svg><h3>Safe inputs</h3><p>Useful data exists and can be accessed responsibly.</p></article>
-            <article><span>04</span><svg aria-hidden="true"><use href="#icon-spark"></use></svg><h3>A judgment</h3><p>Something is classified, transformed, or decided.</p></article>
-            <article><span>05</span><svg aria-hidden="true"><use href="#icon-arrow"></use></svg><h3>A visible action</h3><p>The output moves real work forward.</p></article>
-            <article><span>06</span><svg aria-hidden="true"><use href="#icon-clock"></use></svg><h3>A measurable change</h3><p>Time, quality, error rate, or experience improves.</p></article>
-          </div>
-        </div>
-      </section>
-
-      <section class="section ideas-section" id="ideas">
-        <div class="wrap">
-          <div class="ideas-header">
-            <div class="section-heading compact">
-              <p class="eyebrow">Where to look</p>
-              <h2>Bring two ideas.<br />We will help you choose one.</h2>
-            </div>
-            <div class="idea-tabs" role="tablist" aria-label="Idea type">
-              <button id="tab-personal" class="idea-tab active" role="tab" aria-selected="true" aria-controls="panel-personal" data-panel="personal">
-                Personal productivity
-              </button>
-              <button id="tab-company" class="idea-tab" role="tab" aria-selected="false" aria-controls="panel-company" data-panel="company">
-                Company workflow
-              </button>
-            </div>
-          </div>
-
-          <div class="idea-panel" id="panel-personal" role="tabpanel" aria-labelledby="tab-personal">
-            <div class="prompt-card">
-              <span class="card-number">01</span>
-              <h3>Look for work that keeps returning to you.</h3>
-              <ul>
-                <li>What requires collecting information from several places?</li>
-                <li>What do you postpone because it takes too much context switching?</li>
-                <li>Which recurring decision uses roughly the same inputs?</li>
-                <li>What could AI prepare while you retain the final call?</li>
-              </ul>
-            </div>
-            <div class="idea-deck" data-idea-deck>
-              <div class="idea-deck-head">
-                <span class="mono-label">Ideas to borrow</span>
-                <div class="idea-deck-controls">
-                  <button type="button" data-deck-prev aria-label="Previous personal productivity idea"><svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
-                  <span data-deck-count aria-live="polite">1 / 8</span>
-                  <button type="button" data-deck-next aria-label="Next personal productivity idea"><svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
-                </div>
-              </div>
-              <div class="idea-carousel" tabindex="0" aria-label="Personal productivity idea examples">
-                <article class="example-card"><p class="mono-label">Weekly leadership brief</p><blockquote>Collect team metrics, open decisions, customer signals, and missed commitments. Prepare a one-page brief that highlights what needs attention next week.</blockquote><div class="example-metric"><span>Success</span><strong>90 min → 15 min</strong></div></article>
-                <article class="example-card"><p class="mono-label">Meeting follow-through</p><blockquote>After every important meeting, turn notes into decisions, owners, deadlines, and follow-up drafts for my approval.</blockquote><div class="example-metric"><span>Success</span><strong>Follow-ups out the same day</strong></div></article>
-                <article class="example-card"><p class="mono-label">Decision inbox</p><blockquote>Group messages that need my judgment, bring in the missing context, and prepare a short recommendation without replying on my behalf.</blockquote><div class="example-metric"><span>Success</span><strong>One focused review queue</strong></div></article>
-                <article class="example-card"><p class="mono-label">Calendar preparation</p><blockquote>Before each external or leadership meeting, assemble the relationship history, latest metrics, unresolved questions, and a suggested agenda.</blockquote><div class="example-metric"><span>Success</span><strong>Prepared before every meeting</strong></div></article>
-                <article class="example-card"><p class="mono-label">Commitment review</p><blockquote>Every Friday, find commitments I made across meetings and messages, show what is open, and prepare the next follow-up.</blockquote><div class="example-metric"><span>Success</span><strong>No important loose ends</strong></div></article>
-                <article class="example-card"><p class="mono-label">Metrics exception brief</p><blockquote>Watch the metrics I care about, explain unusual movement, and bring me only the exceptions that need investigation or a decision.</blockquote><div class="example-metric"><span>Success</span><strong>Attention goes to exceptions</strong></div></article>
-                <article class="example-card"><p class="mono-label">Research digest</p><blockquote>Turn saved articles, reports, and competitor updates into a weekly digest with implications, open questions, and ideas worth testing.</blockquote><div class="example-metric"><span>Success</span><strong>2 hr → 20 min</strong></div></article>
-                <article class="example-card"><p class="mono-label">Recurring communication</p><blockquote>Use current metrics, decisions, and project updates to prepare the first draft of my weekly team note in my usual structure.</blockquote><div class="example-metric"><span>Success</span><strong>First draft ready on time</strong></div></article>
-              </div>
-              <p class="swipe-hint">Swipe the card or use the arrows</p>
-            </div>
-          </div>
-
-          <div class="idea-panel" id="panel-company" role="tabpanel" aria-labelledby="tab-company" hidden>
-            <div class="prompt-card">
-              <span class="card-number">02</span>
-              <h3>Look for work that slows down at a handoff.</h3>
-              <ul>
-                <li>Where is information repeatedly copied between systems?</li>
-                <li>Where do people classify, validate, reconcile, or chase status?</li>
-                <li>Where does quality depend on one person remembering the process?</li>
-                <li>Where could AI recommend an action while a human approves?</li>
-              </ul>
-            </div>
-            <div class="idea-deck" data-idea-deck>
-              <div class="idea-deck-head">
-                <span class="mono-label">Ideas to borrow</span>
-                <div class="idea-deck-controls">
-                  <button type="button" data-deck-prev aria-label="Previous company workflow idea"><svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
-                  <span data-deck-count aria-live="polite">1 / 8</span>
-                  <button type="button" data-deck-next aria-label="Next company workflow idea"><svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
-                </div>
-              </div>
-              <div class="idea-carousel" tabindex="0" aria-label="Company workflow idea examples">
-                <article class="example-card"><p class="mono-label">Escalation routing</p><blockquote>When a high-risk escalation arrives, gather the case context, group the root cause, recommend an owner, and draft a status update for approval.</blockquote><div class="example-metric"><span>Success</span><strong>No high-risk case missed</strong></div></article>
-                <article class="example-card"><p class="mono-label">Claims reliability watch</p><blockquote>Detect stalled or inconsistent claims, explain the likely failure point, and create an investigation queue with the right owner.</blockquote><div class="example-metric"><span>Success</span><strong>Issues found before complaints</strong></div></article>
-                <article class="example-card"><p class="mono-label">Renewal risk briefing</p><blockquote>Combine usage, service, relationship, and commercial signals to identify accounts at risk and prepare the next-best action for review.</blockquote><div class="example-metric"><span>Success</span><strong>Every risk has an owner</strong></div></article>
-                <article class="example-card"><p class="mono-label">Benefits onboarding</p><blockquote>Turn a signed customer handoff into a complete launch plan, missing-information checklist, owner map, and employee communication drafts.</blockquote><div class="example-metric"><span>Success</span><strong>Fewer launch-day surprises</strong></div></article>
-                <article class="example-card"><p class="mono-label">Hiring feedback loop</p><blockquote>Collect interview notes, flag missing evidence, prepare a role-specific summary, and route the final decision to the hiring owner.</blockquote><div class="example-metric"><span>Success</span><strong>Decision within 24 hours</strong></div></article>
-                <article class="example-card"><p class="mono-label">Incident communication</p><blockquote>When an incident begins, assemble verified facts, maintain a timeline, and prepare audience-specific updates with explicit approval gates.</blockquote><div class="example-metric"><span>Success</span><strong>Clear updates without guesswork</strong></div></article>
-                <article class="example-card"><p class="mono-label">Implementation handoff</p><blockquote>Translate sales commitments and customer context into milestones, risks, dependencies, and a kickoff brief the delivery team can use.</blockquote><div class="example-metric"><span>Success</span><strong>No context lost at handoff</strong></div></article>
-                <article class="example-card"><p class="mono-label">Reconciliation exceptions</p><blockquote>Compare records across systems, isolate mismatches, suggest likely causes, and send only unresolved exceptions to an operator.</blockquote><div class="example-metric"><span>Success</span><strong>Humans review exceptions only</strong></div></article>
-              </div>
-              <p class="swipe-hint">Swipe the card or use the arrows</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section prepare-section" id="prepare">
-        <div class="wrap">
-          <div class="prepare-grid">
-            <div class="prepare-copy">
-            <p class="eyebrow">Before the day</p>
-            <h2>Start with the problem,<br />not the tools.</h2>
-            <p>
-              Over the next few days, write down one personal-productivity idea and one company-workflow idea. A rough description is enough.
-            </p>
-            <div class="idea-formula" id="idea-formula">
-              <p class="mono-label">Idea formula</p>
+          <div class="pair-grid">
+            <article class="panel">
+              <h3>What you get</h3>
               <p>
-                Whenever <strong>this happens</strong>, use <strong>these inputs</strong> to prepare
-                <strong>this decision</strong>, take <strong>this action</strong>, and ask a human to
-                approve <strong>this part</strong>. It works if <strong>this metric improves</strong>.
+                Ten read-only slices: claims, covered lives, support tickets, NPS, policy schedules and
+                more. Ask for what you want — you don't need to know table names.
               </p>
-              <button class="copy-button" type="button" data-copy-target="idea-formula">
-                <svg aria-hidden="true"><use href="#icon-copy"></use></svg>
-                <span>Copy the template</span>
-              </button>
-            </div>
-          </div>
-
-            <div class="workflow-stage" aria-label="Example useful workflow: a trigger leads to inputs, AI judgment, human approval, and an action">
-              <div class="workflow-heading">
-                <span class="mono-label">A useful workflow</span>
-                <span class="live-dot"><i></i> one complete run</span>
-              </div>
-              <div class="workflow-rail">
-                <div class="workflow-node node-trigger"><span class="node-index">01</span><svg aria-hidden="true"><use href="#icon-loop"></use></svg><div><strong>Trigger</strong><small>Something happens</small></div></div>
-                <div class="workflow-connector"><span></span></div>
-                <div class="workflow-node"><span class="node-index">02</span><svg aria-hidden="true"><use href="#icon-box"></use></svg><div><strong>Inputs</strong><small>Useful context arrives</small></div></div>
-                <div class="workflow-connector"><span></span></div>
-                <div class="workflow-node node-ai"><span class="node-index">03</span><svg aria-hidden="true"><use href="#icon-spark"></use></svg><div><strong>AI judgment</strong><small>Prepare a decision</small></div></div>
-                <div class="workflow-connector"><span></span></div>
-                <div class="workflow-node node-human"><span class="node-index">04</span><svg aria-hidden="true"><use href="#icon-user-check"></use></svg><div><strong>Human check</strong><small>You stay in control</small></div></div>
-                <div class="workflow-connector"><span></span></div>
-                <div class="workflow-node node-action"><span class="node-index">05</span><svg aria-hidden="true"><use href="#icon-arrow"></use></svg><div><strong>Action</strong><small>Work moves forward</small></div></div>
-              </div>
-              <div class="workflow-caption"><span>Start small</span><span>Measure the change</span></div>
-            </div>
-          </div>
-
-          <div class="checklist-card checklist-card-wide">
-            <div class="checklist-heading">
-              <div><p class="mono-label">Your preparation</p><h3>Ready is enough.</h3></div>
-              <span class="check-count" aria-live="polite"><b>0</b>/6</span>
-            </div>
-            <div class="checklist" data-checklist="leadership-prep">
-              <label><input type="checkbox" value="personal" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>One personal-productivity idea</span></label>
-              <label><input type="checkbox" value="company" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>One company-workflow idea</span></label>
-              <label><input type="checkbox" value="today" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>How the work happens today</span></label>
-              <label><input type="checkbox" value="user" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>Who needs the outcome</span></label>
-              <label><input type="checkbox" value="systems" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>Data and systems involved</span></label>
-              <label><input type="checkbox" value="metric" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>The improvement worth making</span></label>
-            </div>
-            <p class="saved-note">Saved on this device</p>
+              <p class="panel-foot">De-identified: no member names, ages banded, free-text notes stripped out.</p>
+            </article>
+            <article class="panel panel-signal">
+              <h3>Read this once</h3>
+              <p>
+                It is still <strong>confidential company data</strong>. Never screenshot it into Slack.
+                Never put a raw row on a slide.
+              </p>
+              <p class="panel-foot">Aggregate numbers and charts in your demo are fine. Raw records are not.</p>
+            </article>
           </div>
         </div>
       </section>
 
+      <!-- examples --------------------------------------------------------->
+      <section class="section orient-section" id="examples">
+        <div class="wrap">
+          <div class="section-heading">
+            <p class="eyebrow">Stage three · What good looks like</p>
+            <h2>One problem,<br />four sentences.</h2>
+            <p>Notice what you never do: no keys, no hosting setup, no database migration, no cron syntax.</p>
+          </div>
+          <div class="convo">
+            <div class="convo-row you"><span class="mono-label">You</span><p>"Every Monday I chase five teams for status. Build me something that collects it and drafts my summary."</p></div>
+            <div class="convo-row it"><span class="mono-label">It does</span><p>Scaffolds an app, creates a table for submissions, deploys it to your public URL.</p></div>
+            <div class="convo-row you"><span class="mono-label">You</span><p>"Email the five leads a link every Monday at 9, and draft the summary once three of them reply."</p></div>
+            <div class="convo-row it"><span class="mono-label">It does</span><p>Wires the schedule, the inbox, and a draft that waits for your approval before anything sends.</p></div>
+          </div>
+
+          <div class="section-heading spaced">
+            <p class="eyebrow">Showing your work</p>
+            <h2>Two things you'll<br />want tomorrow.</h2>
+          </div>
+          <div class="pair-grid">
+            <article class="panel">
+              <h3><code>iw-deploy</code></h3>
+              <p>Puts your app on a real public URL. Anyone can open it — no login, no Vercel account needed.</p>
+              <p class="panel-foot">Because it's public: nothing with real customer data in what you deploy.</p>
+            </article>
+            <article class="panel">
+              <h3>"Get ready to present"</h3>
+              <p>
+                Checks your URL actually loads, saves a screenshot as a backup in case the site dies
+                mid-pitch, and drafts a three-line pitch: problem → what you built → the wow moment.
+              </p>
+              <p class="panel-foot">Also useful: <code>/insurwreck:status</code> repairs anything unfinished.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- closing ---------------------------------------------------------->
       <section class="closing-section">
         <div class="wrap closing-inner">
-          <p class="eyebrow">What you leave with</p>
-          <h2>A prototype that does real work.<br />And a clear next step.</h2>
+          <p class="eyebrow">Stage three</p>
+          <h2>Bring one real problem.</h2>
           <p>
-            By the end of the day, you should be able to run the system live, show where human judgment remains, and decide whether to improve it, adopt it, or stop.
+            Not a demo. Something that actually costs you time every week. You'll leave with it running,
+            and a decision about whether to keep it.
           </p>
+          <div class="stuck-row">
+            <div><strong><code>iw-doctor</code></strong><span>When something's broken</span></div>
+            <div><strong>Raise your hand</strong><span>When iw-doctor doesn't help</span></div>
+          </div>
           <div class="signoff"><span>AI pod at Plum</span><small>Building alongside you</small></div>
         </div>
       </section>
@@ -425,7 +492,7 @@
     <footer class="site-footer">
       <div class="wrap footer-inner">
         <span>Plum · Insurwreck 4.0</span>
-        <span>Leadership Hackathon · 31 July 2026</span>
+        <span>Orientation · 31 July 2026</span>
       </div>
     </footer>
   </body>
