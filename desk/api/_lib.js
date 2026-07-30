@@ -40,6 +40,23 @@ export function emailAllowed(email) {
   return email.endsWith(`@${domain}`) || extras.includes(email);
 }
 
+// The participant's long-lived `iwk-` token (minted as the `anthropic`
+// credential) -> their email, or null. This is the same token /api/mcp accepts,
+// so INSURWRECK_TOKEN authenticates every participant-facing endpoint and
+// nothing expires mid-hackathon the way a 24 h desk session would.
+export async function participantEmail(req) {
+  const auth = req.headers.authorization || "";
+  const header = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+  const token = header || String(req.headers["x-api-key"] || "").trim();
+  if (!token) return null;
+  const rows = await sb(
+    `credentials?service=eq.anthropic&revoked_at=is.null` +
+      `&payload->>token_hash=eq.${sha256(token)}` +
+      `&select=participant_email&limit=1`
+  );
+  return rows.length ? rows[0].participant_email : null;
+}
+
 export function isAdmin(req) {
   const key = process.env.ADMIN_KEY;
   return Boolean(key) && req.headers["x-admin-key"] === key;

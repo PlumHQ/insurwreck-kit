@@ -384,6 +384,34 @@ export async function mintN8n(email, existing = {}) {
   return finalize(payload, []);
 }
 
+// ----------------------------------------------------------------- kula ---
+
+// Kula authenticates the MCP server with an API key and nothing else - there is
+// no OAuth flow and no email/password login, so unlike Keka this CANNOT be
+// scoped to the individual participant. One organizer-generated key is handed to
+// everyone, exactly like n8n.
+//
+// Read this before switching it on: Kula's own docs classify the Application API
+// key as "Full access", and the MCP server exposes 11 write tools including
+// create_candidate, update_candidate and update_application_stage. So this key
+// lets any participant read the whole recruiting pipeline - real candidate PII -
+// and move real applications between stages. Point KULA_API_KEY at a sandbox or
+// demo workspace, not production, unless an organizer has decided otherwise.
+export async function mintKula(email, existing = {}) {
+  const token = process.env.KULA_API_KEY;
+  if (!token) throw new Error("KULA_API_KEY not set");
+
+  const payload = { ...existing };
+  payload.api_key = token;
+  payload.shared = true;
+  payload.scoped_to_you = false;
+  payload.note =
+    "Shared hackathon Kula key, reachable as the `kula` MCP server in Claude Code. It is NOT scoped to you - " +
+    "everyone sees the same candidates and the write tools change real records. Read freely, and check with an " +
+    "organizer before you create or move anything.";
+  return finalize(payload, []);
+}
+
 function deskBaseUrl() {
   return (
     process.env.DESK_BASE_URL || "https://insurwreck-desk.preview.plumhq.com"

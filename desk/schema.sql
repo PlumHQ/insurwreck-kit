@@ -76,9 +76,31 @@ create table if not exists public.data_slices (
   created_at  timestamptz not null default now()
 );
 
+-- Keka per-user OAuth, behind /api/keka-mcp. The desk holds no tenant-wide
+-- Keka key: each participant authorises their own Keka account, so Keka
+-- enforces their own permissions on every call the MCP server makes.
+create table if not exists public.keka_oauth_states (
+  state text primary key,
+  email text not null,
+  expires_at timestamptz not null,
+  consumed_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.keka_tokens (
+  email text primary key,
+  access_token text not null,
+  refresh_token text,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 alter table public.participants enable row level security;
 alter table public.otp_codes enable row level security;
 alter table public.sessions enable row level security;
 alter table public.credentials enable row level security;
 alter table public.llm_usage enable row level security;
 alter table public.data_slices enable row level security;
+alter table public.keka_oauth_states enable row level security;
+alter table public.keka_tokens enable row level security;

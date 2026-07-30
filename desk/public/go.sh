@@ -4,8 +4,9 @@
 #
 #   curl -fsSL https://insurwreck-desk.preview.plumhq.com/go | bash
 #
-# Installs Ghostty, installs Claude Code, repairs PATH, installs the insurwreck
-# plugin, scaffolds a project folder, and launches you into it.
+# Installs Ghostty, installs Claude Code, repairs PATH, installs node and the
+# Salesforce CLI the bundled MCP servers need, installs the insurwreck plugin,
+# scaffolds a project folder, and launches you into it.
 #
 # Safe to re-run. Every step checks before it acts, so a half-finished run
 # just picks up where it stopped.
@@ -80,8 +81,8 @@ if [ "$PLATFORM" = "wsl" ] && [ "$WITH_GHOSTTY" = "1" ]; then
   GHOSTTY_SKIP_REASON="running under WSL — using your existing terminal"
 fi
 
-TOTAL_STEPS=6
-[ "$WITH_GHOSTTY" = "1" ] && TOTAL_STEPS=7
+TOTAL_STEPS=7
+[ "$WITH_GHOSTTY" = "1" ] && TOTAL_STEPS=8
 
 # ----------------------------------------------------------------- banner ----
 
@@ -297,7 +298,98 @@ else
   Expected it at $LOCAL_BIN/claude — check that the file exists."
 fi
 
-# ---------------------------------------------------------- 5 the plugin ----
+# ------------------------------------------------------ 5 node + mcp deps ----
+# The plugin ships two MCP servers that run as `npx` commands - salesforce and
+# kula - so node has to exist before Claude Code first launches them. Two
+# failure modes this step exists to prevent, both found the same way the git and
+# Ghostty ones were:
+#
+#   1. No node at all. The servers just fail to start and the participant sees
+#      two dead entries with no explanation.
+#   2. Node present but a cold npx cache. @salesforce/mcp is a large download;
+#      fetching it inside the MCP startup window can exceed it, so the server
+#      reports failed on first launch and works on the second. Prewarming makes
+#      the first launch the fast one.
+#
+# Nothing here is fatal. Claude Code, the desk, and the Plum data server all
+# work without Salesforce or Kula, so a failure warns and moves on.
+
+step "Setting up the Salesforce and Kula tools"
+
+install_node_linux() {
+  if have apt-get; then
+    sudo apt-get update -qq >/dev/null 2>&1 \
+      && sudo apt-get install -y -qq nodejs npm >/dev/null 2>&1
+  else
+    return 1
+  fi
+}
+
+# Official prebuilt tarball into ~/.local — same place claude lives, already on
+# PATH from step 4, and needs no sudo or package manager.
+install_node_tarball() {
+  local ver="v22.14.0" plat arch url tmp
+  case "$PLATFORM" in
+    macos) plat="darwin" ;;
+    linux|wsl) plat="linux" ;;
+    *) return 1 ;;
+  esac
+  case "$ARCH" in
+    arm64|aarch64) arch="arm64" ;;
+    x86_64|amd64)  arch="x64" ;;
+    *) return 1 ;;
+  esac
+  url="https://nodejs.org/dist/$ver/node-$ver-$plat-$arch.tar.gz"
+  tmp="$(mktemp -d)"
+  curl -fsSL --max-time 180 "$url" -o "$tmp/node.tar.gz" || { rm -rf "$tmp"; return 1; }
+  mkdir -p "$HOME/.local"
+  tar -xzf "$tmp/node.tar.gz" -C "$tmp" || { rm -rf "$tmp"; return 1; }
+  cp -R "$tmp/node-$ver-$plat-$arch/." "$HOME/.local/" || { rm -rf "$tmp"; return 1; }
+  rm -rf "$tmp"
+  export PATH="$LOCAL_BIN:$PATH"
+  have node
+}
+
+if have node && have npx; then
+  ok "node $(node --version 2>/dev/null)"
+else
+  info "installing node…"
+  if { [ "$PLATFORM" != "macos" ] && install_node_linux; } || install_node_tarball; then
+    ok "node $(node --version 2>/dev/null)"
+  else
+    warn "couldn't install node automatically"
+    info "install the LTS from https://nodejs.org, then run: iw-doctor"
+  fi
+fi
+
+if have npm; then
+  # `sf` is how the Salesforce MCP server gets a session: it reads orgs the CLI
+  # already authorised, and never takes a password itself.
+  if have sf; then
+    skip "salesforce cli already installed"
+  elif npm i -g @salesforce/cli >/dev/null 2>&1; then
+    ok "salesforce cli installed"
+  else
+    warn "salesforce cli didn't install — run: npm i -g @salesforce/cli"
+  fi
+
+  # Populate the npx cache so the first MCP launch doesn't race its own
+  # download. --version exits immediately once the package is fetched.
+  for pkg in "@salesforce/mcp" "@kula-ai/mcp-server"; do
+    if npx -y "$pkg" --version >/dev/null 2>&1; then
+      ok "cached $pkg"
+    else
+      # A non-zero exit here is usually the package rejecting --version, not a
+      # download failure, so this is informational only.
+      skip "$pkg will download on first use"
+    fi
+  done
+else
+  warn "no npm, so the salesforce and kula servers will not start"
+  info "install node from https://nodejs.org, then run: iw-doctor"
+fi
+
+# ---------------------------------------------------------- 6 the plugin ----
 # `claude plugin ...` is the non-interactive path. Doing it here means the
 # participant never types /plugin marketplace add themselves.
 
@@ -370,7 +462,7 @@ EOF
 fi
 rm -f "$plugin_log"
 
-# -------------------------------------------------------- 6 project folder ----
+# -------------------------------------------------------- 7 project folder ----
 
 step "Creating your project folder"
 
@@ -393,7 +485,7 @@ GI
   ok "added a .gitignore that keeps your keys out of git"
 fi
 
-# ------------------------------------------------------------- 7 hand off ----
+# ------------------------------------------------------------- 8 hand off ----
 
 step "Ready"
 

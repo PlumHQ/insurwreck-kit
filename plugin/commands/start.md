@@ -82,9 +82,18 @@ everything already there), and write it back. If the file doesn't exist, create 
 just an `env` object. Never print either token.
 
 - `INSURWRECK_TOKEN` - the bundle's `anthropic.api_key`. Powers the `insurwreck-data`
-  MCP server (read-only Plum data slices).
+  MCP server (read-only Plum data slices) and the `keka` MCP server.
 - `N8N_TOKEN` - the bundle's `n8n.token`, if the n8n service is present. Powers the `n8n`
   MCP server for building workflows. Skip it silently if n8n is still pending.
+- `KULA_API_KEY` - the bundle's `kula.api_key`, if the kula service is present. Powers the
+  `kula` MCP server (recruiting data, read-only - a hook blocks every write tool). Skip it
+  silently if kula is still pending.
+
+After the restart, four of the five MCP servers work with no further action:
+`insurwreck-data`, `n8n`, `kula`, and the tool list for `keka`. Two need the participant to
+log in as themselves, because they act with that person's own permissions - point them at
+`/insurwreck:connect` for Salesforce and `/insurwreck:keka-connect` for Keka. Don't walk
+them through either here; this command is already long enough.
 
 Say plainly: the data they get is a **de-identified snapshot** of Plum data — no member
 names, ages banded, free-text diagnosis and ticket bodies removed. It is still

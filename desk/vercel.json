@@ -9,6 +9,9 @@
     "api/mcp.js": {
       "maxDuration": 300
     },
+    "api/keka-mcp.js": {
+      "maxDuration": 300
+    },
     "api/data/[card].js": {
       "maxDuration": 300
     },
