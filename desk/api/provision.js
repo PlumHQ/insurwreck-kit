@@ -7,19 +7,9 @@ import {
   mintAnthropic,
   mintN8n,
   mintGoogleAuth,
-  mintKula,
 } from "./_minters.js";
 
-const SERVICES = [
-  "vercel",
-  "supabase",
-  "n8n",
-  "resend",
-  "agentmail",
-  "anthropic",
-  "google_auth",
-  "kula",
-];
+const SERVICES = ["vercel", "supabase", "n8n", "resend", "agentmail", "anthropic", "google_auth"];
 
 // Every service has a minter now. One that throws - usually a missing env var -
 // leaves that service pending and the next provision call repairs it.
@@ -33,7 +23,6 @@ const MINTERS = {
   anthropic: mintAnthropic,
   n8n: mintN8n,
   google_auth: mintGoogleAuth,
-  kula: mintKula,
 };
 
 async function sessionEmail(req) {

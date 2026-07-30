@@ -58,6 +58,37 @@ else
   ' "$CREDS" 2>/dev/null || warn "could not read credentials (is the file valid JSON?)"
 fi
 
+# --- the data servers ------------------------------------------------------
+# These fail in three different ways that look identical from the outside:
+# never written, written but this session predates it, and written but
+# rejected. Each has a different fix, so name which one it is.
+if [ -f "$CREDS" ]; then
+  SETTINGS="$HOME/.claude/settings.json"
+  IN_SETTINGS="$(node -e '
+    try { const s = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+          process.stdout.write(s.env && s.env.INSURWRECK_TOKEN ? "yes" : "no"); }
+    catch { process.stdout.write("no"); }
+  ' "$SETTINGS" 2>/dev/null)"
+
+  if [ "$IN_SETTINGS" != "yes" ]; then
+    bad "the Plum data server is not switched on"
+    note "run: iw-connect"
+  elif [ -z "${INSURWRECK_TOKEN:-}" ]; then
+    warn "the Plum data server is configured but this session started before it was"
+    note "quit Claude Code and start it again"
+  else
+    CODE="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
+      -X POST https://insurwreck-desk.preview.plumhq.com/api/mcp \
+      -H "Authorization: Bearer $INSURWRECK_TOKEN" -H "Content-Type: application/json" \
+      -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' 2>/dev/null)"
+    case "$CODE" in
+      200) ok "Plum data server reachable" ;;
+      401) bad "the Plum data server rejected your token"; note "tell an organizer — your credential row may need re-minting" ;;
+      *)   warn "could not reach the Plum data server (HTTP ${CODE:-000})"; note "check your network, then re-run iw-doctor" ;;
+    esac
+  fi
+fi
+
 # --- the classic deploy killer ---------------------------------------------
 printf "\n${B}Checking this project${R}\n\n"
 
