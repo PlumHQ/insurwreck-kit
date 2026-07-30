@@ -181,9 +181,9 @@ const TOOLS = [
   {
     name: "export_dataset",
     description:
-      "Get the FULL dataset - every row, not the 500-row preview - as a file the participant's app can load. " +
-      "Use this whenever they need the whole set rather than a look at it: seeding their Supabase, charts over " +
-      "everything, or any analysis where a sample would mislead.",
+      "Get a dataset as a downloadable file for the participant's app to load, rather than into this conversation. " +
+      "Returns up to 2000 rows - Metabase's ceiling, which we cannot raise. Use it for seeding their Supabase. " +
+      "If a slice is bigger than 2000 rows, an aggregated or tighter-filtered slice is the answer, not this tool.",
     inputSchema: {
       type: "object",
       properties: {
@@ -248,15 +248,18 @@ async function callTool(name, args, email) {
       const card = await mb(`card/${id}`);
       const url = `${deskBase()}/api/data/${id}.${format}`;
       return [
-        `Full export of "${card.name}" is at:`,
+        `Download "${card.name}" from:`,
         `  ${url}`,
         "",
-        "Download it with the participant's own token, then load it into their Supabase:",
+        "Use the participant's own token, then load the file into their Supabase:",
         "",
         `  curl -H "Authorization: Bearer $INSURWRECK_TOKEN" ${url} -o data.${format}`,
         "",
-        "There is no row cap on this route - it returns every row. Don't read the file",
-        "into context; write code that streams it into their database and query it there.",
+        "Capped at 2000 rows by Metabase. The response carries x-insurwreck-row-count,",
+        "and x-insurwreck-truncated when it hit the cap - check it, and if the real",
+        "answer needs more than 2000 rows, ask an organizer for an aggregated slice",
+        "instead of paging. Don't read the file into context: write code that loads it",
+        "into their database and query it there.",
       ].join("\n");
     }
 

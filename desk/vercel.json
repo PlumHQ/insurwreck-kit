@@ -24,7 +24,7 @@
   ],
   "headers": [
     {
-      "source": "/go.sh",
+      "source": "/(go|go.sh)",
       "headers": [
         {
           "key": "content-type",

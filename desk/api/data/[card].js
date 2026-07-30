@@ -1,10 +1,15 @@
 import { sb, sha256 } from "../_lib.js";
 
-// Bulk export. The MCP `run_dataset` tool is capped at 500 rows because its
-// results go into the model's context window - that's a token limit, not an
-// access limit. This route is the other half: the FULL result set of the same
-// allowlisted card, streamed as CSV or JSON, for the participant's app to load
-// into their own Supabase and query without limits.
+// Bulk export, for loading a slice into the participant's own Supabase rather
+// than into the model's context. `run_dataset` caps at 500 rows because tool
+// results consume context; this route returns everything Metabase will give us.
+//
+// That ceiling is 2000 rows, and it is not ours to raise. Metabase's own
+// download endpoints (/query/csv, /query/json, /query/xlsx) are blocked at the
+// reverse proxy in front of stats2 - a deliberate control against bulk
+// warehouse export - so we go through /api/card/:id/query, which returns at most
+// 2000 bare rows, and format the result here. A participant needing more should
+// ask an organizer to publish an aggregated or tighter-filtered slice.
 //
 //   curl -H "Authorization: Bearer $INSURWRECK_TOKEN" \
 //     https://<desk>/api/data/1234.csv -o data.csv
@@ -59,39 +64,45 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: `Dataset ${cardId} isn't published to you.` });
   }
 
-  // Metabase's export endpoints return the full result set, not the UI's
-  // display limit - that's exactly what we want here.
-  const upstream = await fetch(`${MB()}/api/card/${cardId}/query/${format}`, {
+  const upstream = await fetch(`${MB()}/api/card/${cardId}/query`, {
     method: "POST",
     headers: {
       "x-api-key": process.env.METABASE_API_KEY || "",
-      "Content-Type": "application/x-www-form-urlencoded",
+      "Content-Type": "application/json",
     },
-    body: "parameters=[]",
+    body: JSON.stringify({ parameters: [] }),
   });
 
   if (!upstream.ok) {
-    return res.status(502).json({ error: `Metabase export failed (${upstream.status}).` });
+    return res.status(502).json({ error: `Metabase query failed (${upstream.status}).` });
   }
 
-  console.log(`bulk export card=${cardId} format=${format} by ${email}`);
+  const result = await upstream.json();
+  if (result?.status === "failed") {
+    return res.status(502).json({ error: "That dataset failed to run." });
+  }
+  const cols = (result?.data?.cols || []).map((c) => c.display_name || c.name);
+  const rows = result?.data?.rows || [];
+
+  console.log(`bulk export card=${cardId} format=${format} rows=${rows.length} by ${email}`);
 
   res.status(200);
-  res.setHeader(
-    "content-type",
-    format === "csv" ? "text/csv; charset=utf-8" : "application/json; charset=utf-8"
-  );
   res.setHeader("content-disposition", `attachment; filename="dataset-${cardId}.${format}"`);
+  res.setHeader("x-insurwreck-row-count", String(rows.length));
+  if (rows.length >= 2000) res.setHeader("x-insurwreck-truncated", "true");
 
-  // Stream it through rather than buffering - these can be large.
-  if (upstream.body) {
-    const reader = upstream.body.getReader();
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      res.write(Buffer.from(value));
-    }
-    return res.end();
+  if (format === "json") {
+    res.setHeader("content-type", "application/json; charset=utf-8");
+    return res.send(JSON.stringify(rows.map((r) => Object.fromEntries(cols.map((c, i) => [c, r[i]])))));
   }
-  return res.send(await upstream.text());
+
+  res.setHeader("content-type", "text/csv; charset=utf-8");
+  const cell = (v) => {
+    if (v === null || v === undefined) return "";
+    const s = String(v);
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  res.write(cols.map(cell).join(",") + "\n");
+  for (const row of rows) res.write(row.map(cell).join(",") + "\n");
+  return res.end();
 }
