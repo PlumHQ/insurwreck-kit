@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="auth-pending">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -19,7 +19,9 @@
     />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="build-kit-prep.css" />
+    <link rel="stylesheet" href="auth.css" />
     <script src="script.js" defer></script>
+    <script src="auth.js" defer></script>
   </head>
   <body>
     <svg class="svg-sprite" aria-hidden="true">
@@ -54,6 +56,21 @@
       </symbol>
     </svg>
 
+    <div class="auth-gate" role="dialog" aria-labelledby="auth-gate-title" aria-modal="true">
+      <div class="auth-gate-card">
+        <img class="auth-gate-logo" src="assets/plum-logo.svg" alt="Plum" />
+        <p class="eyebrow">Internal page</p>
+        <h1 id="auth-gate-title">Sign in with your Plum account.</h1>
+        <p>This page is for the AI pod and organisers. Sign in with Google using your
+          <strong>@plumhq.com</strong> account to continue.</p>
+        <button class="button button-primary" type="button" data-auth-signin>
+          Continue with Google
+          <svg aria-hidden="true"><use href="#icon-arrow"></use></svg>
+        </button>
+        <p class="auth-gate-note" data-auth-message></p>
+      </div>
+    </div>
+
     <header class="site-nav">
       <div class="wrap nav-inner">
         <a class="brand" href="/" aria-label="Insurwreck 4.0 home">
@@ -68,9 +85,10 @@
           <a href="#provisioning">Provisioning</a>
           <a href="#decisions">Decisions</a>
         </nav>
-        <span class="date-pill">
+        <span class="auth-who">
           <svg aria-hidden="true"><use href="#icon-shield"></use></svg>
-          Internal draft
+          <span data-auth-email></span>
+          <button type="button" data-auth-signout>Sign out</button>
         </span>
       </div>
     </header>

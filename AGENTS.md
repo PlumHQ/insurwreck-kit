@@ -49,7 +49,9 @@ Check before every commit:
 git diff --cached | grep -nE 'sbp_|vcp_|re_[A-Za-z0-9]|GOCSPX|eyJhbGciOi|sb_secret_'
 ```
 
-That must return nothing. Also: participants receive **per-participant, minimum-scope** credentials only. A master key must never reach a credential bundle — see how `mintGoogleAuth` writes the OAuth secret straight into the participant's Supabase config and returns only the public client ID.
+That must return nothing, with **one documented exception**: `site/auth.js` contains the Supabase **anon** key for the `insurwreck-site-auth` project. Anon keys are designed to ship in page source. That project holds no tables, and its before-user-created hook rejects any address outside `plumhq.com` for every provider, so the key grants nothing but the ability to start a sign-in. It will match the `eyJhbGciOi` pattern above — that hit is expected. No other JWT belongs in this repo.
+
+Also: participants receive **per-participant, minimum-scope** credentials only. A master key must never reach a credential bundle — see how `mintGoogleAuth` writes the OAuth secret straight into the participant's Supabase config and returns only the public client ID.
 
 ## 4. Minters must be idempotent and fail closed
 
@@ -109,7 +111,8 @@ The signature is **AI pod at Plum**. Voice is direct and concrete, no hype words
 - `docs/participant-cheatsheet.md` — what participants are told.
 - `desk/api/_minters.js` — every credential the desk issues. Start here to understand provisioning.
 - `desk/schema.sql` — the credential store. All tables are RLS-enabled with no policies, so only the desk's service role can read them.
-- `site/` — the public event site. `site/DESIGN.md` governs its visuals and the copy voice for all event communication.
+- `site/` — the public event site: `/` attendee page, `/deck` orientation deck, `/build-kit-prep` internal prep. `site/DESIGN.md` governs its visuals and the copy voice for all event communication.
+- `site/auth.js` — Google sign-in for internal pages, backed by the `insurwreck-site-auth` Supabase project (ref `vqbvofchrdbqrrmnjctv`). It hides content, it does not protect it: the HTML is still served to anyone who fetches the URL. Real restriction needs a server-side token check before serving.
 - Internal planning (working log, Main Hackathon program, comms drafts) lives in the **private** `PlumHQ/insurwreck-4` repo, not here.
 
 ## Before the event

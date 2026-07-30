@@ -107,7 +107,7 @@ Run the check with `bash plugin/hooks/scripts/test-block-kula-writes.sh`.
 - `plugin/` — the `insurwreck` plugin (commands only, no secrets, no code execution beyond curl to the desk).
 - `plugin/.mcp.json` — MCP servers shipped with the plugin. Keys come from the participant's environment, never this repo.
 - `desk/` — the credential desk: dependency-free Vercel functions deployed as the `insurwreck-desk` project. Base URL: `https://insurwreck-desk.preview.plumhq.com`.
-- `site/` — the public attendee event site, deployed as the separate `insurwreck-4` project at `https://insurwreck-4.preview.plumhq.com` (`/` attendee page, `/concept` brand exploration, `/build-kit-prep` systems prep). `site/DESIGN.md` is the source of truth for its visual system and the copy voice used across event communication.
+- `site/` — the public attendee event site, deployed as the separate `insurwreck-4` project at `https://insurwreck-4.preview.plumhq.com` (`/` attendee page, `/deck` orientation deck, `/concept` brand exploration, `/build-kit-prep` systems prep — the last one behind Google sign-in). `site/DESIGN.md` is the source of truth for its visual system and the copy voice used across event communication.
 - `desk/schema.sql` — source of truth for the Supabase credential-store schema (project `insurwreck-desk`, ref `mlbnpqoderetgzvjgeam`).
 
 ## Desk endpoints
