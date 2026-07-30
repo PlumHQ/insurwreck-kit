@@ -67,9 +67,32 @@ async function participantFor(req) {
   const rows = await sb(
     `credentials?service=eq.anthropic&revoked_at=is.null` +
       `&payload->>token_hash=eq.${sha256(token)}` +
-      `&select=participant_email&limit=1`
+      `&select=participant_email,payload&limit=1`
   );
-  return rows.length ? rows[0].participant_email : null;
+  if (!rows.length) return null;
+  return { email: rows[0].participant_email, full: Boolean(rows[0].payload?.full_data_access) };
+}
+
+// The escape hatch, off unless an organizer turns it on for one person.
+//
+// It exists because a published slice cannot anticipate every question, and an
+// idea dying at 2pm for want of a join is worse than the risk of a wider read.
+// But be clear about what it costs: this runs arbitrary SELECT against all 850
+// tables, so the allowlist - the only real boundary - is gone for that person.
+// It needs its own Metabase key with native-query rights, because the ordinary
+// hackathon key is deliberately 403'd from /api/dataset.
+const FULL_KEY = () => process.env.METABASE_FULL_KEY || "";
+
+const FORBIDDEN =
+  /\b(insert|update|delete|drop|alter|create|truncate|grant|revoke|copy|vacuum|call|do|set|reset|listen|notify|begin|commit)\b/i;
+
+function guardSelect(sql) {
+  const q = String(sql || "").trim().replace(/;+\s*$/, "");
+  if (!q) throw new Error("empty query");
+  if (!/^(select|with)\b/i.test(q)) throw new Error("only SELECT or WITH is allowed");
+  if (q.includes(";")) throw new Error("one statement at a time - remove the semicolon");
+  if (FORBIDDEN.test(q)) throw new Error("this connection is read-only");
+  return q;
 }
 
 // -------------------------------------------------------------- metabase ---
@@ -196,10 +219,42 @@ const TOOLS = [
   },
 ];
 
-async function callTool(name, args, email) {
+const FULL_TOOL = {
+  name: "query_warehouse",
+  description:
+    "Run a read-only SQL SELECT directly against the Plum warehouse. You have this because an organizer " +
+    "granted you wider access than the published slices. Prefer list_datasets first - the slices are faster, " +
+    "already de-identified, and won't surprise you. Table and column names are camelCase and must be " +
+    "double-quoted: SELECT c.\"claimedAmount\" FROM \"Claim\" c. Always bound the query with a WHERE clause; " +
+    "several tables run to tens of millions of rows. This is real member data - aggregate it, don't screenshot it.",
+  inputSchema: {
+    type: "object",
+    properties: { sql: { type: "string", description: "A single SELECT statement, no trailing semicolon" } },
+    required: ["sql"],
+    additionalProperties: false,
+  },
+};
+
+async function callTool(name, args, participant) {
+  const email = participant.email;
   if (!MB_KEY()) {
     return "The data connection isn't switched on yet. Tell an organizer that METABASE_API_KEY is unset on the desk.";
   }
+  if (name === "query_warehouse") {
+    if (!participant.full) throw new Error("You don't have direct warehouse access. Use list_datasets.");
+    if (!FULL_KEY()) return "Direct access isn't configured. Tell an organizer that METABASE_FULL_KEY is unset.";
+    const sql = guardSelect(args?.sql);
+    console.warn(`FULL WAREHOUSE QUERY by ${email}: ${sql.slice(0, 400)}`);
+    const res = await fetch(`${MB()}/api/dataset`, {
+      method: "POST",
+      headers: { "x-api-key": FULL_KEY(), "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "native", database: 2, native: { query: sql } }),
+    });
+    if (!res.ok) throw new Error(`warehouse refused the query (${res.status})`);
+    const { cols, rows, truncated } = toRows(await res.json());
+    return JSON.stringify({ columns: cols, row_count: rows.length, truncated, rows }, null, 2);
+  }
+
   const allowed = await allowlist();
   if (!allowed.size) {
     return "No data slices have been published yet. Tell an organizer that MCP_CARD_IDS is empty.";
@@ -279,13 +334,13 @@ export default async function handler(req, res) {
   }
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
 
-  let email;
+  let participant;
   try {
-    email = await participantFor(req);
+    participant = await participantFor(req);
   } catch (error) {
     return res.status(500).json(rpcError(null, -32603, String(error.message || error)));
   }
-  if (!email) return res.status(401).json(rpcError(null, -32001, "Invalid or missing token."));
+  if (!participant) return res.status(401).json(rpcError(null, -32001, "Invalid or missing token."));
 
   const message = typeof req.body === "object" ? req.body : JSON.parse(req.body || "{}");
   const { id = null, method, params } = message || {};
@@ -306,11 +361,13 @@ export default async function handler(req, res) {
           })
         );
 
-      case "tools/list":
-        return res.status(200).json(rpcOk(id, { tools: TOOLS }));
+      case "tools/list": {
+        const tools = participant.full ? [...TOOLS, FULL_TOOL] : TOOLS;
+        return res.status(200).json(rpcOk(id, { tools }));
+      }
 
       case "tools/call": {
-        const text = await callTool(params?.name, params?.arguments || {}, email);
+        const text = await callTool(params?.name, params?.arguments || {}, participant);
         return res.status(200).json(rpcOk(id, { content: [{ type: "text", text }] }));
       }
 

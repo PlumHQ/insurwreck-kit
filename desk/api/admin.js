@@ -95,6 +95,27 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, email, budget_usd: budget });
       }
 
+      // The escape hatch: give one person arbitrary read of the whole warehouse
+      // when the published slices genuinely can't answer their question. This
+      // removes the only real boundary for that participant, so it is per-email,
+      // explicit, off by default, and every query it permits is logged.
+      case "set_full_access": {
+        const email = normalizeEmail(body.email);
+        const enabled = Boolean(body.enabled);
+        if (!email) return res.status(400).json({ error: "email required" });
+        const rows = await sb(
+          `credentials?participant_email=eq.${encodeURIComponent(email)}&service=eq.anthropic&select=payload`
+        );
+        if (!rows.length) return res.status(404).json({ error: "no anthropic credential for that address" });
+        const payload = { ...rows[0].payload, full_data_access: enabled };
+        await sb(
+          `credentials?participant_email=eq.${encodeURIComponent(email)}&service=eq.anthropic`,
+          { method: "PATCH", body: { payload } }
+        );
+        console.warn(`FULL WAREHOUSE ACCESS ${enabled ? "GRANTED to" : "revoked for"} ${email} by ${who}`);
+        return res.status(200).json({ ok: true, email, full_data_access: enabled });
+      }
+
       // Send someone a fresh OTP and hand the organizer the code, so a stuck
       // participant can be walked through verification over the shoulder.
       case "resend_code": {

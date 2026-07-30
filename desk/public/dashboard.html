@@ -50,7 +50,10 @@
   .p-ok { color:var(--ok); border-color:color-mix(in srgb,var(--ok) 40%,transparent); }
   .p-no { color:var(--warn); border-color:color-mix(in srgb,var(--warn) 40%,transparent); }
   .msg { padding:9px 0; font-size:.84rem; min-height:20px; }
-  .msg.err { color:var(--bad); } .msg.ok { color:var(--ok); }
+  .msg.err { color:var(--bad); } .msg.ok { color:var(--ok); } .msg.warn { color:var(--warn); }
+  .chip-full { display:inline-block; margin-left:4px; padding:1px 6px; border-radius:20px;
+               font-size:.66rem; font-weight:700; color:var(--warn);
+               border:1px solid color-mix(in srgb,var(--warn) 45%,transparent); }
   code { font-family:ui-monospace,monospace; font-size:.8rem;
          background:color-mix(in srgb,var(--fg) 8%,transparent); padding:1px 5px; border-radius:4px; }
   .bars { display:flex; flex-direction:column; gap:6px; }
@@ -156,11 +159,15 @@
         held.get(c.participant_email).add(c.service);
       }
       const spendBy = new Map((body.spend || []).map(s => [s.participant_email, s]));
+      const fullBy = new Map((body.credentials || [])
+        .filter(c => c.service === "anthropic")
+        .map(c => [c.participant_email, c.full_data_access]));
       data = (body.participants || []).map(p => ({
         ...p,
         services: Object.fromEntries([...(held.get(p.email) || [])].map(s => [s, true])),
         spend: spendBy.get(p.email)?.cost_usd || 0,
         calls: spendBy.get(p.email)?.calls || 0,
+        full: Boolean(fullBy.get(p.email)),
       }));
       render();
       say("");
@@ -209,6 +216,10 @@
         <td>
           <button class="sm" data-code="${esc(p.email)}">Get code</button>
           <button class="sm" data-budget="${esc(p.email)}">Raise budget</button>
+          <button class="sm" data-full="${esc(p.email)}" data-on="${p.full ? 1 : 0}">
+            ${p.full ? "Revoke full data" : "Grant full data"}
+          </button>
+          ${p.full ? '<span class="chip-full">full warehouse</span>' : ""}
         </td>
       </tr>`).join("") : '<tr><td colspan="4" class="msg">Nobody matches.</td></tr>';
 
@@ -218,6 +229,22 @@
         say(r.debug_code ? `Code for ${b.dataset.code}: ${r.debug_code}` : `Code sent to ${b.dataset.code}.`, "ok");
       } catch (e) { say(e.message, "err"); }
     });
+    document.querySelectorAll("button[data-full]").forEach(b => b.onclick = async () => {
+      const on = b.dataset.on === "1";
+      if (!on && !confirm(
+        `Give ${b.dataset.full} arbitrary read access to the whole warehouse?\n\n` +
+        `This bypasses the published slices entirely - all 850 tables, including ` +
+        `columns the slices deliberately hide. Only do this when a slice genuinely ` +
+        `can't answer their question. Every query they run gets logged.`)) return;
+      try {
+        const r = await admin("set_full_access", { email: b.dataset.full, enabled: !on });
+        say(r.full_data_access
+          ? `${r.email} now has full warehouse access. They must restart Claude Code to see the tool.`
+          : `Full access revoked for ${r.email}.`, r.full_data_access ? "warn" : "ok");
+        load();
+      } catch (e) { say(e.message, "err"); }
+    });
+
     document.querySelectorAll("button[data-budget]").forEach(b => b.onclick = async () => {
       const v = prompt(`New model budget in dollars for ${b.dataset.budget}:`, "40");
       if (!v) return;
