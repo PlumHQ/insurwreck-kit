@@ -1,4 +1,4 @@
-import { sb, isAdmin, nowIso, readBody } from "./_lib.js";
+import { sb, nowIso, readBody, organizerFor } from "./_lib.js";
 
 // Organizer-only. Publish a Metabase saved question to participants, or pull it
 // back, without a redeploy.
@@ -8,7 +8,7 @@ import { sb, isAdmin, nowIso, readBody } from "./_lib.js";
 // next MCP call - no deploy, no env var, no restart for participants.
 
 export default async function handler(req, res) {
-  if (!isAdmin(req)) return res.status(401).json({ error: "admin key required" });
+  if (!(await organizerFor(req))) return res.status(401).json({ error: "organizer access required" });
 
   try {
     if (req.method === "GET") {

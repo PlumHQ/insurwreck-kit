@@ -45,6 +45,32 @@ export function isAdmin(req) {
   return Boolean(key) && req.headers["x-admin-key"] === key;
 }
 
+// An organizer is either someone holding the shared ADMIN_KEY, or someone whose
+// verified session belongs to an address on the ORGANIZER_EMAILS list. The
+// second path lets organizers sign in with the same six-digit code participants
+// use, instead of pasting a secret into a browser. Deliberately an env var and
+// not a table: the list changes twice ever, and a table is one more place a
+// compromise could promote someone.
+export async function organizerFor(req) {
+  if (isAdmin(req)) return "admin-key";
+  const auth = req.headers.authorization || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+  if (!token) return null;
+  const allowed = new Set(
+    String(process.env.ORGANIZER_EMAILS || "")
+      .toLowerCase()
+      .split(",")
+      .map((e) => e.trim())
+      .filter(Boolean)
+  );
+  if (!allowed.size) return null;
+  const rows = await sb(
+    `sessions?token_hash=eq.${sha256(token)}&expires_at=gt.${nowIso()}&select=email&limit=1`
+  );
+  const email = rows.length ? normalizeEmail(rows[0].email) : null;
+  return email && allowed.has(email) ? email : null;
+}
+
 export function readBody(req) {
   if (req.body && typeof req.body === "object") return req.body;
   try {

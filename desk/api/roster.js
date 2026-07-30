@@ -1,8 +1,8 @@
-import { sb, isAdmin } from "./_lib.js";
+import { sb, organizerFor } from "./_lib.js";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "GET only" });
-  if (!isAdmin(req)) return res.status(401).json({ error: "admin key required" });
+  if (!(await organizerFor(req))) return res.status(401).json({ error: "organizer access required" });
 
   try {
     const participants = await sb(

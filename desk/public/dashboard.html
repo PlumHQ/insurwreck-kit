@@ -1,0 +1,280 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Insurwreck 4.0 · organizer console</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg:#fbfbfa; --fg:#1a1a19; --dim:#6b6b68; --line:#e4e4e1; --card:#fff;
+    --ok:#1a7f4b; --warn:#a86a00; --bad:#b3261e; --accent:#2f6ae0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#141413; --fg:#eeeeec; --dim:#9a9a96; --line:#2e2e2c; --card:#1d1d1c;
+            --ok:#4ec27f; --warn:#e0a33a; --bad:#f2685c; --accent:#7aa2f7; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:22px; background:var(--bg); color:var(--fg);
+         font:14px/1.5 ui-sans-serif,-apple-system,"Segoe UI",sans-serif; }
+  header { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:4px; }
+  h1 { font-size:1.15rem; margin:0; letter-spacing:-.01em; }
+  .sub { color:var(--dim); font-size:.84rem; margin-bottom:16px; }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
+  input, button, select { font:inherit; padding:7px 11px; border:1px solid var(--line);
+                          border-radius:7px; background:var(--card); color:var(--fg); }
+  button { cursor:pointer; font-weight:600; }
+  button.p { background:var(--accent); border-color:var(--accent); color:#fff; }
+  button.sm { padding:3px 9px; font-size:.78rem; font-weight:600; }
+  .grid { display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); margin-bottom:16px; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .panel h2 { font-size:.74rem; text-transform:uppercase; letter-spacing:.07em;
+              color:var(--dim); margin:0 0 10px; font-weight:700; }
+  .stats { display:flex; gap:14px; flex-wrap:wrap; }
+  .stat b { display:block; font-size:1.6rem; line-height:1.1; }
+  .stat span { color:var(--dim); font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; }
+  .chk { display:flex; justify-content:space-between; gap:10px; padding:3px 0;
+         border-bottom:1px solid var(--line); font-size:.84rem; }
+  .chk:last-child { border-bottom:0; }
+  .chk em { font-style:normal; color:var(--dim); font-size:.76rem; }
+  .yes { color:var(--ok); font-weight:700; }
+  .no  { color:var(--bad); font-weight:700; }
+  .scroll { overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--card); }
+  table { border-collapse:collapse; width:100%; min-width:760px; }
+  th,td { text-align:left; padding:8px 11px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  th { font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:var(--dim); cursor:pointer; }
+  tbody tr:last-child td { border-bottom:0; }
+  tr.stuck { background:color-mix(in srgb,var(--bad) 8%,transparent); }
+  .who { font-weight:600; }
+  .em { color:var(--dim); font-size:.79rem; }
+  .pill { display:inline-block; padding:1px 6px; border-radius:20px; font-size:.68rem;
+          font-weight:700; margin:1px 2px 1px 0; border:1px solid transparent; }
+  .p-ok { color:var(--ok); border-color:color-mix(in srgb,var(--ok) 40%,transparent); }
+  .p-no { color:var(--warn); border-color:color-mix(in srgb,var(--warn) 40%,transparent); }
+  .msg { padding:9px 0; font-size:.84rem; min-height:20px; }
+  .msg.err { color:var(--bad); } .msg.ok { color:var(--ok); }
+  code { font-family:ui-monospace,monospace; font-size:.8rem;
+         background:color-mix(in srgb,var(--fg) 8%,transparent); padding:1px 5px; border-radius:4px; }
+  .bars { display:flex; flex-direction:column; gap:6px; }
+  .bar-row { display:grid; grid-template-columns:150px 1fr 74px; gap:8px; align-items:center; font-size:.8rem; }
+  .track { height:7px; background:color-mix(in srgb,var(--fg) 10%,transparent); border-radius:4px; overflow:hidden; }
+  .fill { height:100%; background:var(--accent); }
+  .fill.hot { background:var(--bad); }
+</style>
+
+<header>
+  <h1>Insurwreck 4.0 · organizer console</h1>
+  <span class="em" id="clock"></span>
+</header>
+<div class="sub">Everything you need on the day. Refreshes every 30s.</div>
+
+<div class="bar" id="login">
+  <input id="email" type="email" placeholder="your @plumhq.com address" size="26" autocomplete="username" />
+  <button class="p" id="send">Email me a code</button>
+  <input id="code" placeholder="6-digit code" size="10" inputmode="numeric" hidden />
+  <button class="p" id="verify" hidden>Sign in</button>
+  <button id="usekey">use admin key instead</button>
+</div>
+<div class="bar" id="keybar" hidden>
+  <input id="key" type="password" placeholder="admin key" size="26" autocomplete="off" />
+  <button class="p" id="go">Load</button>
+  <button id="useotp">back to email sign-in</button>
+</div>
+<div class="bar" id="signedin" hidden>
+  <span class="em">signed in as <b id="whoami"></b></span>
+  <button id="signout">sign out</button>
+  <label class="em"><input type="checkbox" id="only" /> only show people who are stuck</label>
+</div>
+<div id="msg" class="msg"></div>
+
+<div class="grid">
+  <div class="panel">
+    <h2>Where everyone is</h2>
+    <div class="stats">
+      <div class="stat"><b id="s-total">-</b><span>registered</span></div>
+      <div class="stat"><b id="s-ready">-</b><span>fully ready</span></div>
+      <div class="stat"><b id="s-stuck">-</b><span>stuck</span></div>
+      <div class="stat"><b id="s-spend">-</b><span>model spend</span></div>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>System health</h2>
+    <div id="health"><span class="em">load to check</span></div>
+  </div>
+  <div class="panel">
+    <h2>Budget burn</h2>
+    <div class="bars" id="bars"><span class="em">nobody has spent anything yet</span></div>
+  </div>
+</div>
+
+<div class="scroll"><table>
+  <thead><tr>
+    <th data-k="name">Person</th><th data-k="missing">Services</th>
+    <th data-k="spend">Spend</th><th>Quick actions</th>
+  </tr></thead>
+  <tbody id="rows"><tr><td colspan="4" class="msg">Enter the admin key to load.</td></tr></tbody>
+</table></div>
+
+<script>
+  const SERVICES = ["vercel","supabase","resend","anthropic","agentmail","n8n"];
+  const $ = (id) => document.getElementById(id);
+  const key = () => $("key").value.trim();
+  let session = sessionStorage.getItem("iw_session") || "";
+
+  // Either credential works; the session is preferred so nobody has to hold the
+  // shared secret to run the console.
+  const authHeaders = () => session
+    ? { Authorization: `Bearer ${session}` }
+    : { "x-admin-key": key() };
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  let data = [], budgets = {}, sortKey = "missing", desc = true;
+
+  const say = (t, c="") => { $("msg").className = "msg " + c; $("msg").textContent = t; };
+
+  async function admin(action, extra={}) {
+    const r = await fetch("/api/admin", {
+      method:"POST",
+      headers:{ ...authHeaders(), "content-type":"application/json" },
+      body: JSON.stringify({ action, ...extra }),
+    });
+    const d = await r.json().catch(()=>({}));
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    return d;
+  }
+
+  async function load() {
+    if (!session && !key()) return say("Sign in first.", "err");
+    if (key()) localStorage.setItem("iw_admin_key", key());
+    try {
+      const res = await fetch("/api/roster", { headers: authHeaders() });
+      if (!res.ok) throw new Error(res.status === 401
+        ? "Not recognised as an organizer. Check ORGANIZER_EMAILS, or use the admin key."
+        : `HTTP ${res.status}`);
+      const body = await res.json();
+
+      const held = new Map();
+      for (const c of body.credentials || []) {
+        if (!held.has(c.participant_email)) held.set(c.participant_email, new Set());
+        held.get(c.participant_email).add(c.service);
+      }
+      const spendBy = new Map((body.spend || []).map(s => [s.participant_email, s]));
+      data = (body.participants || []).map(p => ({
+        ...p,
+        services: Object.fromEntries([...(held.get(p.email) || [])].map(s => [s, true])),
+        spend: spendBy.get(p.email)?.cost_usd || 0,
+        calls: spendBy.get(p.email)?.calls || 0,
+      }));
+      render();
+      say("");
+      admin("health").then(h => renderHealth(h.checks)).catch(()=>{});
+    } catch (e) { say(e.message, "err"); }
+  }
+
+  function renderHealth(checks) {
+    $("health").innerHTML = checks.map(c =>
+      `<div class="chk"><span>${esc(c.name)} ${c.detail ? `<em>${esc(c.detail)}</em>` : ""}</span>
+       <span class="${c.ok ? "yes" : "no"}">${c.ok ? "ok" : "no"}</span></div>`).join("");
+  }
+
+  function renderBars() {
+    const spenders = data.filter(p => p.spend > 0).sort((a,b) => b.spend - a.spend).slice(0, 8);
+    $("bars").innerHTML = spenders.length ? spenders.map(p => {
+      const budget = 15, pct = Math.min(100, (p.spend / budget) * 100);
+      return `<div class="bar-row"><span class="em">${esc((p.name||p.email).slice(0,20))}</span>
+        <span class="track"><span class="fill ${pct>75?"hot":""}" style="width:${pct}%"></span></span>
+        <span class="em">$${p.spend.toFixed(2)}</span></div>`;
+    }).join("") : '<span class="em">nobody has spent anything yet</span>';
+  }
+
+  function render() {
+    const onlyStuck = $("only").checked;
+    const missingFor = p => SERVICES.filter(s => !(p.services||{})[s]);
+    const rows = data.map(p => ({...p, missing: missingFor(p)}))
+      .filter(p => !onlyStuck || p.missing.length)
+      .sort((a,b) => {
+        const av = sortKey==="missing" ? a.missing.length : (a[sortKey] ?? "");
+        const bv = sortKey==="missing" ? b.missing.length : (b[sortKey] ?? "");
+        return (av<bv?-1:av>bv?1:0) * (desc?-1:1);
+      });
+
+    $("s-total").textContent = data.length;
+    $("s-stuck").textContent = data.filter(p => missingFor(p).length).length;
+    $("s-ready").textContent = data.filter(p => !missingFor(p).length).length;
+    $("s-spend").textContent = "$" + data.reduce((t,p)=>t+(p.spend||0),0).toFixed(2);
+    renderBars();
+
+    $("rows").innerHTML = rows.length ? rows.map(p => `
+      <tr class="${p.missing.length?"stuck":""}">
+        <td><div class="who">${esc(p.name||"-")}</div><div class="em">${esc(p.email)}</div></td>
+        <td>${SERVICES.map(s => `<span class="pill ${p.missing.includes(s)?"p-no":"p-ok"}">${s}</span>`).join("")}</td>
+        <td class="em">${p.spend ? `$${p.spend.toFixed(2)} (${p.calls})` : "-"}</td>
+        <td>
+          <button class="sm" data-code="${esc(p.email)}">Get code</button>
+          <button class="sm" data-budget="${esc(p.email)}">Raise budget</button>
+        </td>
+      </tr>`).join("") : '<tr><td colspan="4" class="msg">Nobody matches.</td></tr>';
+
+    document.querySelectorAll("button[data-code]").forEach(b => b.onclick = async () => {
+      try {
+        const r = await admin("resend_code", { email: b.dataset.code });
+        say(r.debug_code ? `Code for ${b.dataset.code}: ${r.debug_code}` : `Code sent to ${b.dataset.code}.`, "ok");
+      } catch (e) { say(e.message, "err"); }
+    });
+    document.querySelectorAll("button[data-budget]").forEach(b => b.onclick = async () => {
+      const v = prompt(`New model budget in dollars for ${b.dataset.budget}:`, "40");
+      if (!v) return;
+      try {
+        const r = await admin("set_budget", { email: b.dataset.budget, budget_usd: Number(v) });
+        say(`Budget for ${r.email} is now $${r.budget_usd}. Applies on their next call.`, "ok");
+      } catch (e) { say(e.message, "err"); }
+    });
+  }
+
+  // --- sign-in ---------------------------------------------------------------
+  $("send").onclick = async () => {
+    const email = $("email").value.trim();
+    if (!email) return say("Enter your work email.", "err");
+    try {
+      const r = await fetch("/api/otp", { method:"POST", headers:{"content-type":"application/json"},
+        body: JSON.stringify({ email })});
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+      $("code").hidden = false; $("verify").hidden = false; $("code").focus();
+      say("Code sent. Check your inbox.", "ok");
+    } catch (e) { say(e.message, "err"); }
+  };
+
+  $("verify").onclick = async () => {
+    try {
+      const r = await fetch("/api/verify", { method:"POST", headers:{"content-type":"application/json"},
+        body: JSON.stringify({ email: $("email").value.trim(), code: $("code").value.trim() })});
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "Wrong or expired code.");
+      session = d.token;
+      sessionStorage.setItem("iw_session", session);
+      sessionStorage.setItem("iw_who", $("email").value.trim());
+      showSignedIn();
+      load();
+    } catch (e) { say(e.message, "err"); }
+  };
+
+  function showSignedIn() {
+    $("login").hidden = true; $("keybar").hidden = true; $("signedin").hidden = false;
+    $("whoami").textContent = sessionStorage.getItem("iw_who") || "admin key";
+  }
+  $("signout").onclick = () => { sessionStorage.clear(); location.reload(); };
+  $("usekey").onclick = () => { $("login").hidden = true; $("keybar").hidden = false; };
+  $("useotp").onclick = () => { $("keybar").hidden = true; $("login").hidden = false; };
+
+  $("go").onclick = () => { showSignedIn(); load(); };
+  $("only").onchange = render;
+  $("key").onkeydown = e => { if (e.key === "Enter") load(); };
+  document.querySelectorAll("th[data-k]").forEach(th => th.onclick = () => {
+    const k = th.dataset.k; desc = sortKey===k ? !desc : true; sortKey = k; render();
+  });
+  setInterval(() => { $("clock").textContent = new Date().toLocaleTimeString(); }, 1000);
+  if (session) { showSignedIn(); load(); }
+  else {
+    const saved = localStorage.getItem("iw_admin_key");
+    if (saved) { $("key").value = saved; showSignedIn(); load(); }
+  }
+  setInterval(() => { if (data.length) load(); }, 30000);
+</script>
