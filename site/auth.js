@@ -105,47 +105,51 @@
     [3, 11, 1, 9],
     [15, 7, 13, 5],
   ];
-  const CELL_W = 8;
-  const CELL_H = 15;
-  const MAX_CELLS = 24000;
+  const BASE_FONT = 11;
+  const BASE_LINE = 15;
+  const MAX_CELLS = 26000;
 
   let artTimer = null;
   let artResize = null;
+  let artMove = null;
+  let artLeave = null;
 
-  function renderField(cols, rows, t) {
+  // Pointer ripple: position in field units, with a power that decays so the
+  // wake fades instead of freezing where the cursor stopped.
+  const ptr = { x: 0, y: 0, power: 0, live: false };
+
+  function renderField(cols, rows, cellW, cellH, t) {
     const faint = [];
     const strong = [];
-    // Work in pixel space: a cell is 8px wide but 15px tall, so normalising by
-    // cell index would stretch every circle into an ellipse.
-    const halfW = (cols * CELL_W) / 2;
-    const halfH = (rows * CELL_H) / 2;
+    const halfW = (cols * cellW) / 2;
+    const halfH = (rows * cellH) / 2;
     const norm = Math.min(halfW, halfH) || 1;
 
     for (let y = 0; y < rows; y += 1) {
-      const py = (y * CELL_H - halfH) / norm;
+      const py = (y * cellH - halfH) / norm;
       for (let x = 0; x < cols; x += 1) {
-        const px = (x * CELL_W - halfW) / norm;
-        const dx = px;
-        const dy = py;
-        const r = Math.sqrt(dx * dx + dy * dy);
+        const px = (x * cellW - halfW) / norm;
+        const r = Math.sqrt(px * px + py * py);
+        const a = Math.atan2(py, px);
 
-        // Radial first, so the pattern reads as a symmetric halo around the
-        // card rather than drifting to one side. Concentric rings, a slower
-        // second set beating against them, and a gentle angular sweep.
-        const a = Math.atan2(dy, dx);
         let v =
           Math.sin(r * 13 - t * 1.1) * 0.5 +
           Math.sin(r * 6.5 + t * 0.5) * 0.28 +
           Math.sin(a * 5 + t * 0.32) * 0.15 +
           Math.sin(a * 3 - r * 5 + t * 0.18) * 0.12;
+
+        if (ptr.power > 0.01) {
+          const pdx = px - ptr.x;
+          const pdy = py - ptr.y;
+          const pd = Math.sqrt(pdx * pdx + pdy * pdy);
+          // Tight, fast rings around the cursor that die off with distance.
+          v += Math.sin(pd * 26 - t * 5.2) * 0.75 * ptr.power * Math.exp(-pd * 3.1);
+        }
+
         v = 0.5 + v * 0.54;
 
-        // Build outward. The CSS mask carves the calm middle, so this only
-        // needs to keep the very centre thin.
         const ramp = Math.min(1, Math.max(0, (r - 0.2) / 0.5));
         v *= 0.3 + ramp * 0.7;
-
-        // Ordered dither: nudge by the Bayer cell before quantising.
         v += (BAYER[y & 3][x & 3] / 16 - 0.5) * 0.16;
 
         const idx = Math.max(0, Math.min(RAMP.length - 1, Math.round(v * RAMP.length)));
@@ -180,38 +184,98 @@
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let cols = 0;
     let rows = 0;
+    let cellW = 8;
+    let cellH = BASE_LINE;
+
+    // Measure the real glyph advance rather than assuming one: the font is
+    // loaded late, and guessing leaves the field short of the right edge.
+    function advanceAt(fontPx) {
+      // A bare span on <body>, NOT a .auth-art pre — that class carries
+      // `inset: 0`, which stretches the probe to the container and makes this
+      // measure the viewport instead of a glyph.
+      const probe = document.createElement("span");
+      probe.style.cssText =
+        "position:absolute;left:-9999px;top:0;visibility:hidden;white-space:pre;" +
+        `letter-spacing:0;font-family:${getComputedStyle(faintEl).fontFamily};font-size:${fontPx}px;`;
+      probe.textContent = "X".repeat(200);
+      document.body.appendChild(probe);
+      const w = probe.getBoundingClientRect().width / 200;
+      probe.remove();
+      return w > 0.5 ? w : fontPx * 0.72;
+    }
 
     function measure() {
-      cols = Math.ceil(window.innerWidth / CELL_W) + 1;
-      rows = Math.ceil(window.innerHeight / CELL_H) + 1;
-      // Very large viewports get coarser cells rather than more work.
-      while (cols * rows > MAX_CELLS) {
-        cols = Math.floor(cols * 0.85);
-        rows = Math.floor(rows * 0.85);
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      let font = BASE_FONT;
+      let line = BASE_LINE;
+      cellW = advanceAt(font);
+      cellH = line;
+      cols = Math.ceil(vw / cellW) + 2;
+      rows = Math.ceil(vh / cellH) + 2;
+
+      // Too many cells: make the cells BIGGER so the field still reaches the
+      // edges. Dropping columns instead is what cut the right-hand side off.
+      if (cols * rows > MAX_CELLS) {
+        const scale = Math.sqrt((cols * rows) / MAX_CELLS);
+        font *= scale;
+        line *= scale;
+        cellW = advanceAt(font);
+        cellH = line;
+        cols = Math.ceil(vw / cellW) + 2;
+        rows = Math.ceil(vh / cellH) + 2;
       }
+
+      [faintEl, strongEl].forEach((el) => {
+        el.style.fontSize = `${font}px`;
+        el.style.lineHeight = `${line}px`;
+      });
     }
 
     function paint(t) {
-      const [f, s] = renderField(cols, rows, t);
+      const [f, s] = renderField(cols, rows, cellW, cellH, t);
       faintEl.textContent = f;
       strongEl.textContent = s;
     }
 
+    let t = 0;
     measure();
     paint(0);
 
-    if (!still) {
-      let t = 0;
-      // ~8fps: this is ambient texture, not an animation anyone watches.
-      artTimer = window.setInterval(() => {
-        t += 0.06;
+    // Re-measure once webfonts land, or the field is sized to the fallback.
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        measure();
         paint(t);
-      }, 120);
+      });
+    }
+
+    if (!still) {
+      artTimer = window.setInterval(() => {
+        t += 0.11;
+        if (!ptr.live) ptr.power *= 0.9;
+        paint(t);
+      }, 55);
+
+      artMove = (event) => {
+        const halfW = (cols * cellW) / 2;
+        const halfH = (rows * cellH) / 2;
+        const norm = Math.min(halfW, halfH) || 1;
+        ptr.x = (event.clientX - halfW) / norm;
+        ptr.y = (event.clientY - halfH) / norm;
+        ptr.power = 1;
+        ptr.live = true;
+      };
+      artLeave = () => {
+        ptr.live = false;
+      };
+      window.addEventListener("pointermove", artMove, { passive: true });
+      window.addEventListener("pointerleave", artLeave, { passive: true });
     }
 
     artResize = () => {
       measure();
-      paint(0);
+      paint(t);
     };
     window.addEventListener("resize", artResize, { passive: true });
   }
@@ -220,7 +284,10 @@
     if (artTimer) window.clearInterval(artTimer);
     artTimer = null;
     if (artResize) window.removeEventListener("resize", artResize);
-    artResize = null;
+    if (artMove) window.removeEventListener("pointermove", artMove);
+    if (artLeave) window.removeEventListener("pointerleave", artLeave);
+    artResize = artMove = artLeave = null;
+    ptr.power = 0;
   }
 
   // The gate builds its own DOM so a page is protected by loading this file —
