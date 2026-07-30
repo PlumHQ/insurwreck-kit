@@ -3,15 +3,19 @@ name: idea-to-template
 description: Use when the participant says they don't know what to build, asks for help getting started, says they're still exploring, or only has a vague idea. Maps their idea brief to a starter shape, scaffolds it from the plugin template, and gets a dev server running.
 ---
 
-Get them from "I have a vague idea" to "a server is running on my laptop" in one shot. Don't overthink the mapping — pick a shape and move.
+Get them from "I have a vague idea" to "a server is running on my laptop" — but through a short product conversation, not around it. The project's `CLAUDE.md` is the contract here, and a `require-brief.sh` hook blocks application code until `BRIEF.md` exists, so scaffolding first will simply be denied.
 
-## Step 1 — Read their idea brief
+## Step 1 — Read their idea brief, then talk
 
 ```
 node -e 'console.log(require(require("os").homedir()+"/.insurwreck/credentials.json").participant.idea_brief || "")'
 ```
 
-If it's empty or says "still exploring," ask **one** clarifying question — something like "give me one sentence: are you trying to look at data and make a call, or turn something into a written document/email?" — then proceed. Don't ask more than one question before acting.
+Whatever it says — even if it reads like a complete spec — ask **3 to 5 questions in one message** about the problem and the people, never the implementation. Who has this problem and what do they do today, what decision should this make easier, what would they look at first thing in the morning, what does success look like in one sentence, what is the smallest version that would still be useful.
+
+Do not ask which framework, database or library. Those are your call and the stack is already provisioned.
+
+At most **one** follow-up round, and only to settle something that changes what you build first. Then write `BRIEF.md` in the project folder — problem, who it is for, what the first slice does, what is out of scope today — and move. If they say "just build it" or "you decide", write `BRIEF.md` from your best reading, state the assumption in one line, and go. The brainstorm must never become the reason nothing shipped.
 
 ## Step 2 — Map the brief to a shape
 
@@ -32,7 +36,7 @@ cp -r "$SRC"/. "$DEST"/
 cd "$DEST"
 ```
 
-Copy the whole template — both routes come along regardless of shape; don't try to split it. Once it's running (Step 5), offer to delete the route they don't need (`app/dashboard` or `app/generate` plus its `app/api/...` counterpart) — only if they want a cleaner starting point, not by default.
+Copy the whole template — both routes come along regardless of shape; don't try to split it. Copying the provided starter is not what the brief gate is guarding against, so this step works before `BRIEF.md` exists; writing bespoke application code does not. Once it's running (Step 5), offer to delete the route they don't need (`app/dashboard` or `app/generate` plus its `app/api/...` counterpart) — only if they want a cleaner starting point, not by default.
 
 ## Step 4 — Wire it up and run setup
 
@@ -49,5 +53,7 @@ npm run dev
 ```
 
 Confirm it's actually serving (check the printed local URL at `http://localhost:3000`, or curl it) before telling them it's ready. Then tell them, in one or two sentences, what they're looking at and the one thing to try first — e.g. "open localhost:3000/dashboard, hit the risk-flag button, that's Claude scoring the sample claims already."
+
+Build the smallest useful slice on top of the template, show it, and ask what is wrong with it rather than whether to keep going. Update `BRIEF.md` whenever they change direction — it is the shared record of what this is and what you both agreed to leave out.
 
 Point them to the route-specific files next if they want to customize (`data/claims.seed.json` and `app/api/dashboard/classify/route.ts` for the dashboard shape; `app/generate/page.tsx` and `app/api/generate/route.ts` for the generator shape — the template's own `README.md` has the full file map). Hand off to `load-your-data` when they mention their own spreadsheet or real data, and `demo-in-3-minutes` when they're ready to present.
