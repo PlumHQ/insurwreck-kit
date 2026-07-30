@@ -7,6 +7,17 @@ set -uo pipefail
 
 CREDS="$HOME/.insurwreck/credentials.json"
 FAIL=0
+# @kula-ai/mcp-server needs node >=22, @salesforce/mcp >=20. Ubuntu 24.04 - the
+# WSL2 default - ships 18 from apt, so a Windows participant can pass every other
+# check and still have two dead MCP servers.
+MIN_NODE=22
+
+case "$(uname -s)" in
+  Darwin) PLATFORM="macos" ;;
+  Linux)  PLATFORM="linux"
+          grep -qi microsoft /proc/version 2>/dev/null && PLATFORM="wsl" ;;
+  *)      PLATFORM="other" ;;
+esac
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   B=$'\033[1m'; R=$'\033[0m'; GRN=$'\033[32m'; YLW=$'\033[33m'; RED=$'\033[31m'; DIM=$'\033[2m'
@@ -24,15 +35,44 @@ printf "\n${B}Checking your setup${R}\n\n"
 # --- tools -----------------------------------------------------------------
 for tool in node npm git claude; do
   if command -v "$tool" >/dev/null 2>&1; then
-    ok "$tool"
+    if [ "$tool" = "node" ]; then
+      NODE_V="$(node --version 2>/dev/null)"; NODE_MAJOR="${NODE_V#v}"; NODE_MAJOR="${NODE_MAJOR%%.*}"
+      if [ "${NODE_MAJOR:-0}" -ge "$MIN_NODE" ] 2>/dev/null; then
+        ok "node $NODE_V"
+      else
+        bad "node $NODE_V is too old (need $MIN_NODE or newer)"
+        note "the Salesforce and Kula MCP servers refuse to start below $MIN_NODE"
+        note "re-run the setup command from the invite - it installs a current node"
+      fi
+    else
+      ok "$tool"
+    fi
   else
     case "$tool" in
-      node|npm) bad "$tool is missing"; note "install Node from https://nodejs.org (LTS)" ;;
-      git)      bad "git is missing"; note "on macOS run: xcode-select --install" ;;
+      node|npm) bad "$tool is missing"; note "install Node $MIN_NODE+ from https://nodejs.org (LTS)" ;;
+      git)      bad "git is missing"
+                case "$PLATFORM" in
+                  macos)     note "run: xcode-select --install" ;;
+                  wsl|linux) note "run: sudo apt-get install -y git" ;;
+                  *)         note "install git from https://git-scm.com/downloads" ;;
+                esac ;;
       claude)   bad "claude is missing"; note "re-run the setup command from the invite" ;;
     esac
   fi
 done
+
+# WSL cannot open a Windows browser on its own, and the browser-based logins are
+# the only steps that need one. Say so before someone reads a silent no-op as a
+# broken login.
+if [ "$PLATFORM" = "wsl" ]; then
+  if command -v wslview >/dev/null 2>&1 || command -v xdg-open >/dev/null 2>&1; then
+    ok "browser handoff available (WSL)"
+  else
+    warn "running under WSL with no way to open a Windows browser"
+    note "'sf org login web' will print a URL instead of opening it - paste it into"
+    note "your Windows browser, or run: sudo apt-get install -y wslu"
+  fi
+fi
 
 # --- the kit itself --------------------------------------------------------
 # A stale kit is invisible from the inside: commands and MCP servers that were

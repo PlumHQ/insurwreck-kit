@@ -11,9 +11,13 @@ RUN apt-get update -qq \
  && apt-get install -y -qq --no-install-recommends ca-certificates curl sudo \
  && rm -rf /var/lib/apt/lists/*
 
-# A normal, non-root user with passwordless sudo, like a laptop account.
+# A normal, non-root user whose sudo needs a PASSWORD - which is what WSL2 and a
+# real laptop account both give you. The previous NOPASSWD:ALL was convenient and
+# wrong: it hid a step that ran `sudo apt-get ... >/dev/null 2>&1`, where the
+# password prompt went to /dev/null and the whole script appeared to freeze. Any
+# step that needs root must detect that and skip, not block.
 RUN useradd -m -s /bin/bash leader \
- && echo "leader ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/leader
+ && usermod -aG sudo leader
 
 USER leader
 WORKDIR /home/leader
