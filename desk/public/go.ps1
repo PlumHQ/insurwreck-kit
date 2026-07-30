@@ -66,13 +66,86 @@ function Add-ToUserPath {
   return $true
 }
 
+# Do NOT suppress winget's output. These downloads are tens of megabytes and can
+# take minutes on a corporate network; with the progress bar swallowed, a slow
+# step is indistinguishable from a hang and people kill the window mid-install.
+# go.sh had exactly this bug with a hidden sudo prompt - same mistake, other shell.
+#
+# And do NOT pass --disable-interactivity. Git and Node install machine-wide, so
+# Windows raises a UAC prompt; on a managed laptop that prompt asks for an
+# administrator password, which the participant may well have. Disabling
+# interactivity suppresses the one dialog they need to answer.
 function Install-WinGetPackage {
-  param($Id, $Label)
+  param($Id, $Label, $Expect)
   if (-not (Test-Have 'winget')) { return $false }
+  if ($Expect) { Write-Info "$Label - usually $Expect. Progress below; leave this window open." }
+  Write-Info "Windows may ask for an administrator password. Enter it if prompted."
+  $started = Get-Date
   winget install --exact --id $Id --silent `
-    --accept-source-agreements --accept-package-agreements 2>&1 | Out-Null
+    --accept-source-agreements --accept-package-agreements
   Sync-Path
-  return $true
+  Write-Info "$Label: winget finished in $([int]((Get-Date) - $started).TotalSeconds)s"
+  # Exit codes are not a reliable signal here - winget returns non-zero for
+  # "already installed" and zero for some partial installs. Callers verify the
+  # capability instead, which is the only thing that actually matters.
+}
+
+# No-admin fallbacks. Portable extraction into the user profile needs no
+# installer and no elevation, so a machine where the password is unavailable
+# still ends up working rather than half-configured.
+function Install-PortableNode {
+  $ver = 'v22.14.0'
+  $dest = Join-Path $HOME '.local'
+  $dir  = Join-Path $dest "node-$ver-win-x64"
+  if (Test-Path (Join-Path $dir 'node.exe')) { $env:Path = "$dir;$env:Path"; return $true }
+  try {
+    $zip = Join-Path $env:TEMP "node-$ver.zip"
+    Write-Info "fetching a portable Node ($ver, no installer needed)..."
+    Invoke-WebRequest -Uri "https://nodejs.org/dist/$ver/node-$ver-win-x64.zip" -OutFile $zip -UseBasicParsing
+    New-Item -ItemType Directory -Force -Path $dest | Out-Null
+    Expand-Archive -Path $zip -DestinationPath $dest -Force
+    Remove-Item $zip -Force -ErrorAction SilentlyContinue
+    $env:Path = "$dir;$env:Path"
+    Add-ToUserPath $dir | Out-Null
+    return (Test-Path (Join-Path $dir 'node.exe'))
+  } catch { return $false }
+}
+
+function Install-PortableGit {
+  $dir = Join-Path $HOME '.local\git'
+  if (Test-Path (Join-Path $dir 'bin\bash.exe')) { $env:Path = "$dir\cmd;$env:Path"; return $true }
+  # Resolve the current PortableGit asset, with a pinned fallback - the same
+  # shape as the Ghostty resolver in go.sh, and for the same reason.
+  $url = $null
+  try {
+    $rel = Invoke-RestMethod -Uri 'https://api.github.com/repos/git-for-windows/git/releases/latest' -UseBasicParsing
+    $url = ($rel.assets | Where-Object { $_.name -match 'PortableGit.*64-bit\.7z\.exe$' } | Select-Object -First 1).browser_download_url
+  } catch { }
+  if (-not $url) {
+    $url = 'https://github.com/git-for-windows/git/releases/download/v2.55.0.windows.3/PortableGit-2.55.0.3-64-bit.7z.exe'
+  }
+  try {
+    $exe = Join-Path $env:TEMP 'PortableGit.7z.exe'
+    Write-Info "fetching a portable Git (~56 MB, no installer needed)..."
+    Invoke-WebRequest -Uri $url -OutFile $exe -UseBasicParsing
+    & $exe "-o$dir" -y | Out-Null
+    Remove-Item $exe -Force -ErrorAction SilentlyContinue
+    if (Test-Path (Join-Path $dir 'bin\bash.exe')) {
+      $env:Path = "$dir\cmd;$env:Path"
+      Add-ToUserPath (Join-Path $dir 'cmd') | Out-Null
+      return $true
+    }
+    return $false
+  } catch { return $false }
+}
+
+function Find-GitBash {
+  @(
+    'C:\Program Files\Git\bin\bash.exe',
+    'C:\Program Files (x86)\Git\bin\bash.exe',
+    (Join-Path $env:LOCALAPPDATA 'Programs\Git\bin\bash.exe'),
+    (Join-Path $HOME '.local\git\bin\bash.exe')
+  ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 }
 
 Write-Host @"
@@ -81,6 +154,10 @@ Write-Host @"
   Leadership Hackathon | 31 July 2026 | Plum
 
   Bring one real problem. Leave with a working prototype.
+
+  On a machine with none of this installed, expect 8 to 15 minutes - most of it
+  downloading. Some steps sit quiet for minutes at a time. That is normal; leave
+  the window open.
 
 "@ -ForegroundColor White
 
@@ -151,20 +228,18 @@ Write-Step "Installing Git (this is what keeps the safety checks working)"
 if (Test-Have 'git') {
   Write-Ok "git already installed ($(git --version))"
 } else {
-  Write-Info "downloading Git for Windows..."
-  Install-WinGetPackage -Id 'Git.Git' | Out-Null
-  if (Test-Have 'git') { Write-Ok "git installed" }
-  else { Write-Warn "git did not install - tell an organiser before you start building" }
+  Install-WinGetPackage -Id 'Git.Git' -Label 'Git for Windows (~70 MB)' -Expect '1-3 minutes'
+  if (-not (Test-Have 'git')) {
+    Write-Warn "the Git installer did not complete - falling back to a portable copy"
+    Install-PortableGit | Out-Null
+  }
+  if (Test-Have 'git') { Write-Ok "git installed ($(git --version))" }
+  else { Write-Warn "git is still missing - the safety checks below will not run" }
 }
 
 # Pin the bash path so Claude Code uses Git Bash for the Bash tool rather than
 # falling back to PowerShell, which would leave every hook in this kit inert.
-$bashCandidates = @(
-  'C:\Program Files\Git\bin\bash.exe',
-  'C:\Program Files (x86)\Git\bin\bash.exe',
-  (Join-Path $env:LOCALAPPDATA 'Programs\Git\bin\bash.exe')
-)
-$bash = $bashCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+$bash = Find-GitBash
 
 if ($bash) {
   $settingsPath = Join-Path $HOME '.claude\settings.json'
@@ -205,26 +280,37 @@ if ($nodeMajor -ge $MinNode) {
 } else {
   if ($nodeMajor -gt 0) { Write-Info "node v$nodeMajor is too old for the Salesforce and Kula servers; installing $MinNode+..." }
   else { Write-Info "installing node..." }
-  Install-WinGetPackage -Id 'OpenJS.NodeJS.LTS' | Out-Null
+  Install-WinGetPackage -Id 'OpenJS.NodeJS.LTS' -Label 'Node (~30 MB)' -Expect '1-2 minutes'
   $nodeMajor = Get-NodeMajor
+  if ($nodeMajor -lt $MinNode) {
+    Write-Warn "the Node installer did not give us $MinNode+ - falling back to a portable copy"
+    Install-PortableNode | Out-Null
+    $nodeMajor = Get-NodeMajor
+  }
   if ($nodeMajor -ge $MinNode) { Write-Ok "node $(node --version)" }
-  else { Write-Warn "node $MinNode+ did not install - get it from https://nodejs.org, then run iw-doctor" }
+  else { Write-Warn "node $MinNode+ is missing - the salesforce and kula servers will not start" }
 }
 
 if (Test-Have 'npm') {
   if (Test-Have 'sf') {
     Write-Skip "salesforce cli already installed"
   } else {
-    npm install -g @salesforce/cli 2>&1 | Out-Null
+    Write-Info "Salesforce CLI - the biggest download here, usually 3-6 minutes."
+    Write-Info "npm prints little while it works; that is normal, not a hang."
+    $sfStart = Get-Date
+    npm install -g @salesforce/cli --loglevel http
+    Write-Info "Salesforce CLI finished in $([int]((Get-Date) - $sfStart).TotalSeconds)s"
     Sync-Path
     if (Test-Have 'sf') { Write-Ok "salesforce cli installed" }
     else { Write-Warn "salesforce cli didn't install - run: npm i -g @salesforce/cli" }
   }
 
   # Populate the npx cache so the first MCP launch isn't racing its own download.
-  foreach ($pkg in @('@salesforce/mcp', '@kula-ai/mcp-server')) {
-    npx -y $pkg --version 2>&1 | Out-Null
-    Write-Ok "cached $pkg"
+  $pkgs = @('@salesforce/mcp', '@kula-ai/mcp-server')
+  for ($i = 0; $i -lt $pkgs.Count; $i++) {
+    Write-Info "caching $($pkgs[$i]) ($($i + 1) of $($pkgs.Count)) - about a minute each"
+    npx -y $pkgs[$i] --version 2>&1 | Out-Null
+    Write-Ok "cached $($pkgs[$i])"
   }
 } else {
   Write-Warn "no npm, so the salesforce and kula servers will not start"
@@ -236,7 +322,42 @@ if (Test-Have 'npm') {
 
 Write-Step "Installing the Insurwreck plugin"
 
-claude plugin marketplace add $KitRepo 2>&1 | Out-Null
+# `claude plugin marketplace add owner/repo` shells out to git clone. go.sh
+# deliberately avoids that on macOS - a fresh machine may have no usable git -
+# and Windows deserves the same treatment. A downloaded zip needs nothing but
+# Invoke-WebRequest and Expand-Archive, both built into PowerShell 5.
+# This is what failed as "Command 'git' not found or is in an unsafe location"
+# on a laptop where the Git install had silently not completed.
+function Install-KitFromZip {
+  $dir = Join-Path $HOME '.insurwreck\kit'
+  try {
+    $zip = Join-Path $env:TEMP 'insurwreck-kit.zip'
+    Invoke-WebRequest -Uri "https://codeload.github.com/$KitRepo/zip/refs/heads/main" -OutFile $zip -UseBasicParsing
+    $staging = Join-Path $env:TEMP 'insurwreck-kit-staging'
+    if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
+    Expand-Archive -Path $zip -DestinationPath $staging -Force
+    # Only swap in once the manifest is confirmed - a truncated download must not
+    # leave the participant with no kit at all.
+    $manifest = Get-ChildItem -Path $staging -Recurse -Filter 'marketplace.json' |
+                Where-Object { $_.DirectoryName -like '*\.claude-plugin' } |
+                Select-Object -First 1
+    if (-not $manifest) { return $null }
+    $root = Split-Path (Split-Path $manifest.FullName)
+    if (Test-Path $dir) { Remove-Item $dir -Recurse -Force }
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    Move-Item -Path $root -Destination $dir
+    Remove-Item $zip, $staging -Recurse -Force -ErrorAction SilentlyContinue
+    return (Join-Path $dir (Split-Path $root -Leaf))
+  } catch { return $null }
+}
+
+$local = Install-KitFromZip
+if ($local) {
+  claude plugin marketplace add $local 2>&1 | Out-Null
+} else {
+  Write-Info "zip download unavailable, trying git..."
+  claude plugin marketplace add $KitRepo 2>&1 | Out-Null
+}
 claude plugin install insurwreck@insurwreck-kit --scope user 2>&1 | Out-Null
 
 # Exit codes here don't distinguish "already installed" from "couldn't reach the
@@ -359,11 +480,32 @@ Write-Host @"
   Your project folder:  $ProjectDir
   Next:                 run /insurwreck:start inside Claude Code
 
+"@ -ForegroundColor White
+
+# Auto permission mode is only defensible because the hooks run - block-secrets,
+# block-destructive, block-kula-writes. Those are bash scripts. With no bash on
+# the machine they are silently inert, and skipping the prompts as well would
+# leave a participant with neither guard. So the handover changes shape.
+if (Find-GitBash) {
+  Write-Host @"
   Paste this to begin:
 
       cd "$ProjectDir" ; claude --permission-mode auto
 
 "@ -ForegroundColor White
+} else {
+  Write-Host @"
+  Paste this to begin:
+
+      cd "$ProjectDir" ; claude
+
+  Note: this starts WITHOUT auto-approve, on purpose. The kit's safety checks
+  need Git Bash, which is not on this machine, so Claude will ask before each
+  action instead. Tell an organiser - they can get git installed and you will
+  get the smoother flow.
+
+"@ -ForegroundColor Yellow
+}
 
 # `irm | iex` gives no interactive stdin, so handing over to a live session is
 # not possible - the line above is the handover.

@@ -30,6 +30,8 @@ irm https://insurwreck-desk.preview.plumhq.com/win | iex
 
 It does the same job in the same terminal you already use. It installs Git for Windows on the way through, which is not optional: every safety check in this kit is a bash script, and without a bash on the machine they would silently stop running.
 
+On a laptop with none of this installed, expect **8 to 15 minutes**, most of it downloading - Git, Node and the Salesforce CLI are large. Some steps sit quiet for a couple of minutes. Leave the window open; it is not stuck.
+
 ### 2. Sign in and get your toolkit
 
 When it finishes it prints one line to paste, ending in `claude --permission-mode auto`. Paste that. The assistant starts. Then type:
