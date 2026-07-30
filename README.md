@@ -64,7 +64,7 @@ Still stuck after `iw-doctor`? Find an organiser. Do not lose twenty minutes to 
 
 ## Bundled MCP servers
 
-All four start automatically when the plugin installs — they are declared in `plugin/.mcp.json`, so there is no separate install step.
+All five start automatically when the plugin installs — they are declared in `plugin/.mcp.json`, so there is no separate install step.
 
 | Server | Package | Official? | Auth | Scoped to the individual? |
 |---|---|---|---|---|
@@ -72,6 +72,7 @@ All four start automatically when the plugin installs — they are declared in `
 | `kula` | [`@kula-ai/mcp-server`](https://github.com/kula-ai/kula-mcp-server) (MIT) | Yes — Kula's own server | `KULA_API_KEY`, one shared organizer key, delivered in the bundle | **No** — read-only, enforced by a hook; see below |
 | `insurwreck-data` | ours — `desk/api/mcp.js` | — | `INSURWRECK_TOKEN` | Allowlisted warehouse slices, same for everyone |
 | `n8n` | organizer-hosted | — | `N8N_TOKEN` | Shared workspace |
+| `remotion` | [`@remotion/mcp`](https://github.com/remotion-dev/remotion/tree/main/packages/mcp) (MIT) | Yes — Remotion's own | none — unauthenticated, no key | n/a — searches public docs |
 
 Three of the four resolve a `${TOKEN}` placeholder when Claude Code starts, and those tokens do not exist until `/insurwreck:start` has run inside an already-started Claude Code. `/insurwreck:start` closes that gap by running `iw-connect`, which merges `INSURWRECK_TOKEN`, `N8N_TOKEN` and `KULA_API_KEY` from the bundle into `~/.claude/settings.json` without disturbing anything else there, skips whatever is not issued yet, and probes the desk so a rejected token cannot look like a missing one. After one restart `insurwreck-data`, `n8n` and `kula` are live.
 

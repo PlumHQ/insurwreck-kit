@@ -34,6 +34,10 @@
       "env": {
         "KULA_API_KEY": "${KULA_API_KEY}"
       }
+    },
+    "remotion": {
+      "command": "npx",
+      "args": ["-y", "@remotion/mcp"]
     }
   }
 }
