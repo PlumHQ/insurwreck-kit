@@ -97,16 +97,48 @@ function guardSelect(sql) {
 
 // -------------------------------------------------------------- metabase ---
 
+// stats2 sits behind an IP-allowlisting proxy that Vercel's egress isn't on.
+// DevOps allow us through on a shared-secret header instead of an IP rule, so
+// that no other Vercel tenant inherits the access. Absent, calls 403 and the
+// snapshot fallback takes over.
+export const mbHeaders = () => ({
+  "x-api-key": MB_KEY(),
+  "Content-Type": "application/json",
+  ...(process.env.METABASE_GATE_SECRET
+    ? { "X-Insurwreck-Gate": process.env.METABASE_GATE_SECRET }
+    : {}),
+});
+
 async function mb(path, { method = "GET", body } = {}) {
   const res = await fetch(`${MB()}/api/${path}`, {
     method,
-    headers: { "x-api-key": MB_KEY(), "Content-Type": "application/json" },
+    headers: mbHeaders(),
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const text = await res.text();
   if (!res.ok) throw new Error(`metabase ${res.status}: ${text.slice(0, 300)}`);
   return text ? JSON.parse(text) : null;
 }
+
+// The desk runs on Vercel, whose egress is not on the warehouse proxy's IP
+// allowlist, so a live Metabase call can come back as a plain nginx 403. Rather
+// than fail the participant, fall back to the materialised copy that
+// desk/scripts/refresh-slices.mjs writes from an allowed machine. It also keeps
+// the slices working through a stats2 outage mid-event.
+async function cached(cardId) {
+  const rows = await sb(`slice_cache?card_id=eq.${cardId}&select=*&limit=1`);
+  return rows.length ? rows[0] : null;
+}
+
+async function cachedAll(ids) {
+  if (!ids.length) return [];
+  return sb(`slice_cache?card_id=in.(${ids.join(",")})&select=*`);
+}
+
+const staleness = (iso) => {
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  return mins < 90 ? `${mins} min old` : `${Math.round(mins / 60)} h old`;
+};
 
 // Reject anything not on the allowlist before a request is even shaped.
 function requireAllowed(id, allowed) {
@@ -247,7 +279,7 @@ async function callTool(name, args, participant) {
     console.warn(`FULL WAREHOUSE QUERY by ${email}: ${sql.slice(0, 400)}`);
     const res = await fetch(`${MB()}/api/dataset`, {
       method: "POST",
-      headers: { "x-api-key": FULL_KEY(), "Content-Type": "application/json" },
+      headers: { ...mbHeaders(), "x-api-key": FULL_KEY() },
       body: JSON.stringify({ type: "native", database: 2, native: { query: sql } }),
     });
     if (!res.ok) throw new Error(`warehouse refused the query (${res.status})`);
@@ -266,8 +298,23 @@ async function callTool(name, args, participant) {
         [...allowed].map((id) => mb(`card/${id}`).catch(() => null))
       );
       const live = cards.filter(Boolean).map(summarize);
-      if (!live.length) return "No datasets are reachable right now. Tell an organizer.";
-      return JSON.stringify(live, null, 2);
+      if (live.length) return JSON.stringify(live, null, 2);
+
+      const snap = await cachedAll([...allowed]).catch(() => []);
+      if (snap.length) {
+        return JSON.stringify(
+          snap.map((c) => ({
+            id: c.card_id,
+            name: c.name,
+            description: `${c.row_count} rows, snapshot ${staleness(c.refreshed_at)}`,
+            columns: (c.columns || []).map((name) => ({ name })),
+            parameters: [],
+          })),
+          null,
+          2
+        );
+      }
+      return "No datasets are reachable right now. Tell an organizer - the desk can't reach Metabase and there's no snapshot.";
     }
 
     case "describe_dataset": {
@@ -285,16 +332,40 @@ async function callTool(name, args, participant) {
 
     case "run_dataset": {
       const id = requireAllowed(args?.dataset_id, allowed);
-      const card = await mb(`card/${id}`);
-      const parameters = bindParameters(card, args?.filters);
-      console.log(`mcp run card=${id} by ${email} params=${parameters.length}`);
-      const result = await mb(`card/${id}/query`, { method: "POST", body: { parameters } });
-      const { cols, rows, truncated } = toRows(result);
-      return JSON.stringify(
-        { dataset: card.name, columns: cols, row_count: rows.length, truncated, rows },
-        null,
-        2
-      );
+      console.log(`mcp run card=${id} by ${email}`);
+      try {
+        const card = await mb(`card/${id}`);
+        const parameters = bindParameters(card, args?.filters);
+        const result = await mb(`card/${id}/query`, { method: "POST", body: { parameters } });
+        const { cols, rows, truncated } = toRows(result);
+        return JSON.stringify(
+          { dataset: card.name, columns: cols, row_count: rows.length, truncated, rows },
+          null,
+          2
+        );
+      } catch (error) {
+        const snap = await cached(id);
+        if (!snap) throw error;
+        // Filters can't be applied to a snapshot - say so rather than silently
+        // returning unfiltered rows the participant would treat as filtered.
+        const note = Object.keys(args?.filters || {}).length
+          ? "Filters were ignored: this came from a snapshot, not a live query. Filter the rows yourself."
+          : undefined;
+        const rows = (snap.rows || []).slice(0, ROW_CAP);
+        return JSON.stringify(
+          {
+            dataset: snap.name,
+            source: `snapshot, ${staleness(snap.refreshed_at)}`,
+            ...(note ? { note } : {}),
+            columns: snap.columns,
+            row_count: rows.length,
+            truncated: (snap.rows || []).length > ROW_CAP,
+            rows,
+          },
+          null,
+          2
+        );
+      }
     }
 
     case "export_dataset": {
@@ -337,7 +408,7 @@ export default async function handler(req, res) {
     let upstream = "unknown";
     try {
       const r = await fetch(`${MB()}/api/card/${[...(await allowlist())][0] ?? 0}`, {
-        headers: { "x-api-key": MB_KEY() },
+        headers: mbHeaders(),
         signal: AbortSignal.timeout(8000),
       });
       upstream = r.ok ? "ok" : `http_${r.status}`;

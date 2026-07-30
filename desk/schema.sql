@@ -76,9 +76,23 @@ create table if not exists public.data_slices (
   created_at  timestamptz not null default now()
 );
 
+-- A materialised copy of each published slice, refreshed from a machine that can
+-- reach stats2. The desk runs on Vercel, whose egress is not on the warehouse
+-- proxy's IP allowlist, so /api/mcp falls back to this when Metabase 403s.
+-- Also means a stats2 outage mid-event doesn't take the data with it.
+create table if not exists public.slice_cache (
+  card_id     integer primary key,
+  name        text,
+  columns     jsonb not null default '[]'::jsonb,
+  rows        jsonb not null default '[]'::jsonb,
+  row_count   integer not null default 0,
+  refreshed_at timestamptz not null default now()
+);
+
 alter table public.participants enable row level security;
 alter table public.otp_codes enable row level security;
 alter table public.sessions enable row level security;
 alter table public.credentials enable row level security;
 alter table public.llm_usage enable row level security;
 alter table public.data_slices enable row level security;
+alter table public.slice_cache enable row level security;
