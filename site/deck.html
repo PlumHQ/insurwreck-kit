@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="robots" content="noindex" />
+    <meta
+      name="description"
+      content="Insurwreck 4.0 orientation: set up your build environment, meet the harness, and see what to ask for."
+    />
+    <title>Orientation · Insurwreck 4.0</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Inter:wght@400;500;600&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="deck.css" />
+    <script src="deck.js" defer></script>
+  </head>
+  <body class="deck-body">
+    <svg class="svg-sprite" aria-hidden="true">
+      <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M5 12h14M14 7l5 5-5 5" /></symbol>
+      <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12.5 4.2 4L19 7" /></symbol>
+      <symbol id="icon-copy" viewBox="0 0 24 24">
+        <rect x="8" y="8" width="11" height="12" rx="2" />
+        <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h2" />
+      </symbol>
+      <symbol id="icon-terminal" viewBox="0 0 24 24">
+        <rect x="3" y="4.5" width="18" height="15" rx="2" />
+        <path d="m7 9.5 3 2.5-3 2.5M12.5 15H17" />
+      </symbol>
+      <symbol id="icon-spark" viewBox="0 0 24 24"><path d="M12 3l1.3 4.2a5 5 0 0 0 3.4 3.4L21 12l-4.3 1.4a5 5 0 0 0-3.4 3.4L12 21l-1.3-4.2a5 5 0 0 0-3.4-3.4L3 12l4.3-1.4a5 5 0 0 0 3.4-3.4L12 3Z" /></symbol>
+      <symbol id="icon-box" viewBox="0 0 24 24"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z" /><path d="m4 7.5 8 4.5 8-4.5M12 12v9" /></symbol>
+      <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 3.5 19 6v5.5c0 4.4-2.6 7.6-7 9-4.4-1.4-7-4.6-7-9V6l7-2.5Z" /><path d="m8.5 12 2.2 2.2 4.8-5" /></symbol>
+      <symbol id="icon-loop" viewBox="0 0 24 24"><path d="M7 7h9.5a4.5 4.5 0 0 1 0 9H8" /><path d="m10 12-4 4 4 4M17 3l3 4-3 4" /></symbol>
+      <symbol id="icon-user-check" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3" /><path d="M3.5 19c.6-3.2 2.4-5 5.5-5s4.9 1.8 5.5 5M15.5 10.5l2 2 3.5-4" /></symbol>
+      <symbol id="icon-restart" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9" /><path d="M20 4v4h-4" /></symbol>
+      <symbol id="icon-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3.5 7.5 8.5 5.5 8.5-5.5" /></symbol>
+    </svg>
+
+    <header class="deck-bar">
+      <div class="deck-bar-inner">
+        <a class="brand" href="/" aria-label="Insurwreck 4.0 home">
+          <img class="brand-logo" src="assets/plum-logo.svg" alt="Plum" />
+          <span class="brand-divider" aria-hidden="true"></span>
+          <span class="brand-event">Orientation</span>
+        </a>
+        <nav class="deck-dots" aria-label="Slides"></nav>
+        <div class="deck-count"><b data-slide-now>1</b><span data-slide-total>/ 16</span></div>
+      </div>
+      <div class="deck-progress"><span data-progress></span></div>
+    </header>
+
+    <main class="deck">
+      <!-- 1 ---------------------------------------------------------------->
+      <section class="slide slide-title" data-title="Welcome">
+        <p class="eyebrow">Insurwreck 4.0 · Orientation · 30 July 2026</p>
+        <h1>Let's get your<br />workshop running.</h1>
+        <p class="slide-lede">
+          By the end of this session every one of you will have a working build environment: your own
+          hosting, your own database, a real inbox, model access, and read-only Plum data — all wired
+          up and verified.
+        </p>
+        <div class="title-meta">
+          <div><strong>~20 min</strong><span>Setup, together</span></div>
+          <div><strong>Follow along</strong><span>We move when everyone's ready</span></div>
+        </div>
+        <p class="slide-note">Use → and ← to move. Everything on screen is also at this URL on your laptop.</p>
+      </section>
+
+      <!-- 2 ---------------------------------------------------------------->
+      <section class="slide" data-title="Today">
+        <p class="eyebrow">How this session runs</p>
+        <h2>Three stages.<br />Nobody gets left behind.</h2>
+        <div class="stage-list">
+          <div><span>01</span><div><strong>Set up</strong><p>One command installs everything. We wait until every screen looks the same.</p></div></div>
+          <div><span>02</span><div><strong>Meet the harness</strong><p>What was built for you, and what you can now ask for in plain English.</p></div></div>
+          <div><span>03</span><div><strong>Try one thing</strong><p>You point at a real problem and watch something get made.</p></div></div>
+        </div>
+        <p class="slide-note">
+          At each checkpoint we stop and confirm out loud. If you're stuck, say so then — not at the end.
+        </p>
+      </section>
+
+      <!-- 3 ---------------------------------------------------------------->
+      <section class="slide" data-title="Before we start">
+        <p class="eyebrow">Before we start</p>
+        <h2>Two things to check.</h2>
+        <div class="two-col">
+          <article class="card">
+            <span class="card-icon"><svg aria-hidden="true"><use href="#icon-terminal"></use></svg></span>
+            <h3>On a Mac?</h3>
+            <p>You're ready. Nothing to do. We'll open Terminal in a moment.</p>
+          </article>
+          <article class="card card-signal">
+            <span class="card-icon"><svg aria-hidden="true"><use href="#icon-shield"></use></svg></span>
+            <h3>On Windows?</h3>
+            <p>
+              You need WSL first, and it needs a restart. Open PowerShell as administrator, run
+              <code>wsl --install</code>, restart, then open <strong>Ubuntu</strong> from the Start menu
+              and follow along there.
+            </p>
+          </article>
+        </div>
+        <p class="slide-note">
+          You do not need to know git, the terminal, or what an environment variable is. You will not be
+          asked to copy a single password.
+        </p>
+      </section>
+
+      <!-- 4 ---------------------------------------------------------------->
+      <section class="slide" data-title="Step 1 · One paste" data-gate="install">
+        <p class="eyebrow">Step 1 of 5</p>
+        <h2>Paste one line.</h2>
+        <p class="slide-lede compact">On a Mac press <kbd>⌘</kbd> <kbd>Space</kbd>, type <em>Terminal</em>, hit enter. Then paste this:</p>
+        <div class="command-block">
+          <code id="cmd-install">curl -fsSL https://insurwreck-desk.preview.plumhq.com/go | bash</code>
+          <button class="copy-button" type="button" data-copy="cmd-install">
+            <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+          </button>
+        </div>
+        <div class="installs">
+          <p class="mono-label">It installs, checking each one first</p>
+          <ul>
+            <li>A proper terminal (Ghostty)</li>
+            <li>Claude Code — the agent you'll build with</li>
+            <li>Node and the Salesforce CLI</li>
+            <li>The Insurwreck toolkit</li>
+            <li>A project folder at <code>~/insurwreck</code></li>
+          </ul>
+        </div>
+        <p class="slide-note">
+          Three to five minutes. A tick appears per step. If it asks for your Mac password, that's the
+          installer needing permission — type it and carry on. Safe to run twice; it skips what's done.
+        </p>
+        <div class="gate" data-gate-for="install">
+          <label><input type="checkbox" value="install" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>My install finished and printed the next command</span></label>
+        </div>
+      </section>
+
+      <!-- 5 ---------------------------------------------------------------->
+      <section class="slide" data-title="Step 2 · Sign in" data-gate="start">
+        <p class="eyebrow">Step 2 of 5</p>
+        <h2>Tell it who you are.</h2>
+        <p class="slide-lede compact">
+          The installer ends by printing a line to paste, finishing in
+          <code>claude --permission-mode auto</code>. Paste that. When the agent starts, type:
+        </p>
+        <div class="command-block">
+          <code id="cmd-start">/insurwreck:start</code>
+          <button class="copy-button" type="button" data-copy="cmd-start">
+            <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+          </button>
+        </div>
+        <div class="three-up">
+          <div><span class="mono-label">It asks</span><strong>Your name</strong></div>
+          <div><span class="mono-label">It asks</span><strong>Your Plum email</strong></div>
+          <div><span class="mono-label">It asks</span><strong>Two sentences on your problem</strong></div>
+        </div>
+        <p class="slide-lede compact">
+          Then it emails you a six-digit code from <code>insurwreck@badge.plumhq.com</code>. Paste it
+          back. Check spam the first time.
+        </p>
+        <p class="slide-note">
+          No idea yet? Say "still exploring" — it's a valid answer and we'll help you pick one later.
+        </p>
+        <div class="gate" data-gate-for="start">
+          <label><input type="checkbox" value="verified" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>I entered my code and it accepted it</span></label>
+        </div>
+      </section>
+
+      <!-- 6 ---------------------------------------------------------------->
+      <section class="slide" data-title="What you get">
+        <p class="eyebrow">Step 3 of 5 · Happening while you wait</p>
+        <h2>Eight things get built,<br />just for you.</h2>
+        <div class="grid-services">
+          <article><span class="mono-label">Hosting</span><strong>Vercel</strong><p>Your own project. Deploys to a public URL you can share.</p></article>
+          <article><span class="mono-label">Database</span><strong>Supabase</strong><p>Your own Postgres, with keys and a dashboard.</p></article>
+          <article><span class="mono-label">Model access</span><strong>Anthropic</strong><p>Metered against a per-person budget. No key to manage.</p></article>
+          <article><span class="mono-label">Inbox</span><strong>AgentMail</strong><p>A real address that sends and receives.</p></article>
+          <article><span class="mono-label">Email out</span><strong>Resend</strong><p>Sending-only, on the shared hackathon domain.</p></article>
+          <article><span class="mono-label">Workflows</span><strong>n8n</strong><p>Schedules and multi-step automation.</p></article>
+          <article><span class="mono-label">Login</span><strong>Google</strong><p>Plum-only sign-in for the app you build.</p></article>
+          <article><span class="mono-label">Recruiting</span><strong>Kula</strong><p>Read-only pipeline data.</p></article>
+        </div>
+        <p class="slide-note">
+          You never see or paste a key. They're written into your project for you. If one says
+          <em>almost ready</em>, that's normal — <code>/insurwreck:status</code> finishes it later.
+        </p>
+      </section>
+
+      <!-- 7 ---------------------------------------------------------------->
+      <section class="slide slide-emphasis" data-title="Step 4 · Restart" data-gate="restart">
+        <p class="eyebrow">Step 4 of 5 · The one everybody skips</p>
+        <h2>Quit it.<br />Start it again.</h2>
+        <div class="emphasis-body">
+          <span class="emphasis-icon"><svg aria-hidden="true"><use href="#icon-restart"></use></svg></span>
+          <div>
+            <p>
+              Close the window. Reopen your terminal. Paste the same launch line the installer gave you.
+            </p>
+            <p>
+              <strong>This restart is what switches the Plum data on.</strong> Skip it and the data
+              server will look broken — and you'll spend twenty minutes debugging something that isn't
+              wrong.
+            </p>
+          </div>
+        </div>
+        <p class="slide-note">
+          Why: the data connections read your tokens when the agent starts, and your tokens only existed
+          a minute ago.
+        </p>
+        <div class="gate" data-gate-for="restart">
+          <label><input type="checkbox" value="restarted" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>I quit and relaunched</span></label>
+        </div>
+      </section>
+
+      <!-- 8 ---------------------------------------------------------------->
+      <section class="slide" data-title="Step 5 · Check" data-gate="doctor">
+        <p class="eyebrow">Step 5 of 5</p>
+        <h2>Prove it works.</h2>
+        <p class="slide-lede compact">Type this. It checks your whole setup and explains anything wrong in plain English.</p>
+        <div class="command-block">
+          <code id="cmd-doctor">iw-doctor</code>
+          <button class="copy-button" type="button" data-copy="cmd-doctor">
+            <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+          </button>
+        </div>
+        <div class="two-col">
+          <article class="card">
+            <h3>All green?</h3>
+            <p>You're done. Sit tight while we get everyone else there.</p>
+          </article>
+          <article class="card">
+            <h3>Something red?</h3>
+            <p>
+              Read what it says — it usually tells you the fix. "Restart" genuinely means restart. If it
+              says a token was rejected, raise your hand; re-running won't help.
+            </p>
+          </article>
+        </div>
+        <div class="gate gate-final" data-gate-for="doctor">
+          <label><input type="checkbox" value="doctor" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span><strong>iw-doctor is green.</strong> I'm ready for stage two</span></label>
+        </div>
+      </section>
+
+      <!-- 9 ---------------------------------------------------------------->
+      <section class="slide" data-title="Stage two">
+        <p class="eyebrow">Stage two</p>
+        <h2>Now — what you<br />actually have.</h2>
+        <p class="slide-lede">
+          Everything from here is about using it. There is nothing left to install, and no more commands
+          you have to memorise.
+        </p>
+        <div class="stage-list">
+          <div><span>01</span><div><strong>The connections</strong><p>Live systems the agent can read for you.</p></div></div>
+          <div><span>02</span><div><strong>The shortcuts</strong><p>Say what you want; it knows the recipe.</p></div></div>
+          <div><span>03</span><div><strong>The safety nets</strong><p>Things quietly stopping you from losing work.</p></div></div>
+        </div>
+      </section>
+
+      <!-- 10 --------------------------------------------------------------->
+      <section class="slide" data-title="Connections">
+        <p class="eyebrow">The connections</p>
+        <h2>Five live systems,<br />already attached.</h2>
+        <div class="table-wrap">
+          <table class="deck-table">
+            <thead><tr><th>Connection</th><th>What you can ask for</th><th>Scope</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Plum data</strong><small>insurwreck-data</small></td><td>"Show me claims by status", "what's our NPS trend"</td><td>Ten read-only slices, de-identified</td></tr>
+              <tr><td><strong>Salesforce</strong></td><td>"What's in this account's history?"</td><td><em>Your own</em> login and permissions — needs <code>/insurwreck:connect</code></td></tr>
+              <tr><td><strong>Kula</strong></td><td>"Show the current hiring pipeline"</td><td>Read-only, shared across everyone</td></tr>
+              <tr><td><strong>n8n</strong></td><td>"Run this every morning at 9"</td><td>Shared workspace</td></tr>
+              <tr><td><strong>Remotion</strong></td><td>"Make a short video from this data"</td><td>Docs only</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="slide-note">
+          Only Salesforce asks you to log in, because it acts as <em>you</em> — you see exactly what you'd
+          see in the Salesforce UI, nothing more.
+        </p>
+      </section>
+
+      <!-- 11 --------------------------------------------------------------->
+      <section class="slide" data-title="Just say it">
+        <p class="eyebrow">The shortcuts</p>
+        <h2>Say what you want.<br />Not how to do it.</h2>
+        <div class="table-wrap">
+          <table class="deck-table">
+            <thead><tr><th>Say this — or anything like it</th><th>What happens</th></tr></thead>
+            <tbody>
+              <tr><td>"My site is down" · "it broke" · "blank page"</td><td>Runs a health check and fixes it. Usually your settings never reached hosting — it copies them over and redeploys.</td></tr>
+              <tr><td>"I don't know what to build"</td><td>Asks you one question, picks a shape, scaffolds it, and gets it running on your laptop.</td></tr>
+              <tr><td>"Connect my spreadsheet" · "here's a CSV"</td><td>Parses your file and seeds it into your own database.</td></tr>
+              <tr><td>"How do I use real Plum data"</td><td>Lists what's available, shows the columns, runs a sample query.</td></tr>
+              <tr><td>"Get ready to present"</td><td>Checks your URL loads, saves a backup screenshot, drafts a three-line pitch.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="slide-note">You do not need the exact words. Describe the problem; it works out which recipe applies.</p>
+      </section>
+
+      <!-- 12 --------------------------------------------------------------->
+      <section class="slide" data-title="Safety nets">
+        <p class="eyebrow">The safety nets</p>
+        <h2>Three things<br />you don't have to think about.</h2>
+        <div class="three-cards">
+          <article class="card">
+            <span class="card-icon"><svg aria-hidden="true"><use href="#icon-loop"></use></svg></span>
+            <h3>Undo you never asked for</h3>
+            <p>Every file change is quietly checkpointed. Say <em>"go back to before that change"</em> and it will.</p>
+          </article>
+          <article class="card">
+            <span class="card-icon"><svg aria-hidden="true"><use href="#icon-shield"></use></svg></span>
+            <h3>Secrets stay out of code</h3>
+            <p>Paste a real key into a file and it stops you, explains why, and puts it somewhere safe instead.</p>
+          </article>
+          <article class="card">
+            <span class="card-icon"><svg aria-hidden="true"><use href="#icon-user-check"></use></svg></span>
+            <h3>No catastrophic commands</h3>
+            <p>Anything that would wipe your folder or throw away work asks what you actually meant.</p>
+          </article>
+        </div>
+        <p class="slide-note">None of this blocks you. It's there so one wrong keystroke doesn't end your day.</p>
+      </section>
+
+      <!-- 13 --------------------------------------------------------------->
+      <section class="slide" data-title="The data">
+        <p class="eyebrow">Your data</p>
+        <h2>Real Plum data.<br />Handled carefully.</h2>
+        <div class="two-col">
+          <article class="card">
+            <h3>What you get</h3>
+            <p>
+              Ten read-only slices: claims, covered lives, support tickets, NPS, policy schedules and
+              more. Ask for what you want — you don't need table names.
+            </p>
+            <p class="card-foot">De-identified: no member names, ages banded, free-text notes stripped.</p>
+          </article>
+          <article class="card card-signal">
+            <h3>Read this once</h3>
+            <p>
+              It is still <strong>confidential company data</strong>. Never screenshot it into Slack.
+              Never put a raw row on a slide.
+            </p>
+            <p class="card-foot">Aggregates and charts in your demo are fine. Raw records are not.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- 14 --------------------------------------------------------------->
+      <section class="slide" data-title="Worked example">
+        <p class="eyebrow">What good looks like</p>
+        <h2>One problem,<br />four sentences.</h2>
+        <div class="example-flow">
+          <div class="example-step"><span class="mono-label">You say</span><p>"Every Monday I chase five teams for status. Build me something that collects it and drafts my summary."</p></div>
+          <div class="example-arrow" aria-hidden="true"><svg><use href="#icon-arrow"></use></svg></div>
+          <div class="example-step"><span class="mono-label">It does</span><p>Scaffolds an app, makes a table for submissions, deploys it to your public URL.</p></div>
+          <div class="example-arrow" aria-hidden="true"><svg><use href="#icon-arrow"></use></svg></div>
+          <div class="example-step"><span class="mono-label">You say</span><p>"Email the five leads a link every Monday at 9, and draft the summary once three reply."</p></div>
+          <div class="example-arrow" aria-hidden="true"><svg><use href="#icon-arrow"></use></svg></div>
+          <div class="example-step"><span class="mono-label">It does</span><p>Wires the schedule, the inbox, and a draft that waits for your approval.</p></div>
+        </div>
+        <p class="slide-note">
+          Notice what you never did: no keys, no hosting setup, no database migration, no cron syntax.
+        </p>
+      </section>
+
+      <!-- 15 --------------------------------------------------------------->
+      <section class="slide" data-title="Ship it">
+        <p class="eyebrow">Showing your work</p>
+        <h2>Two commands<br />you'll want tomorrow.</h2>
+        <div class="two-col">
+          <article class="card">
+            <h3><code>iw-deploy</code></h3>
+            <p>Puts your app on a real public URL. Anyone can open it — no login, no Vercel account.</p>
+            <p class="card-foot">Because it's public: no real customer data in what you deploy.</p>
+          </article>
+          <article class="card">
+            <h3>"Get ready to present"</h3>
+            <p>
+              Checks your URL actually loads, saves a screenshot as backup in case it dies mid-pitch, and
+              drafts a three-line pitch: problem → what you built → the wow moment.
+            </p>
+          </article>
+        </div>
+        <p class="slide-note">Also useful: <code>/insurwreck:status</code> to see your setup and repair anything unfinished.</p>
+      </section>
+
+      <!-- 16 --------------------------------------------------------------->
+      <section class="slide slide-title" data-title="Go">
+        <p class="eyebrow">Stage three</p>
+        <h1>Bring one real problem.</h1>
+        <p class="slide-lede">
+          Not a demo. Something that actually costs you time every week. You'll leave with it running,
+          and a decision about whether to keep it.
+        </p>
+        <div class="stuck-row">
+          <div><strong><code>iw-doctor</code></strong><span>When something's broken</span></div>
+          <div><strong>Raise your hand</strong><span>When iw-doctor doesn't help</span></div>
+        </div>
+        <div class="signoff"><span>AI pod at Plum</span><small>Building alongside you</small></div>
+      </section>
+    </main>
+
+    <div class="deck-nav">
+      <button type="button" data-prev aria-label="Previous slide"><svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
+      <button type="button" data-next aria-label="Next slide"><svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
+    </div>
+  </body>
+</html>
