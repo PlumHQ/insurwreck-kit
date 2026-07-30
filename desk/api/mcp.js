@@ -86,12 +86,20 @@ const FULL_KEY = () => process.env.METABASE_FULL_KEY || "";
 const FORBIDDEN =
   /\b(insert|update|delete|drop|alter|create|truncate|grant|revoke|copy|vacuum|call|do|set|reset|listen|notify|begin|commit)\b/i;
 
-function guardSelect(sql) {
+export function guardSelect(sql) {
   const q = String(sql || "").trim().replace(/;+\s*$/, "");
   if (!q) throw new Error("empty query");
   if (!/^(select|with)\b/i.test(q)) throw new Error("only SELECT or WITH is allowed");
-  if (q.includes(";")) throw new Error("one statement at a time - remove the semicolon");
-  if (FORBIDDEN.test(q)) throw new Error("this connection is read-only");
+
+  // Keyword-match against the query with string literals and quoted identifiers
+  // blanked out. Inside quotes those words are data, not statements, and a
+  // legitimate filter like ("verb" = 'create') was being refused as a write.
+  const bare = q
+    .replace(/'(?:[^']|'')*'/g, "''")
+    .replace(/"(?:[^"]|"")*"/g, '""');
+
+  if (bare.includes(";")) throw new Error("one statement at a time - remove the semicolon");
+  if (FORBIDDEN.test(bare)) throw new Error("this connection is read-only");
   return q;
 }
 
