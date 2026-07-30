@@ -548,12 +548,16 @@ if (Find-GitBash) {
 
       cd "$ProjectDir" ; claude --permission-mode auto
 
+  Once Claude Code starts, type /insurwreck:start
+
 "@ -ForegroundColor White
 } else {
   Write-Host @"
   Paste this to begin:
 
       cd "$ProjectDir" ; claude
+
+  Once Claude Code starts, type /insurwreck:start
 
   Note: this starts WITHOUT auto-approve, on purpose. The kit's safety checks
   need Git Bash, which is not on this machine, so Claude will ask before each
