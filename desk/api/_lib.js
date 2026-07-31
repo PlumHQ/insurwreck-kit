@@ -21,6 +21,25 @@ export async function sb(path, { method = "GET", body, headers = {} } = {}) {
   return text ? JSON.parse(text) : null;
 }
 
+// PostgREST caps a plain select at 1000 rows, silently. llm_usage passed that
+// mark mid-event and every spend figure started drifting downward as new rows
+// shifted which 1000 came back - the roster under-reported, and worse, the
+// gateway's own budget check would have stopped growing at 1000 calls and let
+// someone spend without a ceiling. Page until the server returns a short page.
+// Callers must pass a stable `order` or the pages overlap.
+export async function sbAll(path, pageSize = 1000) {
+  const out = [];
+  for (let from = 0; ; from += pageSize) {
+    const page = await sb(path, {
+      headers: { Range: `${from}-${from + pageSize - 1}`, "Range-Unit": "items" },
+    });
+    if (!Array.isArray(page)) break;
+    out.push(...page);
+    if (page.length < pageSize) break;
+  }
+  return out;
+}
+
 export const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 export const newOtpCode = () => String(randomInt(0, 1000000)).padStart(6, "0");
 export const newToken = () => randomBytes(24).toString("hex");

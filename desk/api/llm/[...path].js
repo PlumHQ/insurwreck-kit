@@ -1,4 +1,4 @@
-import { sb, sha256, nowIso } from "../_lib.js";
+import { sbAll, sb, sha256, nowIso } from "../_lib.js";
 
 // Anthropic's Admin API can't create API keys, so participants can't be given
 // one each. This endpoint stands in for the Anthropic API instead: it holds
@@ -52,8 +52,8 @@ async function participantFor(token) {
 }
 
 async function spentSoFar(email) {
-  const rows = await sb(
-    `llm_usage?participant_email=eq.${encodeURIComponent(email)}&select=cost_usd`
+  const rows = await sbAll(
+    `llm_usage?participant_email=eq.${encodeURIComponent(email)}&select=cost_usd&order=id`
   );
   return rows.reduce((total, row) => total + Number(row.cost_usd || 0), 0);
 }

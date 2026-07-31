@@ -1,4 +1,4 @@
-import { sb, organizerFor } from "./_lib.js";
+import { sb, sbAll, organizerFor } from "./_lib.js";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "GET only" });
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     // budget before they hit the wall rather than after.
     let spend = [];
     try {
-      const usage = await sb("llm_usage?select=participant_email,cost_usd,input_tokens,output_tokens");
+      const usage = await sbAll("llm_usage?select=participant_email,cost_usd,input_tokens,output_tokens&order=id");
       const byEmail = new Map();
       for (const row of usage) {
         const e = row.participant_email;
