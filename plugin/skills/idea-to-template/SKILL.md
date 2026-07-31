@@ -36,7 +36,17 @@ cp -r "$SRC"/. "$DEST"/
 cd "$DEST"
 ```
 
-Copy the whole template — both routes come along regardless of shape; don't try to split it. Copying the provided starter is not what the brief gate is guarding against, so this step works before `BRIEF.md` exists; writing bespoke application code does not. Once it's running (Step 5), offer to delete the route they don't need (`app/dashboard` or `app/generate` plus its `app/api/...` counterpart) — only if they want a cleaner starting point, not by default.
+Then immediately commit it to the shape you picked in Step 2:
+
+```bash
+node scripts/pick.mjs dashboard    # or: generate
+```
+
+**Do this every time, before anything else.** It removes the other route, its API handlers and its component, points the home page at what is left, and trims the nav. Skip it and the two-card chooser we wrote for ourselves ships to their live URL - which is exactly what happened to the first people who deployed.
+
+Idempotent and reversible: the full template is still at `${CLAUDE_PLUGIN_ROOT}/templates/starter` if they later want the other half.
+
+Copying the provided starter is not what the brief gate is guarding against, so this works before `BRIEF.md` exists; writing bespoke application code does not.
 
 ## Step 4 — Wire it up and run setup
 
@@ -45,6 +55,12 @@ npm run setup
 ```
 
 This is `node scripts/setup.mjs` — it pulls in their event credentials from `~/.insurwreck/credentials.json` automatically, no keys typed by hand. If it fails, fall back to `npm install` and tell them plainly what setup step is missing — don't paper over a broken template silently.
+
+## Step 4b — Make it look like Plum
+
+Invoke the `plum-design` skill before you write any UI. Plum's tokens, type and
+rules are there, with a drop-in stylesheet. Every app deployed today carries
+Plum's name; none of them should open in default slate-and-indigo.
 
 ## Step 5 — Get a dev server running
 
