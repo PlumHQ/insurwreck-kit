@@ -1,4 +1,4 @@
-import { sb, isAdmin, nowIso } from "./_lib.js";
+import { sb, organizerFor, nowIso } from "./_lib.js";
 import { callbackRegistered } from "./_minters.js";
 
 // Google has no public API for an OAuth client's authorized redirect URIs, so
@@ -6,7 +6,7 @@ import { callbackRegistered } from "./_minters.js";
 // POST marks everything currently issued as registered, which clears the
 // participants' google_console_registration pending part.
 export default async function handler(req, res) {
-  if (!isAdmin(req)) return res.status(401).json({ error: "admin key required" });
+  if (!(await organizerFor(req))) return res.status(401).json({ error: "organizer access required" });
 
   try {
     const rows = await sb(
