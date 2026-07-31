@@ -641,7 +641,7 @@ if [ ! -t 0 ]; then
 fi
 
 cd "$PROJECT_DIR"
-# The one place we own a real TTY, so the intro can actually animate. Never
+# A wordmark at the handover, in colour because this is a real terminal. Never
 # let a cosmetic script block the handover.
 if command -v iw-intro >/dev/null 2>&1; then
   iw-intro || true

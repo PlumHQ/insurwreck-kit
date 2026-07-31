@@ -14,9 +14,7 @@ Run this first, before saying anything else:
 iw-intro --plain
 ```
 
-It prints the Insurwreck wordmark, the event line and the tagline. The animated
-version already played in their terminal when the installer handed over to Claude Code;
-this is the still, which is what a captured (non-TTY) stdout can carry.
+It prints the Insurwreck wordmark, the event line and the tagline.
 
 **Then reproduce that output inside a fenced code block as the first thing in your reply.**
 Claude Code truncates long tool output to a few lines with a "+5 lines" fold, so a
