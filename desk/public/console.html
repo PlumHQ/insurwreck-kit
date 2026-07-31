@@ -196,7 +196,7 @@
   <table>
     <thead><tr>
       <th data-k="name" title="Click to sort by name.">Person</th>
-      <th data-k="missing" title="One mark per service, in the order listed. Green = provisioned, red = missing. Click to sort by how much is missing.">Services <span class="svc-key">vercel supabase resend model mail n8n</span></th>
+      <th data-k="missing" title="One mark per service, in the order listed: vercel, supabase, resend, model, agentmail, n8n, google sign-in, kula, zendesk. Green = provisioned, red = missing. Click to sort by how much is missing.">Services <span class="svc-key">vercel supabase resend model mail n8n google kula zendesk</span></th>
       <th data-k="spend" title="Spent so far against their budget, and how many calls. Click to sort by spend.">Model spend</th>
       <th>Actions</th>
     </tr></thead>
@@ -344,7 +344,9 @@ having count(*) = 1 order by random() limit 10</pre>
 </div>
 
 <script>
-  const SERVICES = ["vercel","supabase","resend","anthropic","agentmail","n8n"];
+  // Must match provision.js. Counting fewer than the desk provisions renders
+  // someone fully green while they are missing a service.
+  const SERVICES = ["vercel","supabase","resend","anthropic","agentmail","n8n","google_auth","kula","zendesk"];
   const $ = (id) => document.getElementById(id);
   const key = () => $("key").value.trim();
   let session = sessionStorage.getItem("iw_session") || "";
