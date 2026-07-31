@@ -413,7 +413,6 @@ having count(*) = 1 order by random() limit 10</pre>
     // sessionStorage, never localStorage: the admin key unlocks every
     // participant's setup and should not outlive the tab on a shared laptop.
     if (haveKey()) sessionStorage.setItem("iw_admin_key", key());
-    $("gc-note").hidden = haveKey();
     try {
       const body = await api("/api/roster").catch(e => {
         throw new Error(/401/.test(e.message)
@@ -463,7 +462,7 @@ having count(*) = 1 order by random() limit 10</pre>
         tasks.push({ sev:"crit", who, what:"has not verified their email", btn:`<button class="sm" data-code="${esc(p.email)}">Get code</button>` });
       else if (m.length)
         tasks.push({ sev:"crit", who, what:`is missing <b>${m.join(" ")}</b>`,
-          btn:`<button class="sm" data-repair="${esc(p.email)}" ${haveKey()?"":"disabled title='needs the admin key'"}>Repair</button>` });
+          btn:`<button class="sm" data-repair="${esc(p.email)}">Repair</button>` });
       if (p.spend > 12)
         tasks.push({ sev:"warn", who, what:`has spent <b>${money(p.spend)}</b> of $15`, btn:`<button class="sm" data-budget="${esc(p.email)}">Raise</button>` });
       if (p.full)
@@ -515,7 +514,7 @@ having count(*) = 1 order by random() limit 10</pre>
           <button class="sm" data-code="${esc(p.email)}">Code</button>
           <button class="sm" data-budget="${esc(p.email)}">Budget</button>
           <button class="sm" data-full="${esc(p.email)}" data-on="${p.full?1:0}">${p.full?"Revoke":"Full data"}</button>
-          <button class="sm" data-repair="${esc(p.email)}" ${haveKey()?"":"disabled title='needs the admin key'"}>Repair</button>
+          <button class="sm" data-repair="${esc(p.email)}">Repair</button>
           ${p.full ? '<span class="tag full">FULL</span>' : ""}
         </div></td></tr>`;
     }).join("") : '<tr><td colspan="4" class="id">Nobody matches.</td></tr>';
@@ -561,7 +560,6 @@ having count(*) = 1 order by random() limit 10</pre>
 
   // --- google ----------------------------------------------------------------
   $("gc-load").onclick = async () => {
-    if (!haveKey()) return say("This one needs the shared admin key.", "err");
     try {
       // The endpoint probes Google live rather than trusting the stored flag,
       // so `unregistered` is the real work list.
@@ -580,7 +578,6 @@ having count(*) = 1 order by random() limit 10</pre>
   };
   $("gc-copy").onclick = () => { $("gc-list").select(); document.execCommand("copy"); say("Copied.", "ok"); };
   $("gc-done").onclick = async () => {
-    if (!haveKey()) return say("This one needs the shared admin key.", "err");
     if (!confirm("Mark every pending redirect URI as registered in the Google console?")) return;
     try { await api("/api/google-callbacks", { method:"POST", body:"{}" }); say("Marked registered.", "ok"); $("gc-load").click(); }
     catch (e) { say(e.message, "err"); }
@@ -613,9 +610,7 @@ having count(*) = 1 order by random() limit 10</pre>
   function showSignedIn() {
     $("login").hidden = true; $("keybar").hidden = true; $("signedin").hidden = false;
     const who = sessionStorage.getItem("iw_who");
-    $("whoami").textContent = haveKey()
-      ? "admin key · every action available"
-      : `${who} · Repair and Google need the admin key`;
+    $("whoami").textContent = haveKey() ? "admin key" : who;
   }
   $("signout").onclick = () => { sessionStorage.clear(); location.reload(); };
   $("refresh").onclick = () => load();

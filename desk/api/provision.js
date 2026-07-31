@@ -1,4 +1,4 @@
-import { sb, sha256, nowIso, readBody, isAdmin, normalizeEmail } from "./_lib.js";
+import { sb, sha256, nowIso, readBody, organizerFor, normalizeEmail } from "./_lib.js";
 import {
   mintResend,
   mintVercel,
@@ -55,8 +55,13 @@ export default async function handler(req, res) {
   try {
     const body = readBody(req);
     // Organizers can repair a participant's setup without making them
-    // re-verify: admin key plus the participant's email.
-    const email = isAdmin(req) && body.email
+    // re-verify. Any organizer counts, not just a holder of the shared admin
+    // key: an ORGANIZER_EMAILS address that has verified by OTP is a stronger
+    // identity than a secret four people paste into a browser, and requiring
+    // the key left Repair unusable for whoever was actually on the floor.
+    // Provisioning is additive and idempotent, so the cost of being wrong is a
+    // re-mint of something already missing.
+    const email = body.email && (await organizerFor(req))
       ? normalizeEmail(body.email)
       : await sessionEmail(req);
     if (!email) {
