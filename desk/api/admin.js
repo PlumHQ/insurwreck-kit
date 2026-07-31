@@ -1,4 +1,4 @@
-import { sb, nowIso, readBody, normalizeEmail, organizerFor } from "./_lib.js";
+import { sb, sbAll, nowIso, readBody, normalizeEmail, organizerFor } from "./_lib.js";
 
 // Organizer actions, one endpoint, dispatched on `action`. Everything here is
 // something an organizer needs to do in under a minute while 25 people are
@@ -136,7 +136,7 @@ export default async function handler(req, res) {
       // Who is burning budget, who has spent nothing at all (usually a sign
       // they never got started rather than that they're being frugal).
       case "spend": {
-        const usage = await sb("llm_usage?select=participant_email,cost_usd,created_at");
+        const usage = await sbAll("llm_usage?select=participant_email,cost_usd,created_at&order=id");
         const byEmail = new Map();
         for (const row of usage) {
           const acc = byEmail.get(row.participant_email) || { email: row.participant_email, cost_usd: 0, calls: 0, last: null };
