@@ -141,18 +141,18 @@
 </pre>
                 </div>
                 <p>
-                  On a Windows laptop press the <kbd>Windows</kbd> button, type <em>Terminal</em>, hit
-                  enter. Then paste this and press enter.
+                  On a Windows laptop press the <kbd>Windows</kbd> button, type
+                  <em>PowerShell</em>, hit enter. Then paste this and press enter.
                 </p>
                 <div class="term">
                   <div class="term-bar">
                     <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-                    <span class="term-title">Terminal</span>
+                    <span class="term-title">Windows PowerShell</span>
                     <button class="term-copy" type="button" data-copy="cmd-install-win">
                       <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
                     </button>
                   </div>
-                  <pre><span class="t-prompt">$</span> <span id="cmd-install-win">irm https://insurwreck-desk.preview.plumhq.com/win | iex</span>
+                  <pre><span class="t-prompt">PS&gt;</span> <span id="cmd-install-win">irm https://insurwreck-desk.preview.plumhq.com/win | iex</span>
 
 <span class="t-ok">✓</span> Claude Code installed
 <span class="t-ok">✓</span> Git installed
@@ -162,9 +162,15 @@
 </pre>
                 </div>
                 <p class="step-note">
-                  Three to five minutes, with a tick per step. If it asks for your Mac password, that's
-                  the installer needing permission to install software — type it and carry on. Safe to
-                  run twice; it skips whatever is already done.
+                  <strong>Say <em>PowerShell</em>, not <em>Terminal</em>.</strong> If you see
+                  <code>'irm' is not recognized as an internal or external command</code>, you're in
+                  Command Prompt — close it, open PowerShell, and paste again.
+                </p>
+                <p class="step-note">
+                  Three to five minutes, with a tick per step. If it asks for your Mac password, or
+                  Windows asks for an administrator one, that's the installer needing permission to
+                  install software — type it and carry on. Safe to run twice; it skips whatever is
+                  already done.
                 </p>
                 <label class="gate"><input type="checkbox" value="install" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>My install finished and printed a command to run next</span></label>
               </div>
