@@ -25,19 +25,83 @@ async function health() {
     add("desk -> supabase", false, e.message.slice(0, 90));
   }
 
+  // A present env var proves nothing. "agentmail key set" read green for three
+  // hours while every inbox create returned 403 limit_exceeded, and a
+  // participant found it before this panel did. Anything we can cheaply call,
+  // we call; anything we cannot, we label honestly as configured rather than
+  // working.
   for (const [name, key] of [
-    ["anthropic key set", "ANTHROPIC_API_KEY"],
-    ["metabase key set", "METABASE_API_KEY"],
-    ["agentmail key set", "AGENTMAIL_API_KEY"],
-    ["kula key set", "KULA_API_KEY"],
-    ["zendesk creds set", "ZENDESK_TOKEN"],
-    ["n8n token set", "N8N_TOKEN"],
-    ["resend key set", "RESEND_API_KEY"],
-    ["vercel personal token set", "VERCEL_USER_TOKEN"],
-    ["supabase mgmt token set", "SUPABASE_MGMT_TOKEN"],
+    ["anthropic key configured", "ANTHROPIC_API_KEY"],
+    ["metabase key configured", "METABASE_API_KEY"],
+    ["kula key configured", "KULA_API_KEY"],
+    ["zendesk creds configured", "ZENDESK_TOKEN"],
+    ["supabase mgmt token configured", "SUPABASE_MGMT_TOKEN"],
   ]) {
     add(name, env(key), env(key) ? "" : "missing - that service will stay pending");
   }
+
+  const probe = async (name, run, note) => {
+    try {
+      const { ok, detail } = await run();
+      add(name, ok, detail || note || "");
+    } catch (e) {
+      add(name, false, String(e.message).slice(0, 70));
+    }
+  };
+
+  await probe("agentmail can create inboxes", async () => {
+    if (!env("AGENTMAIL_API_KEY")) return { ok: false, detail: "no key" };
+    const r = await fetch("https://api.agentmail.to/v0/inboxes?limit=100", {
+      headers: { Authorization: `Bearer ${process.env.AGENTMAIL_API_KEY}` },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!r.ok) return { ok: false, detail: `HTTP ${r.status}` };
+    const d = await r.json();
+    const used = Number(d.count ?? (d.inboxes || []).length);
+    // Shared-inbox mode needs one seat, not one per person, so a full account
+    // is only fatal when we are still minting per participant.
+    const sharedMode = env("AGENTMAIL_SHARED_INBOX");
+    return {
+      ok: sharedMode || used < 10,
+      detail: `${used} inboxes used` + (sharedMode ? ", shared mode" : " of a 10 cap"),
+    };
+  });
+
+  await probe("resend key works", async () => {
+    if (!env("RESEND_API_KEY")) return { ok: false, detail: "no key" };
+    const r = await fetch("https://api.resend.com/domains", {
+      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
+      signal: AbortSignal.timeout(8000),
+    });
+    // A sending-only key is forbidden from listing domains, which still proves
+    // the key is live. Only 401 means it is dead.
+    return { ok: r.status !== 401, detail: `HTTP ${r.status}` };
+  });
+
+  await probe("n8n answers", async () => {
+    if (!env("N8N_TOKEN")) return { ok: false, detail: "no token" };
+    const url = process.env.N8N_MCP_URL || "https://workflow-stg.plumhq.com/mcp-server/http";
+    const r = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.N8N_TOKEN}`,
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+      },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} }),
+      signal: AbortSignal.timeout(9000),
+    });
+    return { ok: r.ok, detail: `HTTP ${r.status}` };
+  });
+
+  await probe("vercel token works", async () => {
+    if (!env("VERCEL_USER_TOKEN")) return { ok: false, detail: "no token" };
+    const r = await fetch("https://api.vercel.com/v2/user", {
+      headers: { Authorization: `Bearer ${process.env.VERCEL_USER_TOKEN}` },
+      signal: AbortSignal.timeout(8000),
+    });
+    return { ok: r.ok, detail: `HTTP ${r.status}` };
+  });
 
   try {
     const r = await fetch(`${MB()}/api/health`, { signal: AbortSignal.timeout(8000) });
