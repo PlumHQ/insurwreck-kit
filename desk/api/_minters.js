@@ -440,6 +440,39 @@ export async function mintKula(email, existing = {}) {
   return finalize(payload, []);
 }
 
+// --------------------------------------------------------------- zendesk ---
+
+// Same shape as kula and for the same reason: Zendesk API tokens authenticate
+// an account, not a person, so one organizer-issued token goes to everyone.
+// Unlike kula it needs three values - the token alone is useless without the
+// subdomain it belongs to and the agent email it authenticates as.
+//
+// Read this before switching it on: this points at a real support desk with
+// real customer tickets, and zd-mcp-server exposes zendesk_add_public_note,
+// which posts a reply the requester receives by email. block-zendesk-writes.sh
+// denies every write tool for exactly that reason. Point ZENDESK_SUBDOMAIN at a
+// sandbox if you have one; the hook stays on either way.
+export async function mintZendesk(email, existing = {}) {
+  const subdomain = process.env.ZENDESK_SUBDOMAIN;
+  const agentEmail = process.env.ZENDESK_EMAIL;
+  const token = process.env.ZENDESK_TOKEN;
+  if (!subdomain || !agentEmail || !token) {
+    throw new Error("ZENDESK_SUBDOMAIN, ZENDESK_EMAIL and ZENDESK_TOKEN not all set");
+  }
+
+  const payload = { ...existing };
+  payload.subdomain = subdomain;
+  payload.agent_email = agentEmail;
+  payload.api_token = token;
+  payload.shared = true;
+  payload.scoped_to_you = false;
+  payload.note =
+    "Shared hackathon Zendesk credentials, reachable as the `zendesk` MCP server in Claude Code. Read-only - " +
+    "the ticket data is real customer support traffic, and the write tools would reply to actual customers, " +
+    "so they are blocked. Search and read freely; persist anything you generate in your own Supabase.";
+  return finalize(payload, []);
+}
+
 function deskBaseUrl() {
   return (
     process.env.DESK_BASE_URL || "https://insurwreck-desk.preview.plumhq.com"

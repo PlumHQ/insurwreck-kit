@@ -55,6 +55,7 @@ const SERVICES = [
   ["n8n", "n8n", "schedules and workflows"],
   ["google_auth", "Google sign-in", "Plum-only login for your app"],
   ["kula", "Kula", "read-only recruiting data"],
+  ["zendesk", "Zendesk", "read-only support tickets"],
 ];
 
 const services = bundle.services || {};

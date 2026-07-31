@@ -74,17 +74,18 @@ Still stuck after `iw-doctor`? Find an organiser. Do not lose twenty minutes to 
 
 ## Bundled MCP servers
 
-All five start automatically when the plugin installs — they are declared in `plugin/.mcp.json`, so there is no separate install step.
+All six start automatically when the plugin installs — they are declared in `plugin/.mcp.json`, so there is no separate install step.
 
 | Server | Package | Official? | Auth | Scoped to the individual? |
 |---|---|---|---|---|
 | `salesforce` | [`@salesforce/mcp`](https://github.com/salesforcecli/mcp) (Apache-2.0) | Yes — Salesforce DX MCP Server | `sf org login web` — browser OAuth, no password reaches us | **Yes** — acts as their user, with their profile, permission sets and sharing rules |
 | `kula` | [`@kula-ai/mcp-server`](https://github.com/kula-ai/kula-mcp-server) (MIT) | Yes — Kula's own server | `KULA_API_KEY`, one shared organizer key, delivered in the bundle | **No** — read-only, enforced by a hook; see below |
+| `zendesk` | [`zd-mcp-server`](https://www.npmjs.com/package/zd-mcp-server) (MIT) | No — community server | `ZENDESK_SUBDOMAIN` / `ZENDESK_EMAIL` / `ZENDESK_TOKEN`, one shared organizer token, delivered in the bundle | **No** — read-only, enforced by a hook; see below |
 | `insurwreck-data` | ours — `desk/api/mcp.js` | — | `INSURWRECK_TOKEN` | Allowlisted warehouse slices, same for everyone |
 | `n8n` | organizer-hosted | — | `N8N_TOKEN` | Shared workspace |
 | `remotion` | [`@remotion/mcp`](https://github.com/remotion-dev/remotion/tree/main/packages/mcp) (MIT) | Yes — Remotion's own | none — unauthenticated, no key | n/a — searches public docs |
 
-Three of the four resolve a `${TOKEN}` placeholder when Claude Code starts, and those tokens do not exist until `/insurwreck:start` has run inside an already-started Claude Code. `/insurwreck:start` closes that gap by running `iw-connect`, which merges `INSURWRECK_TOKEN`, `N8N_TOKEN` and `KULA_API_KEY` from the bundle into `~/.claude/settings.json` without disturbing anything else there, skips whatever is not issued yet, and probes the desk so a rejected token cannot look like a missing one. After one restart `insurwreck-data`, `n8n` and `kula` are live.
+Four of the five resolve a `${TOKEN}` placeholder when Claude Code starts, and those tokens do not exist until `/insurwreck:start` has run inside an already-started Claude Code. `/insurwreck:start` closes that gap by running `iw-connect`, which merges `INSURWRECK_TOKEN`, `N8N_TOKEN`, `KULA_API_KEY` and the three `ZENDESK_*` values from the bundle into `~/.claude/settings.json` without disturbing anything else there, skips whatever is not issued yet, and probes the desk so a rejected token cannot look like a missing one. After one restart `insurwreck-data`, `n8n`, `kula` and `zendesk` are live.
 
 That restart is the one manual step in onboarding, and it is the step most likely to be skipped - a participant who skips it sees a data server that looks broken. `iw-doctor` names the three states apart: never connected (run `iw-connect`), connected but this session predates it (restart), and connected but rejected (find an organiser).
 
@@ -110,6 +111,16 @@ Two deliberate choices in that hook:
 The hook fails open on malformed input — a broken hook must not take Kula down mid-build — so it is a guardrail against an agent doing something careless, not a security boundary against a determined participant. Note what that means concretely: the shared full-access key is written to `~/.claude/settings.json` on ~25 machines, so anyone who wants to can bypass the hook with their own `claude mcp add kula`. The real boundary remains the key's own permissions. Closing that properly means proxying Kula through the desk and exposing read tools only, so the key never leaves Vercel — worth doing if this outlives the hackathon.
 
 Run the check with `bash plugin/hooks/scripts/test-block-kula-writes.sh`.
+
+### Zendesk: same shape, sharper edge
+
+Zendesk API tokens authenticate an account rather than a person, so like Kula there is one organizer-issued credential for everyone — three values here, because the token is useless without `ZENDESK_SUBDOMAIN` and the `ZENDESK_EMAIL` it authenticates as. `mintZendesk` in `desk/api/_minters.js` delivers all three and leaves the service `pending` until they are set on the desk.
+
+`plugin/hooks/scripts/block-zendesk-writes.sh` is the same `PreToolUse` shape on `mcp__zendesk__.*`: allow `zendesk_search` and `zendesk_get_*`, deny everything else, no override. The difference from Kula is what a write does. `zendesk_add_public_note` doesn't just edit a record — it emails the reply to the customer who filed the ticket, and there is no undo. `zendesk_create_ticket` puts a fabricated ticket in a real agent's queue.
+
+The same caveat applies as with Kula: the hook is a guardrail against a careless agent, not a boundary against a determined participant, because the token itself is on ~25 machines. Point `ZENDESK_SUBDOMAIN` at a sandbox if one exists.
+
+Run the check with `bash plugin/hooks/scripts/test-block-zendesk-writes.sh`.
 
 ## Layout
 

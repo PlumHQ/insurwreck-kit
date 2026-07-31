@@ -30,6 +30,7 @@ async function health() {
     ["metabase key set", "METABASE_API_KEY"],
     ["agentmail key set", "AGENTMAIL_API_KEY"],
     ["kula key set", "KULA_API_KEY"],
+    ["zendesk creds set", "ZENDESK_TOKEN"],
     ["n8n token set", "N8N_TOKEN"],
     ["resend key set", "RESEND_API_KEY"],
     ["vercel personal token set", "VERCEL_USER_TOKEN"],
