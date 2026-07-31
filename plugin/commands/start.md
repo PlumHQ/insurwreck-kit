@@ -11,12 +11,18 @@ The credential desk base URL is `https://insurwreck-desk.preview.plumhq.com` (ca
 Run this first, before saying anything else:
 
 ```
-iw-intro
+iw-intro --plain
 ```
 
-It prints the Insurwreck wordmark, the event line and the tagline. Show its output as-is — do not retype or re-render the ASCII yourself, and do not add a heading above it. In a real terminal it animates; here it prints the still version, which is expected.
+It prints the Insurwreck wordmark, the event line and the tagline.
 
-If `iw-intro` is not found, carry on without it rather than improvising ASCII art — the participant loses nothing important.
+**Then reproduce that output inside a fenced code block as the first thing in your reply.**
+Claude Code truncates long tool output to a few lines with a "+5 lines" fold, so a
+wordmark shown only as tool output arrives sliced in half. Copy it character for
+character — do not re-draw it, do not fix its spacing, and do not put a heading above it.
+
+If `iw-intro` is not found, carry on without it rather than improvising ASCII art — the
+participant loses nothing important.
 
 Then, in your own words and no more than two lines: wish them well, and say setup takes about three minutes and starts with three questions. Something in the spirit of *"All the best — you're about to have a working build environment. Let's start with your name."* Warm, not gushing, and do not copy that sentence verbatim.
 

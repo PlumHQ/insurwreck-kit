@@ -2,22 +2,18 @@
 #
 # Insurwreck 4.0 — terminal intro.
 #
-# "Dither resolve": the wordmark develops out of a field of ordered-dither
-# noise, the same 4x4 Bayer pattern used on the sign-in screen, so the terminal
-# and the web share one visual language.
+# A static wordmark, printed once. There is deliberately no animation: the one
+# place it could have run is here in the installer's terminal, and the payoff
+# was not worth a moving target on event morning. Everywhere else it was never
+# possible anyway — inside Claude Code stdout is captured rather than attached
+# to a TTY, so ANSI escapes arrive as literal "[2K" junk and frames stack
+# instead of overwriting.
 #
-# Three levels of graceful degradation, because the environment decides what is
-# possible:
+# Two paths:
 #
-#   real terminal + node  →  full animation, in plum
-#   real terminal, no node →  static wordmark, in plum
-#   not a terminal         →  static wordmark, PLAIN TEXT
+#   real terminal   →  wordmark in plum
+#   not a terminal  →  wordmark in PLAIN TEXT, zero escape sequences
 #
-# That last case matters: inside Claude Code, stdout is captured rather than
-# attached to a TTY, so ANSI escapes arrive as literal "[2K" junk and frames
-# stack instead of overwriting. Animating there would look broken, so we don't.
-#
-#   --frames   print the resolve as stacked frames (for eyeballing the effect)
 #   --plain    force the plain-text path
 
 set -euo pipefail
@@ -25,9 +21,8 @@ set -euo pipefail
 MODE="auto"
 for arg in "$@"; do
   case "$arg" in
-    --frames) MODE="frames" ;;
     --plain)  MODE="plain" ;;
-    --help|-h) echo "usage: iw-intro [--frames|--plain]"; exit 0 ;;
+    --help|-h) echo "usage: iw-intro [--plain]"; exit 0 ;;
   esac
 done
 
@@ -39,165 +34,14 @@ WORDMARK=' ___  _  _  ___  _   _  ___ __      __ ___  ___   ___  _  __
 EVENT="4.0 · LEADERSHIP HACKATHON · 31 JULY 2026 · PLUM"
 TAGLINE="Bring one real problem. Leave with a working prototype."
 
-plain_intro() {
+# Colour only when a real terminal is on the other end, and never when the
+# caller has asked for plain text or set NO_COLOR.
+if [ "$MODE" = "auto" ] && [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+  printf '\033[35m%s\033[0m\n\n' "$WORDMARK"
+  printf '        \033[2m%s\033[0m\n\n' "$EVENT"
+  printf '    %s\n' "$TAGLINE"
+else
   printf '%s\n\n' "$WORDMARK"
   printf '        %s\n\n' "$EVENT"
   printf '    %s\n' "$TAGLINE"
-}
-
-# Decide the path. NO_COLOR and a non-TTY both fall back to plain.
-use_rich=0
-if [ "$MODE" = "auto" ] && [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
-  use_rich=1
 fi
-if [ "$MODE" = "plain" ]; then use_rich=0; fi
-if [ "$MODE" = "frames" ]; then use_rich=1; fi
-
-if [ "$use_rich" = "0" ] || ! command -v node >/dev/null 2>&1; then
-  if [ "$use_rich" = "1" ]; then
-    # Terminal, but no node: colour the static mark rather than animate it.
-    printf '\033[35m%s\033[0m\n\n' "$WORDMARK"
-    printf '        \033[2m%s\033[0m\n\n' "$EVENT"
-    printf '    %s\n' "$TAGLINE"
-  else
-    plain_intro
-  fi
-  exit 0
-fi
-
-WORDMARK="$WORDMARK" EVENT="$EVENT" TAGLINE="$TAGLINE" IW_MODE="$MODE" node <<'NODE'
-const art = process.env.WORDMARK.split("\n");
-const EVENT = process.env.EVENT;
-const TAGLINE = process.env.TAGLINE;
-const framesOnly = process.env.IW_MODE === "frames";
-
-const PAD_Y = 2;                 // rows of field above and below the letters
-const PAD_X = 3;
-const RAMP = " .·:+*#%";
-const BAYER = [
-  [0, 8, 2, 10],
-  [12, 4, 14, 6],
-  [3, 11, 1, 9],
-  [15, 7, 13, 5],
-];
-
-const W = Math.max(...art.map((l) => l.length)) + PAD_X * 2;
-const H = art.length + PAD_Y * 2;
-
-const PLUM = "\x1b[35m";
-const PLUM_DIM = "\x1b[38;5;96m";
-const DIM = "\x1b[2m";
-const OFF = "\x1b[0m";
-
-// Deterministic per-cell, per-frame hash: the field shimmers as it resolves
-// without needing a stored noise buffer.
-function noise(x, y, f) {
-  const s = Math.sin(x * 12.9898 + y * 78.233 + f * 3.719) * 43758.5453;
-  return s - Math.floor(s);
-}
-
-function glyphAt(x, y) {
-  const row = y - PAD_Y;
-  if (row < 0 || row >= art.length) return " ";
-  const ch = art[row][x - PAD_X];
-  return ch === undefined ? " " : ch;
-}
-
-// p: 0 = pure field, 1 = fully resolved wordmark.
-function frame(p, f) {
-  const out = [];
-  for (let y = 0; y < H; y += 1) {
-    let line = "";
-    let painted = "";
-    for (let x = 0; x < W; x += 1) {
-      const g = glyphAt(x, y);
-      const inMark = g !== " ";
-      const b = BAYER[y & 3][x & 3] / 16;
-      const n = noise(x, y, f);
-
-      if (inMark) {
-        // Letterform cells harden first, dithered so they arrive in a pattern
-        // rather than all at once.
-        if (p * 1.45 > b) {
-          painted += g;
-          continue;
-        }
-        painted += RAMP[1 + Math.floor(n * (RAMP.length - 1))];
-        continue;
-      }
-
-      // Everything outside the letters is a field that thins as p rises.
-      // Cells in the gaps *between* letters clear faster than the outer field,
-      // so the wordmark becomes legible well before the field is gone.
-      const inMarkRows = y >= PAD_Y && y < PAD_Y + art.length;
-      let density = (1 - p) * 0.62;
-      if (inMarkRows) density *= (1 - p) * 0.8;
-
-      // A floor, or cells sitting on Bayer 0 keep emitting a speck at p≈1 and
-      // the finish reads as dirt rather than design.
-      painted +=
-        density > 0.03 && density > b * (0.35 + n * 0.65)
-          ? RAMP[1 + Math.floor(n * 3)]
-          : " ";
-    }
-    line = painted.replace(/\s+$/, "");
-    out.push(line);
-  }
-  return out;
-}
-
-function paintColoured(lines, p) {
-  // Field is a muted plum; the resolved mark reads full strength.
-  const colour = p > 0.92 ? PLUM : PLUM_DIM;
-  return lines.map((l) => colour + l + OFF).join("\n");
-}
-
-const STEPS = 26;
-const ease = (t) => 1 - Math.pow(1 - t, 2.1);
-
-async function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
-async function run() {
-  if (framesOnly) {
-    for (let f = 0; f <= STEPS; f += 5) {
-      process.stdout.write(`--- p=${(ease(f / STEPS)).toFixed(2)}\n`);
-      process.stdout.write(frame(ease(f / STEPS), f).join("\n") + "\n\n");
-    }
-    return;
-  }
-
-  process.stdout.write("\x1b[?25l"); // hide cursor while it develops
-  try {
-    for (let f = 0; f <= STEPS; f += 1) {
-      const p = ease(f / STEPS);
-      const body = paintColoured(frame(p, f), p);
-      if (f > 0) process.stdout.write(`\x1b[${H}A`);
-      process.stdout.write(body + "\n");
-      await sleep(f < STEPS ? 42 : 0);
-    }
-    // Settle on the clean mark.
-    await sleep(120);
-    process.stdout.write(`\x1b[${H}A`);
-    process.stdout.write(paintColoured(frame(1, STEPS + 1), 1) + "\n");
-
-    // Event line and tagline type in underneath.
-    process.stdout.write("\n" + " ".repeat(PAD_X + 5) + DIM);
-    for (const ch of EVENT) {
-      process.stdout.write(ch);
-      await sleep(9);
-    }
-    process.stdout.write(OFF + "\n\n" + " ".repeat(PAD_X + 1));
-    for (const ch of TAGLINE) {
-      process.stdout.write(ch);
-      await sleep(12);
-    }
-    process.stdout.write("\n");
-  } finally {
-    process.stdout.write("\x1b[?25h"); // always restore the cursor
-  }
-}
-
-run();
-NODE
