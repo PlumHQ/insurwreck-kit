@@ -336,6 +336,28 @@ export async function mintAgentmail(email, existing = {}) {
   const slug = slugFor(email);
   const headers = { Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
 
+  // The account is capped at 10 inboxes and the cap cannot be raised, which is
+  // fewer than the room. AgentMail honours plus-addressing - verified: mail to
+  // <base>+tag@agentmail.to lands in <base> with the tagged address preserved
+  // in `to` - so one shared inbox serves everyone and each participant filters
+  // their own mail on that field. Set AGENTMAIL_SHARED_INBOX to switch this on;
+  // unset, it falls back to creating an inbox per person.
+  const shared = process.env.AGENTMAIL_SHARED_INBOX;
+  if (shared && !payload.inbox_id) {
+    const [base, domain] = shared.split("@");
+    payload.inbox_id = shared;
+    payload.address = `${base}+${slug}@${domain}`;
+    payload.shared_inbox = true;
+    payload.api_key = key;
+    payload.api_base = AGENTMAIL_API;
+    payload.note =
+      `Your address is ${base}+${slug}@${domain}. Everyone shares one inbox, so ` +
+      `filter on the "to" field for your own tag - listing messages returns the ` +
+      `whole room's mail. Send with "from" set to your tagged address: ` +
+      `POST {api_base}/inboxes/${shared}/messages/send`;
+    return finalize(payload, []);
+  }
+
   if (!payload.inbox_id) {
     const res = await fetch(`${AGENTMAIL_API}/inboxes`, {
       method: "POST",
