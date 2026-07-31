@@ -286,6 +286,10 @@ fi
 step "Making the 'claude' command available"
 
 LOCAL_BIN="$HOME/.local/bin"
+# Ask BEFORE we export, or the answer is always yes and the "already on your
+# PATH" line below becomes a lie that hides the one failure this step exists to
+# catch: a shell that was started before the rc file was edited.
+have claude && CLAUDE_ALREADY_ON_PATH=1 || CLAUDE_ALREADY_ON_PATH=0
 export PATH="$LOCAL_BIN:$PATH"
 
 path_line='export PATH="$HOME/.local/bin:$PATH"'
@@ -306,7 +310,18 @@ for rc in "$HOME/.zshrc" "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile";
 done
 
 if have claude; then
-  [ -n "$added_to" ] && ok "added to PATH in:$added_to" || ok "already on your PATH"
+  if [ "$CLAUDE_ALREADY_ON_PATH" = "1" ]; then
+    ok "already on your PATH"
+  elif [ -n "$added_to" ]; then
+    ok "added to PATH in:$added_to — new terminal windows will find it"
+  else
+    # An rc file already mentions .local/bin, yet a fresh shell still didn't
+    # have it: the line is commented out, conditional, or overwritten later.
+    # Say so rather than claiming success - the handover below still works,
+    # but every new window they open will not.
+    warn "your shell config mentions .local/bin but didn't apply it"
+    info "if 'claude' is missing in a new window, add this to ~/.zshrc: $path_line"
+  fi
 else
   die "Claude Code installed but the 'claude' command still isn't found.
   Expected it at $LOCAL_BIN/claude — check that the file exists."
@@ -629,14 +644,18 @@ EOF
 CLAUDE_LAUNCH="claude --permission-mode auto"
 
 if [ "$LAUNCH" = "0" ]; then
-  info "Start it yourself with:  cd $PROJECT_DIR && $CLAUDE_LAUNCH"
+  info "Start it yourself with:  export PATH=\"\$HOME/.local/bin:\$PATH\" && cd $PROJECT_DIR && $CLAUDE_LAUNCH"
   exit 0
 fi
 
 if [ ! -t 0 ]; then
   # Piped from curl, so stdin isn't a terminal and we can't hand over an
   # interactive session. Tell them the one line to paste instead.
-  printf "  ${B}Paste this to begin:${R}\n\n      cd %s && %s\n\n  ${DIM}Once Claude Code starts, type${R} ${B}/insurwreck:start${R}\n\n" "$PROJECT_DIR" "$CLAUDE_LAUNCH"
+  # export PATH first, always. This line is pasted into the shell that ran the
+  # curl - a shell started before step 4 edited its rc file, so it has never
+  # heard of ~/.local/bin and reports "command not found: claude" on a install
+  # that worked perfectly. Harmless when the PATH is already right.
+  printf "  ${B}Paste this to begin:${R}\n\n      export PATH=\"\$HOME/.local/bin:\$PATH\" && cd %s && %s\n\n  ${DIM}Once Claude Code starts, type${R} ${B}/insurwreck:start${R}\n\n" "$PROJECT_DIR" "$CLAUDE_LAUNCH"
   exit 0
 fi
 
