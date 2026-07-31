@@ -160,7 +160,7 @@
 <div class="top">
   <div class="mark">INSURWRECK 4.0 <span>ops</span></div>
   <div class="right">
-    <div class="pulse" id="pulse" title="one mark per participant"></div>
+    <div class="pulse" id="pulse" title="One mark per participant. Tall red = not verified or missing a service. Amber = close to their budget. Short green = ready. Hover a mark for the name."></div>
     <span class="pulse-key" id="pulse-key"></span>
     <span class="tick" id="clock"></span>
   </div>
@@ -180,8 +180,8 @@
 </div>
 <div class="row" id="signedin" hidden>
   <span class="id" id="whoami"></span>
-  <button class="sm" id="refresh">Refresh</button>
-  <button class="sm" id="signout">Sign out</button>
+  <button class="sm" id="refresh" title="Reload the roster, spend and health now. The page also refreshes itself every 30 seconds.">Refresh</button>
+  <button class="sm" id="signout" title="Clear this session and any admin key held in this tab.">Sign out</button>
 </div>
 <div id="msg"></div>
 
@@ -195,16 +195,16 @@
 <div class="board">
   <table>
     <thead><tr>
-      <th data-k="name">Person</th>
-      <th data-k="missing">Services <span class="svc-key">vercel supabase resend model mail n8n</span></th>
-      <th data-k="spend">Model spend</th>
+      <th data-k="name" title="Click to sort by name.">Person</th>
+      <th data-k="missing" title="One mark per service, in the order listed. Green = provisioned, red = missing. Click to sort by how much is missing.">Services <span class="svc-key">vercel supabase resend model mail n8n</span></th>
+      <th data-k="spend" title="Spent so far against their budget, and how many calls. Click to sort by spend.">Model spend</th>
       <th>Actions</th>
     </tr></thead>
     <tbody id="rows"><tr><td colspan="4" class="id">Sign in to load.</td></tr></tbody>
   </table>
 </div>
 <div class="row" style="margin-bottom:26px">
-  <label class="id"><input type="checkbox" id="only" /> only people who are stuck</label>
+  <label class="id"><input type="checkbox" id="only" title="Hide anyone whose seven services are all provisioned." /> only people who are stuck</label>
 </div>
 
 <details id="d-health">
@@ -224,7 +224,7 @@
     <div class="row" style="margin-bottom:8px">
       <input id="sc-id" placeholder="card id" size="10" inputmode="numeric" />
       <input id="sc-note" placeholder="who asked, and why" size="32" />
-      <button class="p" id="sc-add">Publish</button>
+      <button class="p" id="sc-add" title="Offer this Metabase card to every participant. Live on their next list_datasets call - no redeploy, nobody restarts.">Publish</button>
     </div>
     <p class="id" style="margin:0 0 6px">
       Participants pick it up on their next <code>list_datasets</code> call. No redeploy, nobody restarts.
@@ -287,9 +287,9 @@ having count(*) = 1 order by random() limit 10</pre>
       and nothing else about their setup is affected. The cap is about 100 URIs per client.
     </p>
     <div class="row" style="margin-bottom:9px">
-      <button class="p" id="gc-load">Load pending</button>
-      <button id="gc-copy">Copy</button>
-      <button id="gc-done">Mark registered</button>
+      <button class="p" id="gc-load" title="Ask Google which redirect URIs are actually registered, and list the ones still missing.">Load pending</button>
+      <button id="gc-copy" title="Copy the list, ready to paste into the Google Cloud console credentials screen.">Copy</button>
+      <button id="gc-done" title="Clear the pending flag for every issued callback. Only press this once you have actually pasted them into Google.">Mark registered</button>
       <a id="gc-open" target="_blank" rel="noopener" hidden>Open the Google console</a>
     </div>
     <textarea id="gc-list" rows="7" spellcheck="false" placeholder="Load pending to see the list."></textarea>
@@ -459,14 +459,14 @@ having count(*) = 1 order by random() limit 10</pre>
     for (const p of data) {
       const who = p.name || p.email, m = missingFor(p);
       if (!p.verified_at)
-        tasks.push({ sev:"crit", who, what:"has not verified their email", btn:`<button class="sm" data-code="${esc(p.email)}">Get code</button>` });
+        tasks.push({ sev:"crit", who, what:"has not verified their email", btn:`<button class="sm" data-code="${esc(p.email)}" title="Send a fresh six-digit code and show it to you, so you can read it out over their shoulder.">Get code</button>` });
       else if (m.length)
         tasks.push({ sev:"crit", who, what:`is missing <b>${m.join(" ")}</b>`,
-          btn:`<button class="sm" data-repair="${esc(p.email)}">Repair</button>` });
+          btn:`<button class="sm" data-repair="${esc(p.email)}" title="Re-run provisioning for this person. Only mints what is missing and never replaces a credential they already hold. Their laptop still needs /insurwreck:status to pull the new bundle.">Repair</button>` });
       if (p.spend > 12)
-        tasks.push({ sev:"warn", who, what:`has spent <b>${money(p.spend)}</b> of $15`, btn:`<button class="sm" data-budget="${esc(p.email)}">Raise</button>` });
+        tasks.push({ sev:"warn", who, what:`has spent <b>${money(p.spend)}</b> of $15`, btn:`<button class="sm" data-budget="${esc(p.email)}" title="Raise this person's model budget before they hit the wall. Applies on their next call.">Raise</button>` });
       if (p.full)
-        tasks.push({ sev:"warn", who, what:"holds full warehouse access", btn:`<button class="sm" data-full="${esc(p.email)}" data-on="1">Revoke</button>` });
+        tasks.push({ sev:"warn", who, what:"holds full warehouse access", btn:`<button class="sm" data-full="${esc(p.email)}" data-on="1" title="Take back full warehouse access. Immediate - the next query they run is refused, no restart needed.">Revoke</button>` });
     }
     tasks.sort((a,b) => (a.sev==="crit"?0:1) - (b.sev==="crit"?0:1));
     $("work-n").textContent = tasks.length || "";
@@ -511,10 +511,10 @@ having count(*) = 1 order by random() limit 10</pre>
             ${p.spend ? `<span class="t"><span class="f ${pct>75?"hot":""}" style="width:${pct}%"></span></span>` : ""}
             ${p.calls ? `<span class="id">${p.calls} calls</span>` : ""}</span></td>
         <td><div class="acts">
-          <button class="sm" data-code="${esc(p.email)}">Code</button>
-          <button class="sm" data-budget="${esc(p.email)}">Budget</button>
-          <button class="sm" data-full="${esc(p.email)}" data-on="${p.full?1:0}">${p.full?"Revoke":"Full data"}</button>
-          <button class="sm" data-repair="${esc(p.email)}">Repair</button>
+          <button class="sm" data-code="${esc(p.email)}" title="Send this person a fresh six-digit code and show it to you, so you can read it out. Does not invalidate their current session.">Code</button>
+          <button class="sm" data-budget="${esc(p.email)}" title="Change their model budget in dollars. Takes effect on their very next call - no restart, nothing for them to do.">Budget</button>
+          <button class="sm" data-full="${esc(p.email)}" data-on="${p.full?1:0}" title="${p.full?"Take back full warehouse access. Immediate - the next query they run is refused, no restart needed.":"Grant raw read-only SQL over the whole warehouse, bypassing the published slices. One person, every query logged, revocable. They must restart Claude Code before the tool appears."}">${p.full?"Revoke":"Full data"}</button>
+          <button class="sm" data-repair="${esc(p.email)}" title="Re-run provisioning for this person. Only mints what is missing and never replaces a credential they already hold. Their laptop still needs /insurwreck:status to pull the new bundle.">Repair</button>
           ${p.full ? '<span class="tag full">FULL</span>' : ""}
         </div></td></tr>`;
     }).join("") : '<tr><td colspan="4" class="id">Nobody matches.</td></tr>';
@@ -535,7 +535,7 @@ having count(*) = 1 order by random() limit 10</pre>
       $("slice-rows").innerHTML = slices.length ? slices.map(s => `
         <tr><td class="id">${esc(s.card_id)}</td><td style="font-weight:600">${esc(s.name)}</td>
             <td class="id">${esc(s.note || "—")}</td>
-            <td><button class="sm" data-off="${esc(s.card_id)}">Withdraw</button></td></tr>`).join("")
+            <td><button class="sm" data-off="${esc(s.card_id)}" title="Stop offering this slice. Anyone using it loses it on their next call - this reaches into a live build.">Withdraw</button></td></tr>`).join("")
         : '<tr><td colspan="4" class="id">Nothing published.</td></tr>';
       bind("off", async b => {
         if (!confirm(`Withdraw card ${b.dataset.off}? Participants lose it on their next call.`)) return;
