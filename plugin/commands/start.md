@@ -84,8 +84,8 @@ iw-connect
 ```
 
 That is the whole step. It reads the bundle you just stored, merges `INSURWRECK_TOKEN`
-(read-only Plum data slices), `N8N_TOKEN` (workflows) and `KULA_API_KEY` (recruiting data)
-into `~/.claude/settings.json` without disturbing anything already there, skips whatever
+(read-only Plum data slices), `N8N_TOKEN` (workflows), `KULA_API_KEY` (recruiting data)
+and the three `ZENDESK_*` values (support tickets) into `~/.claude/settings.json` without disturbing anything already there, skips whatever
 isn't issued yet, and checks the data server actually accepts the token. It is safe to
 run again.
 
@@ -100,8 +100,8 @@ re-running will not fix that.
 restart is the last thing in this whole flow, and restarting here would drop them out of
 onboarding. You will instruct them at the end, in Step 7.
 
-After the restart, three of the four MCP servers work with no further action:
-`insurwreck-data`, `n8n` and `kula`. Only Salesforce needs the participant to log in as
+After the restart, four of the five MCP servers work with no further action:
+`insurwreck-data`, `n8n`, `kula` and `zendesk`. Only Salesforce needs the participant to log in as
 themselves, because it acts with that person's own permissions - point them at
 `/insurwreck:connect` and don't walk them through it here.
 

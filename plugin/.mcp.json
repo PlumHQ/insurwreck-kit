@@ -35,6 +35,15 @@
         "KULA_API_KEY": "${KULA_API_KEY}"
       }
     },
+    "zendesk": {
+      "command": "npx",
+      "args": ["-y", "zd-mcp-server"],
+      "env": {
+        "ZENDESK_SUBDOMAIN": "${ZENDESK_SUBDOMAIN}",
+        "ZENDESK_EMAIL": "${ZENDESK_EMAIL}",
+        "ZENDESK_TOKEN": "${ZENDESK_TOKEN}"
+      }
+    },
     "remotion": {
       "command": "npx",
       "args": ["-y", "@remotion/mcp"]

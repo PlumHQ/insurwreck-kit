@@ -396,7 +396,7 @@ if have npm; then
 
   # Populate the npx cache so the first MCP launch doesn't race its own
   # download. --version exits immediately once the package is fetched.
-  for pkg in "@salesforce/mcp" "@kula-ai/mcp-server"; do
+  for pkg in "@salesforce/mcp" "@kula-ai/mcp-server" "zd-mcp-server"; do
     if npx -y "$pkg" --version >/dev/null 2>&1; then
       ok "cached $pkg"
     else

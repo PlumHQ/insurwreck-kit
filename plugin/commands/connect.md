@@ -2,7 +2,7 @@
 description: Log in to Salesforce with your own account
 ---
 
-Salesforce is the one MCP server that needs a per-participant login. Kula needs nothing; it's covered below for when someone asks.
+Salesforce is the one MCP server that needs a per-participant login. Kula and Zendesk need nothing; both are covered below for when someone asks.
 
 ## Salesforce — your own login, your own access
 
@@ -45,5 +45,22 @@ before assuming anything more exotic.
 
 A denied write is the hook working, not a bug to route around.
 
-Never print `KULA_API_KEY` or the Salesforce access token in full — the service name and
+## Zendesk — already on, nothing to authenticate
+
+Same shape as Kula. `/insurwreck:start` puts `ZENDESK_SUBDOMAIN`, `ZENDESK_EMAIL` and
+`ZENDESK_TOKEN` from their bundle into `~/.claude/settings.json`, and the `zendesk` server
+is live after that restart. Two things to tell them:
+
+- **It's read-only, enforced.** `block-zendesk-writes.sh` allows `zendesk_search` and
+  `zendesk_get_*` and denies everything else, with no override. This matters more than it
+  does for Kula: `zendesk_add_public_note` emails the reply to the customer who filed the
+  ticket, and `zendesk_create_ticket` drops a fake ticket into a real agent's queue.
+- **What they read is real customer support traffic.** Not a de-identified snapshot.
+  Nothing goes on a slide or into Slack.
+
+Failures follow the same order as Kula: no restart since `/insurwreck:start`; `zendesk`
+still `pending` in the bundle, so re-run `/insurwreck:status`; or an organizer hasn't set
+the `ZENDESK_*` values on the desk.
+
+Never print `KULA_API_KEY`, the `ZENDESK_TOKEN` or the Salesforce access token in full — the service name and
 last 4 characters at most.

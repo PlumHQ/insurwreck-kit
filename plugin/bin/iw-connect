@@ -52,6 +52,9 @@ const wanted = {
   INSURWRECK_TOKEN: svc.anthropic?.api_key,
   N8N_TOKEN: svc.n8n?.token,
   KULA_API_KEY: svc.kula?.api_key,
+  ZENDESK_SUBDOMAIN: svc.zendesk?.subdomain,
+  ZENDESK_EMAIL: svc.zendesk?.agent_email,
+  ZENDESK_TOKEN: svc.zendesk?.api_token,
 };
 
 let settings = {};
