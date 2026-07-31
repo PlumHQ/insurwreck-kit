@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# Pull the latest credential bundle from the desk.
+#
+#   iw-refresh
+#
+# The desk keeps no session on disk, so re-running onboarding to pick up a
+# credential means a fresh six-digit code. That is far too heavy for the common
+# case: an organizer repaired you, or a service that was pending for the whole
+# room came good at once. Your own iwk- token is enough to ask the desk what it
+# holds for you, so this needs nothing from you and mints nothing new.
+#
+# Safe to re-run. Read-only on the desk's side.
+
+set -uo pipefail
+
+DESK="${INSURWRECK_DESK:-https://insurwreck-desk.preview.plumhq.com}"
+CREDS="$HOME/.insurwreck/credentials.json"
+
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+  B=$'\033[1m'; R=$'\033[0m'; GRN=$'\033[32m'; YLW=$'\033[33m'; RED=$'\033[31m'; DIM=$'\033[2m'
+else
+  B=""; R=""; GRN=""; YLW=""; RED=""; DIM=""
+fi
+
+[ -f "$CREDS" ] || {
+  printf "\n  ${RED}✗${R} No credentials yet — run /insurwreck:start first.\n\n"; exit 1; }
+command -v node >/dev/null 2>&1 || {
+  printf "\n  ${RED}✗${R} node is missing — re-run the setup command from the invite.\n\n"; exit 1; }
+
+TOKEN="${INSURWRECK_TOKEN:-$(node -pe 'try{JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).services.anthropic.api_key}catch{""}' "$CREDS" 2>/dev/null)}"
+[ -n "$TOKEN" ] || {
+  printf "\n  ${RED}✗${R} No token in your bundle — tell an organizer.\n\n"; exit 1; }
+
+TMP="$(mktemp)"
+CODE="$(curl -s -o "$TMP" -w '%{http_code}' --max-time 30 "$DESK/api/bundle" -H "Authorization: Bearer $TOKEN")"
+
+case "$CODE" in
+  200) ;;
+  401) printf "\n  ${RED}✗${R} The desk did not recognise your token — tell an organizer.\n\n"; rm -f "$TMP"; exit 1 ;;
+  *)   printf "\n  ${RED}✗${R} Could not reach the desk (HTTP %s). Check your network and retry.\n\n" "$CODE"; rm -f "$TMP"; exit 1 ;;
+esac
+
+# Write only after a valid response parses - a truncated download must never
+# replace a working bundle.
+node -e '
+  const fs = require("fs");
+  const [tmp, dest] = process.argv.slice(1);
+  const next = JSON.parse(fs.readFileSync(tmp, "utf8"));
+  if (!next.ok || !next.services) { console.log("BAD"); process.exit(2); }
+
+  let before = {};
+  try { before = JSON.parse(fs.readFileSync(dest, "utf8")).services || {}; } catch {}
+  const gained = Object.keys(next.services).filter((s) => !before[s]);
+
+  fs.writeFileSync(dest, JSON.stringify(next, null, 2));
+  console.log(JSON.stringify({ gained, pending: next.pending || [] }));
+' "$TMP" "$CREDS" > "$TMP.out" 2>/dev/null
+STATUS=$?
+rm -f "$TMP"
+
+if [ "$STATUS" != "0" ]; then
+  printf "\n  ${RED}✗${R} The desk sent something unreadable — your existing setup is untouched.\n\n"
+  rm -f "$TMP.out"; exit 1
+fi
+chmod 600 "$CREDS" 2>/dev/null
+
+RESULT="$(cat "$TMP.out")"; rm -f "$TMP.out"
+GAINED="$(printf '%s' "$RESULT" | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).gained.join(" ")')"
+PENDING="$(printf '%s' "$RESULT" | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).pending.join(" ")')"
+
+printf "\n${B}Refreshed from the desk${R}\n\n"
+if [ -n "$GAINED" ]; then
+  for s in $GAINED; do printf "  ${GRN}✓${R} %s is now yours\n" "$s"; done
+else
+  printf "  ${DIM}·${R} ${DIM}nothing new — you already had everything the desk holds${R}\n"
+fi
+[ -n "$PENDING" ] && for s in $PENDING; do printf "  ${YLW}!${R} %s still pending\n" "$s"; done
+
+printf "\n"
+if [ -n "$GAINED" ]; then
+  printf "Run ${B}iw-connect${R} if any of those power an MCP server, then restart Claude Code.\n\n"
+else
+  printf "Run ${B}iw-status${R} to see the full picture.\n\n"
+fi
