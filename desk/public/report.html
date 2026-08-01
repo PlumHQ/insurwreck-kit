@@ -1,0 +1,640 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Insurwreck 4.0 · event report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap"
+  rel="stylesheet"
+/>
+
+<style>
+  /* Plum's published design system. Tokens are lifted verbatim from
+     plugin/skills/plum-design/plum.css so this page and the participants' own
+     apps look like they came from the same company. The dark set ships with
+     that file: derived rather than inverted, with plum lifted because #7A315D
+     fails contrast on a dark ground. */
+  :root {
+    color-scheme: light dark;
+    --ink:#211d20; --stone:#696267; --faint:#9a9297;
+    --paper:#ffffff; --mist:#f8f7f7; --line:#e9e5e7;
+    --plum:#7a315d; --plum-ink:#54203f; --plum-wash:#f7eef3;
+    --signal:#c65a32; --signal-wash:#fbf0eb;
+    --display:"Bricolage Grotesque",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --body:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --mono:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
+    --wrap:1120px; --radius:18px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink:#f4f1f3; --stone:#a79fa4; --faint:#7b7379;
+      --paper:#171416; --mist:#1f1b1e; --line:#322c30;
+      --plum:#c97ba5; --plum-ink:#e3aac8; --plum-wash:#2a1b24;
+      --signal:#e08a62; --signal-wash:#2e1e17;
+    }
+  }
+
+  * { box-sizing:border-box; }
+  /* .row sets display:flex, which outranks [hidden] and would leave every
+     sign-in bar on screen at once. Make hidden mean hidden. */
+  [hidden] { display:none !important; }
+  body {
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--body); font-size:16px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:var(--wrap); margin:0 auto; padding:0 28px; }
+  a { color:var(--plum); text-underline-offset:2px; }
+  a:hover { color:var(--plum-ink); }
+  :focus-visible { outline:2px solid var(--plum); outline-offset:3px; border-radius:4px; }
+  .label { font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); }
+
+  /* ------------------------------------------------------------- sign in --- */
+  .gate { padding:56px 0 0; }
+  .gate h1 {
+    font-family:var(--display); font-weight:750; letter-spacing:-.025em;
+    font-size:clamp(34px,5vw,52px); line-height:1.04; margin:12px 0 0;
+  }
+  .gate p { color:var(--stone); max-width:58ch; }
+  .row { display:flex; flex-wrap:wrap; gap:9px; align-items:center; margin-top:20px; }
+  input {
+    padding:10px 13px; font-family:var(--body); font-size:14px; color:var(--ink);
+    background:var(--paper); border:1px solid var(--line); border-radius:9px;
+  }
+  input::placeholder { color:var(--faint); }
+  button {
+    font-family:var(--body); font-size:14px; padding:10px 16px; cursor:pointer;
+    border:1px solid var(--line); border-radius:9px; background:var(--paper); color:var(--ink);
+  }
+  button:hover { border-color:var(--plum); color:var(--plum); }
+  button.p { background:var(--plum); border-color:var(--plum); color:#fff; }
+  button.p:hover { background:var(--plum-ink); border-color:var(--plum-ink); color:#fff; }
+  button.sm { padding:6px 11px; font-size:13px; }
+  #msg { margin-top:14px; font-size:14px; color:var(--stone); min-height:22px; }
+  #msg.err { color:var(--signal); }
+  #msg.ok { color:var(--plum); }
+  .who { font-family:var(--mono); font-size:12.5px; color:var(--faint); }
+
+  /* ------------------------------------------------------------ masthead --- */
+  .masthead { border-bottom:1px solid var(--line); padding:8px 0 40px; }
+  .masthead h1 {
+    font-family:var(--display); font-weight:750; letter-spacing:-.025em;
+    font-size:clamp(38px,6vw,66px); line-height:1.02; margin:14px 0 0; text-wrap:balance;
+  }
+  .masthead .sub { color:var(--stone); margin:16px 0 0; max-width:60ch; }
+  .masthead .meta { display:flex; flex-wrap:wrap; gap:10px 22px; margin-top:24px; font-family:var(--mono); font-size:12px; color:var(--faint); }
+
+  .band {
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(168px,1fr));
+    border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; margin-top:44px;
+  }
+  .band .cell { padding:22px; border-right:1px solid var(--line); }
+  .band .cell:last-child { border-right:0; }
+  .band .big {
+    font-family:var(--display); font-weight:750; letter-spacing:-.02em;
+    font-size:38px; line-height:1.05; margin-top:8px; font-variant-numeric:tabular-nums;
+  }
+  .band .foot { font-size:13px; color:var(--stone); margin-top:5px; }
+  .band .cell.accent .big { color:var(--plum); }
+
+  section { padding:64px 0 0; }
+  h2 { font-family:var(--display); font-weight:700; letter-spacing:-.02em; font-size:27px; margin:0; text-wrap:balance; }
+  .lede { color:var(--stone); margin:10px 0 0; max-width:68ch; }
+  .card { border:1px solid var(--line); border-radius:var(--radius); }
+
+  .chart { margin-top:26px; padding:24px; }
+  .bars { display:flex; align-items:flex-end; gap:6px; height:190px; margin-top:8px; }
+  .bars .col { flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; gap:6px; }
+  .bars .stem { background:var(--plum-wash); border:1px solid var(--plum); border-radius:5px 5px 0 0; min-height:2px; }
+  .bars .col:hover .stem { background:var(--plum); }
+  .bars .tick, .bars .val { text-align:center; font-family:var(--mono); font-size:10.5px; color:var(--faint); font-variant-numeric:tabular-nums; }
+  .bars .val { color:var(--stone); }
+  .peakline { display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-top:18px; padding-top:16px; border-top:1px solid var(--line); font-size:14px; color:var(--stone); }
+
+  .controls {
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:26px;
+    padding:16px 18px; border:1px solid var(--line); border-radius:var(--radius); background:var(--mist);
+  }
+  .controls input[type=search] { flex:1 1 230px; min-width:0; }
+  .chip {
+    font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    padding:7px 12px; border-radius:999px;
+  }
+  .chip[aria-pressed="true"] { background:var(--plum); border-color:var(--plum); color:#fff; }
+  .count { margin-left:auto; font-family:var(--mono); font-size:12px; color:var(--faint); }
+
+  .tablewrap { margin-top:16px; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+  .scroll { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:14px; min-width:780px; }
+  thead th {
+    text-align:left; padding:13px 16px; background:var(--mist); border-bottom:1px solid var(--line);
+    white-space:nowrap; font-family:var(--mono); font-size:11px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--faint); font-weight:400;
+  }
+  thead th.s { cursor:pointer; user-select:none; }
+  thead th.s:hover { color:var(--plum); }
+  thead th .ar { opacity:0; margin-left:4px; }
+  thead th[data-dir] .ar { opacity:1; color:var(--plum); }
+  tbody td { padding:13px 16px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tbody tr.r { cursor:pointer; }
+  tbody tr.r:hover td { background:var(--mist); }
+  td.n { text-align:right; font-variant-numeric:tabular-nums; font-family:var(--mono); font-size:13px; white-space:nowrap; }
+  td.rank { color:var(--faint); font-family:var(--mono); font-size:12px; width:36px; }
+  .nm { font-weight:600; }
+  .brief { color:var(--stone); font-size:13.5px; line-height:1.5; margin-top:3px; max-width:52ch; }
+  .pill {
+    display:inline-block; font-family:var(--mono); font-size:10px; letter-spacing:.07em;
+    text-transform:uppercase; padding:3px 8px; border-radius:999px; border:1px solid; white-space:nowrap;
+  }
+  .pill.shipped { color:var(--plum); border-color:var(--plum); background:var(--plum-wash); }
+  .pill.started { color:var(--stone); border-color:var(--line); background:var(--mist); }
+  /* Absence of activity is not an error. Plum's system allows --signal at most
+     once per page, and six orange pills would break that and read as a public
+     flag against six named colleagues. Neutral, dashed, quiet. */
+  .pill.idle { color:var(--faint); border-color:var(--line); border-style:dashed; background:transparent; }
+  tr.detail td { background:var(--mist); }
+  tr.detail .inner { display:grid; gap:12px; padding:4px 0 8px; }
+  tr.detail p { margin:0; max-width:78ch; }
+  tr.detail dl { display:flex; flex-wrap:wrap; gap:8px 30px; margin:0; }
+  tr.detail dt { font-family:var(--mono); font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--faint); }
+  tr.detail dd { margin:2px 0 0; font-family:var(--mono); font-size:12.5px; word-break:break-all; }
+  .empty { padding:44px 16px; text-align:center; color:var(--faint); }
+
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:26px; }
+  .rank-list { padding:24px; }
+  .rank-row { display:grid; grid-template-columns:1fr auto; gap:6px 14px; padding:11px 0; border-bottom:1px solid var(--line); }
+  .rank-row:last-child { border-bottom:0; }
+  .rank-row .amt { font-family:var(--mono); font-size:13px; font-variant-numeric:tabular-nums; }
+  .rank-row .track { grid-column:1/-1; height:5px; background:var(--mist); border-radius:3px; overflow:hidden; }
+  .rank-row .fill { height:100%; background:var(--plum); border-radius:3px; }
+  .rank-row.rest .fill { background:var(--faint); }
+
+  .kv { padding:6px 24px 24px; }
+  .kv .row { display:flex; justify-content:space-between; gap:18px; padding:13px 0; border-bottom:1px solid var(--line); margin:0; }
+  .kv .row:last-child { border-bottom:0; }
+  .kv .k { color:var(--stone); font-size:14px; }
+  .kv .v { font-family:var(--mono); font-size:13.5px; font-variant-numeric:tabular-nums; text-align:right; }
+
+  .note {
+    margin-top:26px; padding:20px 24px; border:1px solid var(--line); border-left:3px solid var(--plum);
+    border-radius:0 var(--radius) var(--radius) 0; background:var(--mist);
+  }
+  .note p { margin:0; }
+  .note p + p { margin-top:10px; }
+
+  .themes { display:grid; grid-template-columns:repeat(auto-fill,minmax(212px,1fr)); gap:10px; margin-top:24px; }
+  .theme { border:1px solid var(--line); border-radius:12px; padding:13px 16px; }
+  .theme .t { font-weight:600; font-size:14px; display:flex; justify-content:space-between; gap:10px; }
+  .theme .t .c { font-family:var(--mono); color:var(--plum); font-variant-numeric:tabular-nums; }
+  .theme .people { color:var(--stone); font-size:12.5px; margin-top:5px; line-height:1.45; }
+
+  footer { margin-top:76px; padding:30px 0 60px; border-top:1px solid var(--line); color:var(--faint); font-size:13px; }
+
+  @media (max-width:860px) {
+    .grid2 { grid-template-columns:1fr; }
+    .band .cell { border-right:0; border-bottom:1px solid var(--line); }
+    .band .cell:last-child { border-bottom:0; }
+    section { padding:48px 0 0; }
+    .bars { height:150px; }
+  }
+  @media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
+</style>
+
+<div class="wrap">
+
+  <!-- The gate. Nothing below it exists in this file: the roster, the
+       addresses and the per-person spend all arrive from /api/report, which
+       refuses anyone organizerFor() does not recognise. -->
+  <div class="gate" id="gate">
+    <div class="label">Plum Leadership Hackathon &middot; 31 July 2026</div>
+    <h1>Insurwreck 4.0 &mdash; event report</h1>
+    <p>Organizers only. This page carries every participant&rsquo;s address and personal model
+    spend, so it is not readable without signing in.</p>
+
+    <div class="row" id="login">
+      <input id="email" type="email" placeholder="your @plumhq.com address" size="26" autocomplete="username" />
+      <button class="p" id="send">Email me a code</button>
+      <input id="code" placeholder="6-digit code" size="10" inputmode="numeric" hidden />
+      <button class="p" id="verify" hidden>Sign in</button>
+      <button id="usekey">Use admin key</button>
+    </div>
+    <div class="row" id="keybar" hidden>
+      <input id="key" type="password" placeholder="admin key" size="26" autocomplete="off" />
+      <button class="p" id="go">Sign in</button>
+      <button id="useotp">Use email instead</button>
+    </div>
+    <div id="msg"></div>
+  </div>
+
+  <div id="report" hidden>
+    <header class="masthead">
+      <div class="row" style="margin:0 0 4px">
+        <span class="who" id="whoami"></span>
+        <button class="sm" id="refresh">Refresh</button>
+        <button class="sm" id="signout">Sign out</button>
+      </div>
+      <div class="label">Plum Leadership Hackathon &middot; 31 July 2026</div>
+      <h1>Insurwreck 4.0</h1>
+      <p class="sub" id="thesis"></p>
+      <div class="meta" id="meta"></div>
+    </header>
+
+    <div class="band" id="band"></div>
+
+    <section>
+      <h2>The day, hour by hour</h2>
+      <p class="lede">Deployments to Vercel on the event day, Indian Standard Time.</p>
+      <div class="card chart">
+        <div class="label">Deployments per hour &middot; IST</div>
+        <div class="bars" id="bars"></div>
+        <div class="peakline" id="peakline"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Who built what</h2>
+      <p class="lede">Select a row for the full brief and the underlying project. Sort by any column.</p>
+      <div class="controls">
+        <input type="search" id="q" placeholder="Search a name or an idea&hellip;" aria-label="Search participants" />
+        <button class="chip" data-filter="all" aria-pressed="true">All</button>
+        <button class="chip" data-filter="shipped" aria-pressed="false">Shipped</button>
+        <button class="chip" data-filter="started" aria-pressed="false">Started</button>
+        <button class="chip" data-filter="idle" aria-pressed="false">No activity</button>
+        <span class="count" id="count"></span>
+      </div>
+      <div class="tablewrap"><div class="scroll">
+        <table>
+          <thead><tr>
+            <th></th>
+            <th class="s" data-sort="name">Participant<span class="ar">&darr;</span></th>
+            <th>Live app</th>
+            <th>Status</th>
+            <th class="s" data-sort="deploys" style="text-align:right">Deploys<span class="ar">&darr;</span></th>
+            <th class="s" data-sort="calls" style="text-align:right">Calls<span class="ar">&darr;</span></th>
+            <th class="s" data-sort="cost" style="text-align:right">Spend<span class="ar">&darr;</span></th>
+          </tr></thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div></div>
+    </section>
+
+    <section>
+      <h2>What it cost, and what that number is not</h2>
+      <div class="grid2">
+        <div class="card rank-list">
+          <div class="label">Model spend by participant</div>
+          <div id="spendlist" style="margin-top:14px"></div>
+        </div>
+        <div class="card"><div class="kv" id="usagekv"><div class="label" style="padding-top:18px">Gateway totals</div></div></div>
+      </div>
+      <div class="note">
+        <p><strong>Read this figure carefully.</strong> The gateway meters what the participants&rsquo;
+        <em>applications</em> spent calling Claude. It does not meter Claude Code, which is what they
+        actually built with.</p>
+        <p>Real model consumption for the day was substantially higher. Quoting this as the cost of
+        the hackathon would be wrong.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Where the room pointed itself</h2>
+      <p class="lede" id="themelede"></p>
+      <div class="themes" id="themes"></div>
+    </section>
+
+    <section>
+      <h2>Did the platform hold</h2>
+      <p class="lede">Nine services per person, provisioned live during onboarding &mdash; Vercel,
+      Supabase, Anthropic, Resend, AgentMail, n8n, Google sign-in, Kula and Zendesk.</p>
+      <div class="grid2">
+        <div class="card"><div class="kv" id="relkv"><div class="label" style="padding-top:18px">Provisioning and builds</div></div></div>
+        <div class="card"><div class="kv" id="livekv"><div class="label" style="padding-top:18px">Still standing</div></div></div>
+      </div>
+      <div class="note" id="relnote"></div>
+    </section>
+
+    <footer>
+      Generated live from the credential desk, the Vercel <code>insurwreck</code> team and the model
+      gateway. Organizer-only: addresses, spend and project identifiers are internal.
+    </footer>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const key = () => $("key").value.trim();
+  let session = sessionStorage.getItem("iw_session") || "";
+  const authHeaders = () => (session ? { Authorization: `Bearer ${session}` } : { "x-admin-key": key() });
+  const haveKey = () => Boolean(key());
+  const say = (t, c = "") => { $("msg").className = c; $("msg").textContent = t; };
+
+  const fmt = (n) => Number(n || 0).toLocaleString("en-IN");
+  const usd = (n) => "$" + Number(n || 0).toFixed(2);
+  const el = (t, c, h) => { const e = document.createElement(t); if (c) e.className = c; if (h !== undefined) e.innerHTML = h; return e; };
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  // A few briefs were pasted with an em dash that lost its encoding somewhere
+  // before the desk stored it and now sits in the row as U+FFFD. Repair it on
+  // the way out rather than rewriting what someone actually typed.
+  const brief = (s) => esc(String(s ?? "").replace(/�/g, "—"));
+
+  /* ------------------------------------------------------------- sign in --- */
+  $("send").onclick = async () => {
+    const email = $("email").value.trim();
+    if (!email) return say("Enter your work email.", "err");
+    try {
+      const r = await fetch("/api/otp", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+      $("code").hidden = false; $("verify").hidden = false; $("code").focus();
+      say("Code sent. Check your inbox.", "ok");
+    } catch (e) { say(e.message, "err"); }
+  };
+  $("verify").onclick = async () => {
+    try {
+      const r = await fetch("/api/verify", { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: $("email").value.trim(), code: $("code").value.trim() }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "Wrong or expired code.");
+      session = d.token;
+      sessionStorage.setItem("iw_session", session);
+      sessionStorage.setItem("iw_who", $("email").value.trim());
+      load();
+    } catch (e) { say(e.message, "err"); }
+  };
+  $("usekey").onclick = () => { $("login").hidden = true; $("keybar").hidden = false; $("key").focus(); };
+  $("useotp").onclick = () => { $("keybar").hidden = true; $("login").hidden = false; };
+  $("go").onclick = () => load();
+  $("refresh").onclick = () => load();
+  $("signout").onclick = () => { sessionStorage.clear(); location.reload(); };
+  $("key").onkeydown = (e) => { if (e.key === "Enter") load(); };
+  $("code").onkeydown = (e) => { if (e.key === "Enter") $("verify").click(); };
+  $("email").onkeydown = (e) => { if (e.key === "Enter") $("send").click(); };
+
+  let D = null;
+
+  async function load() {
+    if (!session && !haveKey()) return say("Sign in first.", "err");
+    say("Building the report…");
+    try {
+      const r = await fetch("/api/report", { headers: authHeaders() });
+      const d = await r.json();
+      if (!r.ok) throw new Error(r.status === 401 ? "That address is not on the organizer list." : d.error || `HTTP ${r.status}`);
+      D = d;
+      $("gate").hidden = true;
+      $("report").hidden = false;
+      $("whoami").textContent = "signed in as " + (haveKey() ? "admin key" : sessionStorage.getItem("iw_who") || d.generated_for);
+      render();
+    } catch (e) { say(e.message, "err"); }
+  }
+
+  /* --------------------------------------------------------------- theme --- */
+  /* Grouped by the part of the business each brief attacked. Keyed on the brief
+     text rather than a hand-written name list, so a re-run of the event does not
+     silently drop anyone who was not in the original mapping. */
+  /* Order matters: the first pattern to match wins, so the specific buckets are
+     listed before the broad ones. "onboarding" alone is ambiguous — it means
+     employee onboarding to HR and customer onboarding to CX — so People is
+     tested first and Accounts asks for the customer sense explicitly. */
+  const THEMES = [
+    ["Member health", /health check|telehealth|mental health|step data|diagnosis|care manager/i],
+    // A bare "HR" is no signal: half the claims briefs name HR as a stakeholder.
+    // Ask for HR as the subject of the build instead.
+    ["People & hiring", /\bhir(e|ing)|screen|applicant|candidate|recruit|hr (dashboard|lifecycle)|onboarding to exit/i],
+    ["Renewals & pricing", /renewal|premium|upsell|rollover|carrier|battlecard|quote/i],
+    ["Claims & operations", /claim|gpa|gtl|endorsement|deduction|reconcil/i],
+    ["Internal ops & finance", /invoice|spend|budget|cost cent|zoho|amorti/i],
+    ["Accounts & CX", /account manager|\bAM\b|handoff|onboarding manager|post.?sales|nps|detractor|pendenc|kickoff/i],
+    ["Engineering & platform", /log|anomal|new relic|gcp|integrat|\bapi\b|creative director|test case/i],
+  ];
+  const themeOf = (p) => {
+    if (p.exploring) return null;
+    for (const [name, re] of THEMES) if (re.test(p.idea)) return name;
+    return "Other";
+  };
+
+  function render() {
+    const T = D.totals;
+    $("thesis").textContent =
+      `${T.people} leaders were given a build environment and one day. ${T.shipped} of them shipped a ` +
+      `working, publicly reachable application. These are live reads from the desk, the deployment ` +
+      `log and the model meter.`;
+    $("meta").innerHTML =
+      `<span>Generated ${new Date(D.generated_at).toLocaleString("en-IN")}</span>` +
+      `<span>${T.excluded} organizer and test rows excluded</span>` +
+      (D.vercel_reachable ? "" : `<span style="color:var(--signal)">Vercel unreachable &mdash; deploy counts incomplete</span>`);
+
+    /* ---------------------------------------------------------------- band -- */
+    $("band").textContent = "";
+    [
+      ["Participants", fmt(T.people), "all verified and provisioned", false],
+      ["Shipped a live app", fmt(T.shipped), Math.round((T.shipped / T.people) * 100) + "% of the room", true],
+      ["Deployments", fmt(T.deploys), `${T.ready} succeeded · ${T.failed} failed`, false],
+      ["On event day", fmt(T.eventday), `peak of ${T.peak} in one hour`, false],
+      ["Problem statements", fmt(T.briefs), "concrete briefs, not topics", false],
+      ["Model spend", usd(T.spend), `of ${usd(T.budget)} budgeted`, false],
+    ].forEach(([k, v, f, accent]) => {
+      const c = el("div", "cell" + (accent ? " accent" : ""));
+      c.append(el("div", "label", k), el("div", "big", v), el("div", "foot", f));
+      $("band").append(c);
+    });
+
+    /* ---------------------------------------------------------------- bars -- */
+    const mx = Math.max(1, ...D.timeline.map((t) => t.n));
+    $("bars").textContent = "";
+    D.timeline.forEach((t) => {
+      const col = el("div", "col");
+      col.append(el("div", "val", t.n || ""));
+      const stem = el("div", "stem");
+      stem.style.height = Math.max(2, (t.n / mx) * 100) + "%";
+      stem.title = `${t.n} deployment${t.n === 1 ? "" : "s"} at ${String(t.h).padStart(2, "0")}:00 IST`;
+      col.append(stem, el("div", "tick", String(t.h).padStart(2, "0")));
+      $("bars").append(col);
+    });
+    $("peakline").innerHTML =
+      `<span>Peak <strong>${T.peak}/hour</strong></span>` +
+      `<span><strong>${fmt(T.eventday)}</strong> of ${fmt(T.deploys)} deployments landed on the day</span>` +
+      `<span>Build success <strong>${((T.ready / Math.max(1, T.deploys)) * 100).toFixed(1)}%</strong></span>`;
+
+    renderRoster();
+
+    /* --------------------------------------------------------------- spend -- */
+    const real = D.participants.filter((p) => !p.test);
+    const spenders = real.filter((p) => p.cost > 0).sort((a, b) => b.cost - a.cost);
+    const topSix = spenders.slice(0, 6);
+    const restCost = +(T.spend - topSix.reduce((s, p) => s + p.cost, 0)).toFixed(2);
+    const sl = $("spendlist");
+    sl.textContent = "";
+    const bar = (label, amount, max, rest) => {
+      const row = el("div", "rank-row" + (rest ? " rest" : ""));
+      row.append(el("div", "", esc(label)), el("div", "amt", usd(amount)));
+      const track = el("div", "track"), fill = el("div", "fill");
+      fill.style.width = (max ? (amount / max) * 100 : 0) + "%";
+      track.append(fill); row.append(track); sl.append(row);
+    };
+    const max = topSix.length ? topSix[0].cost : 0;
+    topSix.forEach((p) => bar(p.name, p.cost, max, false));
+    if (spenders.length > topSix.length) bar(`Remaining ${spenders.length - topSix.length} participants`, restCost, max, true);
+
+    const kv = (target, pairs) => {
+      const box = $(target);
+      box.querySelectorAll(".row").forEach((n) => n.remove());
+      pairs.forEach(([k, v]) => {
+        const row = el("div", "row");
+        row.append(el("div", "k", esc(k)), el("div", "v", esc(v)));
+        box.append(row);
+      });
+    };
+    const topShare = T.spend ? Math.round((topSix.reduce((s, p) => s + p.cost, 0) / T.spend) * 100) : 0;
+    kv("usagekv", [
+      ["Total metered spend", usd(T.spend)],
+      ["Budget available", usd(T.budget)],
+      ["Consumed", Math.round((T.spend / Math.max(1, T.budget)) * 100) + "%"],
+      ["Used the gateway", `${spenders.length} of ${T.people}`],
+      ["Top six share of spend", topShare + "%"],
+      ["Input tokens", fmt(T.tin)],
+      ["Output tokens", fmt(T.tout)],
+      ...D.models.map((m) => [m.m, fmt(m.n) + " calls"]),
+    ]);
+
+    /* -------------------------------------------------------------- themes -- */
+    const groups = {};
+    real.forEach((p) => { const t = themeOf(p); if (t) (groups[t] = groups[t] || []).push(p.name); });
+    $("themelede").textContent =
+      `${T.briefs} participants arrived with a concrete problem rather than a topic. Grouped by the ` +
+      `part of the business they attacked, the distribution is itself a finding: nobody coordinated.`;
+    $("themes").textContent = "";
+    Object.entries(groups).sort((a, b) => b[1].length - a[1].length).forEach(([name, people]) => {
+      const t = el("div", "theme");
+      t.append(el("div", "t", `<span>${esc(name)}</span><span class="c">${people.length}</span>`));
+      t.append(el("div", "people", esc(people.join(" · "))));
+      $("themes").append(t);
+    });
+
+    /* --------------------------------------------------------- reliability -- */
+    kv("relkv", [
+      ["Credential grants attempted", fmt(T.grants)],
+      ["Grants that landed", fmt(T.landed)],
+      ["Provisioning success", ((T.landed / Math.max(1, T.grants)) * 100).toFixed(1) + "%"],
+      ["Builds run", fmt(T.deploys)],
+      ["Build success", ((T.ready / Math.max(1, T.deploys)) * 100).toFixed(1) + "%"],
+      ["Failed builds", fmt(T.failed)],
+    ]);
+    kv("livekv", [
+      ["Apps with a live URL", fmt(real.filter((p) => p.url).length)],
+      ["Supabase projects", fmt(T.sbprojects)],
+      ["Started but did not deploy", fmt(T.started)],
+      ["Never started", fmt(T.idle)],
+      ["Projects renamed mid-build", fmt(real.filter((p) => p.renamed).length)],
+      ["Projects since deleted", fmt(real.filter((p) => p.project_gone).length)],
+    ]);
+    const gaps = D.participants.filter((p) => p.missing.length);
+    const renamed = real.filter((p) => p.renamed);
+    const gone = real.filter((p) => p.project_gone);
+    $("relnote").innerHTML =
+      `<p><strong>${fmt(T.landed)} of ${fmt(T.grants)} credential grants landed.</strong> ` +
+      (gaps.length
+        ? `Outstanding: ${gaps.map((p) => `${esc(p.name)} (${p.missing.join(", ")})`).join("; ")}.`
+        : `Nothing outstanding.`) +
+      `</p>` +
+      (renamed.length
+        ? `<p>${renamed.map((p) => `<strong>${esc(p.name)}</strong> renamed their project to ` +
+            `<code>${esc(p.project)}</code>`).join("; ")}. Any tooling that joins on project ` +
+          `<em>name</em> rather than project <em>id</em> loses them silently. This report joins on id.</p>`
+        : "") +
+      (gone.length
+        ? `<p>${gone.map((p) => `<strong>${esc(p.name)}</strong>`).join(", ")} no longer ` +
+          `${gone.length === 1 ? "has a" : "have"} Vercel project &mdash; it was deleted after minting, and ` +
+          `its deployment history went with it. A zero deploy count for ` +
+          `${gone.length === 1 ? "them" : "these"} means <em>no longer knowable</em>, not <em>never built</em>.</p>`
+        : "");
+  }
+
+  /* -------------------------------------------------------------- roster --- */
+  let filter = "all", sortKey = "deploys", sortDir = -1, query = "";
+
+  function renderRoster() {
+    const q = query.trim().toLowerCase();
+    const list = D.participants
+      .filter((p) => !p.test)
+      .filter((p) => filter === "all" || p.status === filter)
+      .filter((p) => !q || p.name.toLowerCase().includes(q) || p.idea.toLowerCase().includes(q))
+      .sort((a, b) => {
+        const x = a[sortKey], y = b[sortKey];
+        const c = typeof x === "string" ? x.localeCompare(y) : x - y;
+        return c * sortDir || a.name.localeCompare(b.name);
+      });
+
+    const tb = $("tb");
+    tb.textContent = "";
+    $("count").textContent = `${list.length} of ${D.totals.people} shown`;
+    if (!list.length) {
+      const tr = el("tr"), td = el("td", "empty", "No participant matches that search.");
+      td.colSpan = 7; tr.append(td); tb.append(tr); return;
+    }
+
+    list.forEach((p, i) => {
+      const tr = el("tr", "r");
+      tr.tabIndex = 0; tr.setAttribute("role", "button"); tr.setAttribute("aria-expanded", "false");
+      tr.append(el("td", "rank", String(i + 1)));
+
+      const who = el("td");
+      who.append(el("div", "nm", esc(p.name)));
+      who.append(el("div", "brief", p.exploring
+        ? "<em>Still exploring at registration</em>"
+        : brief(p.idea.slice(0, 110)) + (p.idea.length > 110 ? "…" : "")));
+      tr.append(who);
+
+      tr.append(el("td", "", p.url
+        ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.url.replace("https://", ""))}</a>`
+        : '<span style="color:var(--faint)">&mdash;</span>'));
+
+      const lbl = { shipped: "Shipped", started: "Started", idle: "No activity" }[p.status];
+      tr.append(el("td", "", `<span class="pill ${p.status}">${lbl}</span>`));
+      tr.append(el("td", "n", p.deploys || "—"));
+      tr.append(el("td", "n", p.calls ? fmt(p.calls) : "—"));
+      tr.append(el("td", "n", p.cost ? usd(p.cost) : "—"));
+      tb.append(tr);
+
+      const det = el("tr", "detail");
+      det.hidden = true;
+      const td = el("td"); td.colSpan = 7;
+      const inner = el("div", "inner");
+      inner.append(el("p", "", p.exploring
+        ? "Registered without a fixed brief — recorded as still exploring."
+        : brief(p.idea)));
+      const dl = el("dl");
+      [
+        ["Theme", themeOf(p) || "Exploring"],
+        ["Vercel project", p.dash ? `<a href="${esc(p.dash)}" target="_blank" rel="noopener">${esc(p.project)}</a>` : "—"],
+        ["Supabase ref", esc(p.sb || "—")],
+        ["Tokens in / out", p.calls ? `${fmt(p.tin)} / ${fmt(p.tout)}` : "—"],
+        ["Email", esc(p.email)],
+        ...(p.missing.length ? [["Missing", esc(p.missing.join(", "))]] : []),
+      ].forEach(([k, v]) => { const d = el("div"); d.append(el("dt", "", k), el("dd", "", v)); dl.append(d); });
+      inner.append(dl); td.append(inner); det.append(td); tb.append(det);
+
+      const toggle = () => { det.hidden = !det.hidden; tr.setAttribute("aria-expanded", String(!det.hidden)); };
+      tr.addEventListener("click", (e) => { if (e.target.tagName !== "A") toggle(); });
+      tr.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+    });
+  }
+
+  document.querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll(".chip").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
+    filter = b.dataset.filter; renderRoster();
+  }));
+  $("q").addEventListener("input", (e) => { query = e.target.value; renderRoster(); });
+  document.querySelectorAll("th.s").forEach((th) => th.addEventListener("click", () => {
+    const k = th.dataset.sort;
+    if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = k === "name" ? 1 : -1; }
+    document.querySelectorAll("th.s").forEach((o) => o.removeAttribute("data-dir"));
+    th.setAttribute("data-dir", sortDir);
+    th.querySelector(".ar").textContent = sortDir === 1 ? "↑" : "↓";
+    renderRoster();
+  }));
+
+  // A session from the ops console carries straight over to this page.
+  if (session) load();
+</script>
