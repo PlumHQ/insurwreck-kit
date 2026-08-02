@@ -9,7 +9,7 @@ export default async function handler(req, res) {
       "participants?select=name,email,idea_brief,agent,verified_at,provisioned_at,created_at&order=created_at.asc"
     );
     const credentials = await sb(
-      "credentials?select=participant_email,service,minted_live,payload,created_at&revoked_at=is.null&order=created_at.asc"
+      "credentials?select=participant_email,service,minted_live,payload,created_at,revoked_at&order=created_at.asc"
     );
 
     // Model spend per participant, so organizers can see who is close to their
@@ -37,6 +37,7 @@ export default async function handler(req, res) {
       ...rest,
       full_data_access: Boolean(payload?.full_data_access),
       budget_usd: payload?.budget_usd,
+      revoked: Boolean(rest.revoked_at),
     }));
     return res.status(200).json({ participants, credentials: safe, spend });
   } catch (error) {

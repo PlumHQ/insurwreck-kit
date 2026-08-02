@@ -199,6 +199,28 @@ export default async function handler(req, res) {
 
       // Who is burning budget, who has spent nothing at all (usually a sign
       // they never got started rather than that they're being frugal).
+      // Cut one person's Plum data access without touching the room.
+      //
+      // Scoped to the anthropic credential on purpose: that row is what
+      // participantFor() resolves, so revoking it closes the data MCP and the
+      // model gateway for them and leaves n8n and remotion alone. A timestamp,
+      // not a delete, so it is auditable and reversible.
+      case "set_revoked": {
+        const email = normalizeEmail(body.email);
+        const revoked = Boolean(body.revoked);
+        if (!email) return res.status(400).json({ error: "email required" });
+        const rows = await sb(
+          `credentials?participant_email=eq.${encodeURIComponent(email)}&service=eq.anthropic&select=participant_email`
+        );
+        if (!rows.length) return res.status(404).json({ error: "no anthropic credential for that address" });
+        await sb(
+          `credentials?participant_email=eq.${encodeURIComponent(email)}&service=eq.anthropic`,
+          { method: "PATCH", headers: { Prefer: "return=minimal" }, body: { revoked_at: revoked ? nowIso() : null } }
+        );
+        console.warn(`data access ${revoked ? "REVOKED for" : "restored for"} ${email} by ${who}`);
+        return res.status(200).json({ ok: true, email, revoked });
+      }
+
       case "spend": {
         const usage = await sbAll("llm_usage?select=participant_email,cost_usd,created_at&order=id");
         const byEmail = new Map();

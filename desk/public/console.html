@@ -400,6 +400,16 @@ having count(*) = 1 order by random() limit 10</pre>
         : `Full access revoked for ${r.email}.`, r.full_data_access ? "warn" : "ok");
       load();
     },
+    async revoke(email, on) {
+      if (!on && !confirm(
+        `Cut off ${email}?\n\n` +
+        `Closes the Plum data server and the model gateway for them, on their ` +
+        `next call. n8n and remotion keep working. Reversible.`)) return;
+      const r = await admin("set_revoked", { email, revoked: !on });
+      say(r.revoked ? `${r.email} can no longer read Plum data.` : `${r.email} restored.`,
+          r.revoked ? "warn" : "ok");
+      load();
+    },
     async repair(email) {
       say(`Repairing ${email}. This takes up to a minute.`);
       const r = await api("/api/provision", { method:"POST", body: JSON.stringify({ email }) });
@@ -423,9 +433,13 @@ having count(*) = 1 order by random() limit 10</pre>
       });
       const held = new Map();
       for (const c of body.credentials || []) {
+        if (c.revoked) continue;
         if (!held.has(c.participant_email)) held.set(c.participant_email, new Set());
         held.get(c.participant_email).add(c.service);
       }
+      const revokedBy = new Map((body.credentials || [])
+        .filter(c => c.service === "anthropic")
+        .map(c => [c.participant_email, Boolean(c.revoked)]));
       const spendBy = new Map((body.spend || []).map(s => [s.participant_email, s]));
       const budgetBy = new Map((body.credentials || [])
         .filter(c => c.service === "anthropic" && c.budget_usd != null)
@@ -439,6 +453,7 @@ having count(*) = 1 order by random() limit 10</pre>
         calls: spendBy.get(p.email)?.calls || 0,
         full: Boolean(fullBy.get(p.email)),
         budget: budgetBy.get(p.email) ?? 20,
+        revoked: Boolean(revokedBy.get(p.email)),
       }));
       render();
       say("");
@@ -520,8 +535,10 @@ having count(*) = 1 order by random() limit 10</pre>
           <button class="sm" data-code="${esc(p.email)}" title="Send this person a fresh six-digit code and show it to you, so you can read it out. Does not invalidate their current session.">Code</button>
           <button class="sm" data-budget="${esc(p.email)}" title="Change their model budget in dollars. Takes effect on their very next call - no restart, nothing for them to do.">Budget</button>
           <button class="sm" data-full="${esc(p.email)}" data-on="${p.full?1:0}" title="${p.full?"Take back full warehouse access. Immediate - the next query they run is refused, no restart needed.":"Grant raw read-only SQL over the whole warehouse, bypassing the published slices. One person, every query logged, revocable. They must restart Claude Code before the tool appears."}">${p.full?"Revoke":"Full data"}</button>
+          <button class="sm" data-revoke="${esc(p.email)}" data-on="${p.revoked?1:0}" title="${p.revoked?"Give this person Plum data access back. Takes effect on their next call.":"Cut this person off from Plum data and the model gateway, on their next call. n8n and remotion keep working. Reversible."}">${p.revoked?"Restore":"Cut off"}</button>
           <button class="sm" data-repair="${esc(p.email)}" title="Re-run provisioning for this person. Only mints what is missing and never replaces a credential they already hold. Their laptop still needs /insurwreck:status to pull the new bundle.">Repair</button>
           ${p.full ? '<span class="tag full">FULL</span>' : ""}
+          ${p.revoked ? '<span class="tag full">CUT OFF</span>' : ""}
         </div></td></tr>`;
     }).join("") : '<tr><td colspan="4" class="id">Nobody matches.</td></tr>';
 
@@ -529,6 +546,7 @@ having count(*) = 1 order by random() limit 10</pre>
     bind("budget", b => act.budget(b.dataset.budget));
     bind("full",   b => act.full(b.dataset.full, b.dataset.on === "1"));
     bind("repair", b => act.repair(b.dataset.repair));
+    bind("revoke", b => act.revoke(b.dataset.revoke, b.dataset.on === "1"));
   }
 
   // --- slices ----------------------------------------------------------------
