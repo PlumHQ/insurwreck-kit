@@ -275,8 +275,26 @@ const FULL_TOOL = {
   },
 };
 
+// Post-event shutdown for Plum data specifically. Set INSURWRECK_DATA_CLOSED=1
+// and every tool returns this instead of rows - no redeploy of the plugin, no
+// action on 36 laptops, and the agent relays a sentence the participant can
+// actually act on rather than a bare 401 it will try to retry around.
+//
+// Scoped to this server on purpose. n8n and remotion stay up, and salesforce,
+// kula and zendesk cannot be gated here at all: those run on the participant's
+// machine and talk to the vendor directly, so the desk was never in their path.
+const CLOSED_MESSAGE =
+  "Plum data access is closed. Insurwreck 4.0 has ended, so the warehouse " +
+  "slices are no longer served. Anything you already loaded into your own " +
+  "Supabase or your app still works - this only stops new reads. If you need " +
+  "access for something specific, ask the AI pod rather than retrying.";
+
 async function callTool(name, args, participant) {
   const email = participant.email;
+  if (process.env.INSURWRECK_DATA_CLOSED === "1") {
+    console.warn(`closed-access attempt by ${email}: ${name}`);
+    return CLOSED_MESSAGE;
+  }
   if (!MB_KEY()) {
     return "The data connection isn't switched on yet. Tell an organizer that METABASE_API_KEY is unset on the desk.";
   }
