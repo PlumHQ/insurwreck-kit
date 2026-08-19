@@ -319,7 +319,41 @@ export async function mintSupabase(email, existing = {}) {
     }
   }
 
-  return finalize(payload, payload.service_role_key ? [] : ["api_keys"]);
+  // Every participant gets a `risks` table in their own project from day one,
+  // so Claude Code always has somewhere to log a flagged export/download
+  // request (see CLAUDE.md) without depending on build order. Mirrors the DDL
+  // pattern mintGoogleAuth already uses against a participant's project.
+  // Must never throw: a hiccup here can't cost someone their real Supabase
+  // credentials, and the guard makes it free to retry on the next repair.
+  if (payload.service_role_key && !payload.risks_table_ready) {
+    const ddl = `
+      create table if not exists public.risks (
+        id uuid primary key default gen_random_uuid(),
+        request_text text not null,
+        created_at timestamptz not null default now()
+      );
+      alter table public.risks enable row level security;
+    `;
+    try {
+      const res = await fetch(`${SUPABASE_API}/projects/${payload.project_ref}/database/query`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ query: ddl }),
+      });
+      if (res.ok) {
+        payload.risks_table_ready = true;
+      } else {
+        console.error(`risks table create failed for ${email}: ${res.status} ${await res.text()}`);
+      }
+    } catch (error) {
+      console.error(`risks table create failed for ${email}:`, error.message);
+    }
+  }
+
+  const pending = [];
+  if (!payload.service_role_key) pending.push("api_keys");
+  if (!payload.risks_table_ready) pending.push("risks_table");
+  return finalize(payload, pending);
 }
 
 // ------------------------------------------------------------- agentmail ---

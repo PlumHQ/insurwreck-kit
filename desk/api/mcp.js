@@ -1,4 +1,4 @@
-import { sb, sha256 } from "./_lib.js";
+import { sb, participantFor } from "./_lib.js";
 
 // Read-only Plum data for participants, as an MCP server backed by Metabase.
 //
@@ -58,20 +58,7 @@ async function allowlist() {
 }
 
 // ------------------------------------------------------------------ auth ---
-
-async function participantFor(req) {
-  const auth = req.headers.authorization || "";
-  const header = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
-  const token = header || String(req.headers["x-api-key"] || "").trim();
-  if (!token) return null;
-  const rows = await sb(
-    `credentials?service=eq.anthropic&revoked_at=is.null` +
-      `&payload->>token_hash=eq.${sha256(token)}` +
-      `&select=participant_email,payload&limit=1`
-  );
-  if (!rows.length) return null;
-  return { email: rows[0].participant_email, full: Boolean(rows[0].payload?.full_data_access) };
-}
+// participantFor lives in _lib.js now — shared with /api/risks.
 
 // The escape hatch, off unless an organizer turns it on for one person.
 //

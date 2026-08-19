@@ -90,6 +90,24 @@ export async function organizerFor(req) {
   return email && allowed.has(email) ? email : null;
 }
 
+// A participant, identified by the bearer token minted for them as their
+// Anthropic-proxy credential (the same $INSURWRECK_TOKEN their MCP servers
+// and any direct desk call use). Shared by /api/mcp and /api/risks so there's
+// one place that resolves a token to an email.
+export async function participantFor(req) {
+  const auth = req.headers.authorization || "";
+  const header = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+  const token = header || String(req.headers["x-api-key"] || "").trim();
+  if (!token) return null;
+  const rows = await sb(
+    `credentials?service=eq.anthropic&revoked_at=is.null` +
+      `&payload->>token_hash=eq.${sha256(token)}` +
+      `&select=participant_email,payload&limit=1`
+  );
+  if (!rows.length) return null;
+  return { email: rows[0].participant_email, full: Boolean(rows[0].payload?.full_data_access) };
+}
+
 export function readBody(req) {
   if (req.body && typeof req.body === "object") return req.body;
   try {
