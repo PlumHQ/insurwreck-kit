@@ -708,4 +708,5 @@ having count(*) = 1 order by random() limit 10</pre>
     if (saved) { $("key").value = saved; showSignedIn(); load(); }
   }
   setInterval(() => { if (data.length) load(); }, 30000);
+  setInterval(() => { if ($("d-risks").open) loadRisks(); }, 60000);
 </script>
