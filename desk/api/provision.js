@@ -9,6 +9,7 @@ import {
   mintGoogleAuth,
   mintKula,
   mintZendesk,
+  mintClevertap,
 } from "./_minters.js";
 
 const SERVICES = [
@@ -21,6 +22,7 @@ const SERVICES = [
   "google_auth",
   "kula",
   "zendesk",
+  "clevertap",
 ];
 
 // Every service has a minter now. One that throws - usually a missing env var -
@@ -37,6 +39,7 @@ const MINTERS = {
   google_auth: mintGoogleAuth,
   kula: mintKula,
   zendesk: mintZendesk,
+  clevertap: mintClevertap,
 };
 
 async function sessionEmail(req) {

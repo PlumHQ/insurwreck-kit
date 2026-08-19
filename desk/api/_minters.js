@@ -495,6 +495,45 @@ export async function mintZendesk(email, existing = {}) {
   return finalize(payload, []);
 }
 
+// ------------------------------------------------------------- clevertap ---
+
+// Third in the shared-credential family, and the sharpest of the three.
+// CleverTap's REST API authenticates with an Account ID + Passcode pair that
+// belongs to the ACCOUNT, not a person - there is no OAuth, no per-user key,
+// and no read-only passcode type. So one organizer-issued pair goes to every
+// participant, exactly like kula and zendesk.
+//
+// Read this before switching it on: the passcode this delivers has full write
+// access to a live engagement platform. clevertap-mcp exposes
+// clevertap_create_campaign, which posts /targets/create.json with when:"now"
+// across push, email, SMS, webpush, in-app and webhook - one tool call sends
+// real messages to real Plum members, and there is no recall. It also exposes
+// clevertap_delete_profile and clevertap_request (arbitrary path + method,
+// including DELETE). block-clevertap-writes.sh denies every one of them and is
+// the only control that exists, because CleverTap gives us no scoped credential
+// to fall back on. Point CLEVERTAP_ACCOUNT_ID at a non-production project if
+// one exists; the hook stays on either way.
+export async function mintClevertap(email, existing = {}) {
+  const accountId = process.env.CLEVERTAP_ACCOUNT_ID;
+  const passcode = process.env.CLEVERTAP_PASSCODE;
+  const region = process.env.CLEVERTAP_REGION || "in1";
+  if (!accountId || !passcode) {
+    throw new Error("CLEVERTAP_ACCOUNT_ID and CLEVERTAP_PASSCODE not both set");
+  }
+
+  const payload = { ...existing };
+  payload.account_id = accountId;
+  payload.passcode = passcode;
+  payload.region = region;
+  payload.shared = true;
+  payload.scoped_to_you = false;
+  payload.note =
+    "Shared hackathon CleverTap credentials, reachable as the `clevertap` MCP server in Claude Code. Read-only - " +
+    "every write tool is blocked, because this is a live engagement account and a campaign here would send real " +
+    "push, email and SMS to real members. Read the analytics freely; write anything you generate to your own Supabase.";
+  return finalize(payload, []);
+}
+
 function deskBaseUrl() {
   return (
     process.env.DESK_BASE_URL || "https://insurwreck-desk.preview.plumhq.com"

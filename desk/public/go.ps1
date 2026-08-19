@@ -355,7 +355,7 @@ if (Test-Have 'npm') {
 
   # Populate the npx cache so the first MCP launch isn't racing its own download.
   if ($npx) {
-    $pkgs = @('@salesforce/mcp', '@kula-ai/mcp-server', 'zd-mcp-server')
+    $pkgs = @('@salesforce/mcp', '@kula-ai/mcp-server', 'zd-mcp-server', 'clevertap-mcp@1.0.0')
     for ($i = 0; $i -lt $pkgs.Count; $i++) {
       Write-Info "caching $($pkgs[$i]) ($($i + 1) of $($pkgs.Count)) - about a minute each"
       try {

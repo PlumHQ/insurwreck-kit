@@ -55,6 +55,9 @@ const wanted = {
   ZENDESK_SUBDOMAIN: svc.zendesk?.subdomain,
   ZENDESK_EMAIL: svc.zendesk?.agent_email,
   ZENDESK_TOKEN: svc.zendesk?.api_token,
+  CLEVERTAP_ACCOUNT_ID: svc.clevertap?.account_id,
+  CLEVERTAP_PASSCODE: svc.clevertap?.passcode,
+  CLEVERTAP_REGION: svc.clevertap?.region,
 };
 
 let settings = {};
