@@ -2,7 +2,7 @@
 description: Log in to Salesforce with your own account
 ---
 
-Salesforce is the one MCP server that needs a per-participant login. Kula and Zendesk need nothing; both are covered below for when someone asks.
+Salesforce is the one MCP server that needs a per-participant login. Kula, Zendesk and CleverTap need nothing; all three are covered below for when someone asks.
 
 ## Salesforce — your own login, your own access
 
@@ -62,5 +62,30 @@ Failures follow the same order as Kula: no restart since `/insurwreck:start`; `z
 still `pending` in the bundle, so re-run `/insurwreck:status`; or an organizer hasn't set
 the `ZENDESK_*` values on the desk.
 
-Never print `KULA_API_KEY`, the `ZENDESK_TOKEN` or the Salesforce access token in full — the service name and
+## CleverTap — already on, nothing to authenticate
+
+Same shape as Kula and Zendesk. `/insurwreck:start` puts `CLEVERTAP_ACCOUNT_ID`,
+`CLEVERTAP_PASSCODE` and `CLEVERTAP_REGION` from their bundle into
+`~/.claude/settings.json`, and the `clevertap` server is live after that restart.
+Two things to tell them:
+
+- **It is strictly read-only, and this is the tightest of the three.**
+  `block-clevertap-writes.sh` allows exactly `clevertap_get_*`,
+  `clevertap_list_projects` and `clevertap_poll`, and denies everything else with
+  no override. `clevertap_create_campaign` would send real push, email or SMS to
+  real Plum members with no recall, and `clevertap_request` can hit any endpoint
+  with any method, so it is blocked by name rather than filtered.
+- **What they read is live member engagement data.** Real profiles, real device
+  tokens, real campaign performance. Not a de-identified snapshot. Nothing goes on
+  a slide or into Slack.
+
+If someone needs a campaign in their demo, the answer is always the same: read the
+real numbers with `clevertap_get_campaign_report` / `clevertap_get_message_report`,
+model the campaign in their own Supabase, and show that.
+
+Failures follow the same order as Kula: no restart since `/insurwreck:start`;
+`clevertap` still `pending` in the bundle, so re-run `/insurwreck:status`; or an
+organizer hasn't set the `CLEVERTAP_*` values on the desk.
+
+Never print `KULA_API_KEY`, the `ZENDESK_TOKEN`, the `CLEVERTAP_PASSCODE` or the Salesforce access token in full — the service name and
 last 4 characters at most.
