@@ -534,8 +534,10 @@ export async function mintZendesk(email, existing = {}) {
 // Third in the shared-credential family, and the sharpest of the three.
 // CleverTap's REST API authenticates with an Account ID + Passcode pair that
 // belongs to the ACCOUNT, not a person - there is no OAuth, no per-user key,
-// and no read-only passcode type. So one organizer-issued pair goes to every
-// participant, exactly like kula and zendesk.
+// and no read-only passcode type. So the one organizer-issued pair would have to
+// go to every participant, exactly like kula and zendesk. It does not: this is the
+// only service gated to an explicit email allowlist (CLEVERTAP_EMAILS), because it
+// is the only one whose blast radius is messages to real members.
 //
 // Read this before switching it on: the passcode this delivers has full write
 // access to a live engagement platform. clevertap-mcp exposes
@@ -547,7 +549,35 @@ export async function mintZendesk(email, existing = {}) {
 // the only control that exists, because CleverTap gives us no scoped credential
 // to fall back on. Point CLEVERTAP_ACCOUNT_ID at a non-production project if
 // one exists; the hook stays on either way.
+// Who may hold the CleverTap credential at all. Default deny: unset means nobody,
+// because the alternative is a forgotten config silently handing a production
+// engagement passcode to 25 people. Comma-separated, same shape as ALLOWED_EMAILS.
+//
+// This is a DELIVERY gate, not an API scope - CleverTap has no per-user credential
+// to scope to, which is exactly why the gate has to live here. A blocked
+// participant gets no clevertap entry in their bundle, so iw-connect never writes
+// the CLEVERTAP_* variables, the placeholders never resolve, and the server does
+// not start on their machine. Nothing to block, nothing to explain.
+//
+// It does NOT revoke. Removing someone stops future mints; they keep whatever is
+// already in their ~/.claude/settings.json. Taking it back means revoking their
+// credentials row AND clearing those three keys on their machine.
+export function clevertapAllowed(email) {
+  const allowed = (process.env.CLEVERTAP_EMAILS || "")
+    .toLowerCase()
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  return allowed.includes(String(email || "").trim().toLowerCase());
+}
+
 export async function mintClevertap(email, existing = {}) {
+  if (!clevertapAllowed(email)) {
+    // Expected outcome for most participants, not a misconfiguration.
+    // provision.js logs every mint failure and leaves the service pending.
+    throw new Error(`clevertap not enabled for ${email} (not in CLEVERTAP_EMAILS)`);
+  }
+
   const accountId = process.env.CLEVERTAP_ACCOUNT_ID;
   const passcode = process.env.CLEVERTAP_PASSCODE;
   const region = process.env.CLEVERTAP_REGION || "in1";

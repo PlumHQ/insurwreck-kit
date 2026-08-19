@@ -138,7 +138,14 @@ Ordering matters in that hook and there is a test for it: `clevertap_get_campaig
 
 A supply-chain note for whoever maintains this next: the npm package carries no `license`, `repository` or `author` field, and its maintainer (`leanderdperez`) is a different identity from the GitHub owner (`ralphcorleone`). The tarball ships its own `src/`, and it was diffed against the repo at review time — byte-identical apart from CRLF line endings and the two files above. Re-do that diff before moving the pin.
 
-Run the check with `bash plugin/hooks/scripts/test-block-clevertap-writes.sh`.
+**CleverTap is also the one service gated per participant.** `CLEVERTAP_EMAILS` on the desk is a comma-separated allowlist and it is **default deny** — unset means nobody is provisioned. `mintClevertap` throws for anyone not on it, which leaves their `clevertap` service `pending`, so `iw-connect` never writes the three `CLEVERTAP_*` variables and the server never starts on their machine. There is nothing to block and nothing to explain, because the tools are not there.
+
+That is a *delivery* gate, not an API scope — CleverTap has no per-user credential to scope to, which is precisely why the gate has to sit on our side. Two consequences worth writing down:
+
+- **It does not revoke.** Removing an email stops future mints. Anyone already provisioned keeps the passcode in their `~/.claude/settings.json`; taking it back means revoking their `credentials` row *and* clearing those three keys on their machine.
+- **`/api/admin` reports the allowlist size**, including a loud `allowlist EMPTY - nobody is provisioned`. An empty list and a broken credential look identical from a participant's seat, so the panel names which one it is.
+
+Run the checks with `bash plugin/hooks/scripts/test-block-clevertap-writes.sh` and `node desk/test-clevertap-gate.mjs` (the gate test asserts the empty-list default, case/whitespace handling, and that listing one person never implies the domain).
 
 ## Layout
 
