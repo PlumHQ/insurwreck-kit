@@ -8,9 +8,10 @@
 # Salesforce CLI the bundled MCP servers need, installs the insurwreck plugin,
 # scaffolds a project folder, and launches you into it.
 #
-# Supports macOS, Linux, and Windows via WSL2. Native Windows shells (Git Bash,
-# MSYS, Cygwin) are rejected with instructions, because WSL2 is the only path
-# that works. Nothing here requires root.
+# Supports macOS and Linux. Native Windows shells (Git Bash, MSYS, Cygwin) are
+# rejected and pointed at go.ps1, which is the supported Windows path. Do NOT
+# send Windows users to WSL2: Claude Code plugins do not load in WSL sessions at
+# all, so that advice costs them the entire kit. Nothing here requires root.
 #
 # Safe to re-run. Every step checks before it acts, so a half-finished run
 # just picks up where it stopped.
@@ -105,9 +106,9 @@ case "$OS" in
 
       irm https://insurwreck-desk.preview.plumhq.com/win | iex
 
-  Already inside the Claude app? Use the desktop switch instead:
+  Already inside the Claude app? Use this instead:
 
-      \$env:INSURWRECK_DESKTOP=1; irm https://insurwreck-desk.preview.plumhq.com/win | iex"
+      irm https://insurwreck-desk.preview.plumhq.com/win-gui | iex"
     ;;
   *) die "Unsupported system: $OS" ;;
 esac
