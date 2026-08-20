@@ -175,7 +175,13 @@ export default async function handler(req, res) {
     // minting a second Supabase project for the same team. Organizers bypass
     // this: they are the manual path for a team whose captain cannot start.
     const canMint = mayMint(resolution) || Boolean(organizer);
-    if (!canMint && byService.size === 0) {
+    // Count only rows that actually hold a credential. A claim placeholder is
+    // not a bundle: if the captain claimed one service and then crashed, a
+    // member arriving inside the 90s window would otherwise pass this gate and
+    // be handed status:"ok" with nothing in it, which reads as "your team is set
+    // up" while none of it exists.
+    const realRows = [...byService.values()].filter((row) => !row.payload?.claiming);
+    if (!canMint && realRows.length === 0) {
       const captain = await sb(
         `idea_teams?idea_id=eq.${scope.ideaId}&role=eq.owner&select=member_email&limit=1`
       );
