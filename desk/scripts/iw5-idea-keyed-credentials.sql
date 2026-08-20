@@ -152,3 +152,16 @@ alter table public.llm_usage
 -- The budget check runs on every single model call, so it gets its own index.
 create index if not exists llm_usage_idea_id_idx
   on public.llm_usage (idea_id) where idea_id is not null;
+
+-- ---------------------------------------------------------------------------
+-- Applied separately as iw5_idea_teams_brief.
+--
+-- The brief comes from the hub, where the person who published the idea already
+-- wrote it, instead of being asked again at onboarding. Asking produced a second
+-- divergent answer - the half-remembered version typed at 9am - and that was the
+-- one idea-to-template opened their first build conversation from.
+--
+-- Sourced from ideas.brief->>'summary', which is plain prose. The 'pitch' field
+-- is HTML and is only a fallback.
+alter table public.idea_teams
+  add column if not exists idea_brief text;
