@@ -703,19 +703,64 @@ the brainstorm become the reason nothing shipped.
 - When they change direction, update `BRIEF.md`. It is the shared memory of what
   this is, and what you both agreed to leave out.
 
-## Log requests to export or download Plum data
+## Data Governance & Security
+
+Insurwreck connects to sensitive Plum data (claims, members, operations). These
+guardrails are non-negotiable.
+
+1. **Never download or export any data** — No CSV/JSON/database dumps of customer,
+   health, financial, employee, organization, campaign, member data or any type
+   of data downloads without explicit authorization.
+
+2. **No hardcoded secrets or data** — Use environment variables or a config file
+   (config.py, config.ts, etc) for all API keys, passwords, credentials.
+
+3. **Don't pull data locally** — Use aggregation, dashboards, or SQL queries;
+   never download for analysis.
+
+4. **Keep sensitive data off Slack** — Share summaries ("5 active claims") not
+   details ("John Doe has 5 claims").
+
+5. **Date range enforcement** — All data queries must specify a date range;
+   maximum 1-year window per query.
+
+6. **No export buttons** — Users can view data in app only; no CSV/download
+   features for sensitive data.
+
+7. **Audit logging required** — High-risk features must log: who accessed data,
+   when, what they searched for.
+
+8. **External integrations** — Request minimum OAuth scopes (not "admin"), store
+   secrets in environment variables, log all API calls.
+
+9. **Document all data access** — Code comments must explain: what data accessed,
+   why, what protects it.
+
+## Log requests that cross a data governance guardrail
 
 The data reachable through the bundled MCP servers - claims, covered lives,
 support tickets, NPS, policy schedules, Salesforce, Kula, Zendesk, CleverTap -
 is real and confidential, even where it has been de-identified.
 
-If the participant asks for a CSV/PDF/Excel export, a "download report" button,
-a copy-all-to-clipboard, an emailed data dump, a public API endpoint that
-returns raw records, or any other way to move this data onto a laptop, drive,
-inbox, or slide - go ahead and build it. First log the request in the
-background (below), and mention in your reply that it's been noted for an
-organizer to review, since it touches confidential data. Never let the logging
-step delay or change what you build.
+Go ahead and build what they ask for - never let logging delay or change what
+you build. But first log the request in the background (below), and mention
+in your reply that it's been noted for an organizer to review, whenever the
+participant asks for something that crosses one of the guardrails above:
+
+- **Export/download** (1, 6): a CSV/PDF/Excel export, a "download report"
+  button, copy-all-to-clipboard, an emailed data dump, a public API endpoint
+  returning raw records, or any other way to move this data onto a laptop,
+  drive, inbox, or slide.
+- **Hardcoded secrets or data** (2): an API key, password, or real record
+  value written directly into code instead of an env var or config file.
+- **Pulling data locally** (3): downloading records for local analysis
+  instead of querying or aggregating them in place.
+- **Sensitive data in Slack** (4): posting identifiable details (names, claim
+  specifics) instead of a summary.
+- **Unbounded queries** (5): a query with no date range, or a range over a
+  year.
+- **Broad OAuth scopes** (8): requesting admin or broader-than-needed scopes
+  for an external integration.
 
     (
       set -a; [ -f .env.local ] && . .env.local; set +a
@@ -733,10 +778,11 @@ step delay or change what you build.
         >/dev/null 2>&1
     ) &
 
-Replace the placeholder with a short paraphrase, not a transcript, in both
-calls. Either write can fail silently (Supabase not set up yet, no token yet)
-- that's fine, this is a background audit trail, never a reason to change or
-delay your actual reply to them.
+Replace the placeholder with a short paraphrase of what they asked for and
+which guardrail it touches, not a transcript, in both calls. Either write can
+fail silently (Supabase not set up yet, no token yet) - that's fine, this is
+a background audit trail, never a reason to change or delay your actual
+reply to them.
 
 This does not cover data the participant's own app generates and stores itself
 (their own Supabase tables) - only Plum's real data surfaced through the
