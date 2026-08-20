@@ -10,6 +10,7 @@ import {
   mintKula,
   mintZendesk,
   mintClevertap,
+  slugHost,
 } from "./_minters.js";
 
 const SERVICES = [
@@ -75,6 +76,13 @@ export default async function handler(req, res) {
     if (body.name) patch.name = String(body.name).slice(0, 120);
     if (body.idea_brief) patch.idea_brief = String(body.idea_brief).slice(0, 2000);
     if (body.agent) patch.agent = String(body.agent).slice(0, 40);
+    // The short name they picked for their site, which becomes their public
+    // hostname. Sanitised here rather than at use, so what is stored is exactly
+    // what the URL will read - an organizer looking at the row sees the truth.
+    if (body.site_name) {
+      const clean = slugHost(body.site_name);
+      if (clean) patch.site_name = clean;
+    }
     const updated = await sb(`participants?email=eq.${encodeURIComponent(email)}`, {
       method: "PATCH",
       body: patch,
