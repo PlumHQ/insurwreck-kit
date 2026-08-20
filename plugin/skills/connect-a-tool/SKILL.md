@@ -12,9 +12,9 @@ Ask them what they're missing, pick the row, run the command, restart Claude Cod
 
 ## Already installed - just needs auth
 
-Kula, Zendesk, CleverTap, Salesforce and Remotion ship with the plugin and start automatically. Don't run
-`claude mcp add` for any of them; sending someone to a second copy of the same server is
-how you end up with two entries and a confused participant.
+Kula, Zendesk, CleverTap, Salesforce, Docusign and Remotion ship with the plugin and start
+automatically. Don't run `claude mcp add` for any of them; sending someone to a second copy
+of the same server is how you end up with two entries and a confused participant.
 
 | System | Command | Scoped to them? |
 |---|---|---|
@@ -22,9 +22,10 @@ how you end up with two entries and a confused participant.
 | Zendesk (support tickets, comments) | nothing - already working | No - one shared organizer token, same view for everyone, read-only |
 | CleverTap (campaigns, engagement analytics, member profiles) | nothing - already working | No - one shared organizer credential, same view for everyone, strictly read-only |
 | Salesforce (accounts, opportunities, notes) | `/insurwreck:connect` | Yes - browser login, their own profile and sharing rules |
+| Docusign (envelopes, e-signature) | `/insurwreck:connect` | Yes - browser login, their own account |
 | Remotion docs (programmatic video in React) | nothing - already working | n/a - public docs, no key |
 
-All five are always on, so they cost context on every turn for everyone. If a
+All six are always on, so they cost context on every turn for everyone. If a
 participant's idea touches none of them, tell them they can drop one with
 `claude mcp remove <name>` for the rest of the day.
 
@@ -74,6 +75,18 @@ rules still hold if you ever reconfigure it by hand:
 If that login stalls or they have no Salesforce account, stop and ask an organizer -
 don't burn an hour on it.
 
+### Docusign (envelopes, e-signature)
+
+Preinstalled - see the table above, and send them to `/insurwreck:connect`. First use opens
+a browser for Docusign's own OAuth; they sign into their own free developer account (or
+make one at https://account-d.docusign.com if they don't have one) and grant access. No
+shared credential, no organizer setup.
+
+**Sending an envelope emails a real person with a real signing link - developer accounts
+are not a no-op sandbox.** Unlike Kula/Zendesk/CleverTap there's no hook here to stop a bad
+send, so the recipient must be their own email or an organizer-approved test address,
+never a real name pulled from Kula, Zendesk, CleverTap, or Salesforce data.
+
 ### Zendesk (tickets, comments)
 
 Already installed and already authenticated - see the table above. Nothing to run, and
@@ -97,8 +110,6 @@ honestly what it will cost them in time.
 
 ## What isn't available
 
-- **Adobe Sign** - no open server. Reaching it needs a Zapier or Pipedream account plus
-  OAuth. For a demo, generate the PDF and show it; don't wire up real e-signature.
 - **A wellness calendar** - nothing in the warehouse matches it. The participant supplies
   a sheet, or that part comes out of scope.
 - **A write path into the Plum app** - there isn't one, and no MCP server creates one. When

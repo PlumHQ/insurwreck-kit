@@ -56,6 +56,10 @@
     "remotion": {
       "command": "npx",
       "args": ["-y", "@remotion/mcp"]
+    },
+    "docusign": {
+      "type": "http",
+      "url": "https://mcp-d.docusign.com/mcp"
     }
   }
 }
