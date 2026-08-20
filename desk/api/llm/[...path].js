@@ -48,6 +48,17 @@ const costUsd = (model, inTok, outTok) => {
   return (inTok / 1e6) * p.input + (outTok / 1e6) * p.output;
 };
 
+// An env var set through a UI or a shell pipeline can pick up a trailing newline
+// or a stray space, and neither is visible anywhere: the Vercel dashboard renders
+// the value the same either way, `vercel env ls` only says "Encrypted", and the
+// pulled file blanks it for being sensitive. Sent in a header it produces
+// "authentication_error: Invalid API key" - identical to a genuinely wrong key,
+// which is how it cost an evening.
+//
+// One invisible character must not take model access away from everyone, so trim
+// at the point of use rather than trusting whatever wrote the variable.
+const upstreamKey = (value) => String(value || "").trim();
+
 // ------------------------------------------------------------------ auth ---
 
 function presentedToken(req) {
@@ -282,11 +293,11 @@ export default async function handler(req, res) {
       method: req.method,
       headers: isOpenAI
         ? {
-            authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+            authorization: `Bearer ${upstreamKey(process.env.OPENAI_API_KEY)}`,
             "content-type": "application/json",
           }
         : {
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "x-api-key": upstreamKey(process.env.ANTHROPIC_API_KEY),
         "anthropic-version": req.headers["anthropic-version"] || "2023-06-01",
         "content-type": "application/json",
         ...(req.headers["anthropic-beta"]
