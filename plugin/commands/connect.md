@@ -83,9 +83,17 @@ If someone needs a campaign in their demo, the answer is always the same: read t
 real numbers with `clevertap_get_campaign_report` / `clevertap_get_message_report`,
 model the campaign in their own Supabase, and show that.
 
-Failures follow the same order as Kula: no restart since `/insurwreck:start`;
-`clevertap` still `pending` in the bundle, so re-run `/insurwreck:status`; or an
-organizer hasn't set the `CLEVERTAP_*` values on the desk.
+**Before troubleshooting, check whether they are meant to have it at all.**
+CleverTap is the one service restricted to an explicit email allowlist
+(`CLEVERTAP_EMAILS` on the desk), so for most participants `clevertap` staying
+`pending` is the correct outcome, not a fault. Do not send them chasing a fix.
+Tell them CleverTap is limited to a named group for this event and point them at
+the warehouse ticket and NPS slices instead, which every participant has.
+
+If they ARE on the allowlist, failures follow the same order as Kula: no restart
+since `/insurwreck:start`; `clevertap` still `pending` in the bundle, so re-run
+`/insurwreck:status`; or an organizer hasn't set the `CLEVERTAP_*` values on the
+desk.
 
 Never print `KULA_API_KEY`, the `ZENDESK_TOKEN`, the `CLEVERTAP_PASSCODE` or the Salesforce access token in full — the service name and
 last 4 characters at most.

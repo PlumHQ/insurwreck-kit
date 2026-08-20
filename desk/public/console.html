@@ -341,6 +341,28 @@ having count(*) = 1 order by random() limit 10</pre>
   </div>
 </details>
 
+<details id="d-risks">
+  <summary>Risks <span class="hint" id="risks-hint"></span></summary>
+  <div class="body">
+    <p class="id" style="margin:0 0 10px">
+      Every time Claude Code builds an export/download feature for Plum data, it logs the request
+      here and in that participant's own Supabase project. This does not block anything - review
+      each row and follow up directly with the participant if it needs a closer look.
+    </p>
+    <div class="board">
+      <table>
+        <thead><tr>
+          <th>Person</th>
+          <th>Request</th>
+          <th>Logged</th>
+          <th>Reviewed</th>
+        </tr></thead>
+        <tbody id="risk-rows"><tr><td colspan="4" class="id">Sign in to load.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
 </div>
 
 <script>
@@ -607,6 +629,34 @@ having count(*) = 1 order by random() limit 10</pre>
     catch (e) { say(e.message, "err"); }
   };
 
+  // --- risks -------------------------------------------------------------
+  async function loadRisks() {
+    if (!session && !haveKey()) return;
+    try {
+      const d = await api("/api/risks");
+      const risks = d.risks || [];
+      $("risks-hint").textContent = risks.length
+        ? `${risks.filter(r => !r.reviewed_at).length} unreviewed of ${risks.length}`
+        : "none logged";
+      $("risk-rows").innerHTML = risks.length ? risks.map(r => `
+        <tr>
+          <td><div style="font-weight:600">${esc(r.name || "—")}</div><div class="id">${esc(r.participant_email)}</div></td>
+          <td>${esc(r.request_text)}</td>
+          <td class="id">${esc(new Date(r.created_at).toLocaleString())}</td>
+          <td><input type="checkbox" data-risk="${esc(r.id)}" ${r.reviewed_at ? "checked" : ""} /></td>
+        </tr>`).join("")
+        : '<tr><td colspan="4" class="id">Nothing logged.</td></tr>';
+      document.querySelectorAll("input[data-risk]").forEach(cb => cb.onchange = async () => {
+        cb.disabled = true;
+        try {
+          await api("/api/risks", { method:"PATCH", body: JSON.stringify({ id: cb.dataset.risk, reviewed: cb.checked }) });
+          loadRisks();
+        } catch (e) { say(e.message, "err"); cb.checked = !cb.checked; cb.disabled = false; }
+      });
+    } catch (e) { say(e.message, "err"); }
+  }
+  $("d-risks").addEventListener("toggle", () => { if ($("d-risks").open) loadRisks(); });
+
   // --- sign-in ---------------------------------------------------------------
   $("send").onclick = async () => {
     const email = $("email").value.trim();
@@ -658,4 +708,5 @@ having count(*) = 1 order by random() limit 10</pre>
     if (saved) { $("key").value = saved; showSignedIn(); load(); }
   }
   setInterval(() => { if (data.length) load(); }, 30000);
+  setInterval(() => { if ($("d-risks").open) loadRisks(); }, 60000);
 </script>

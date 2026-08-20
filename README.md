@@ -102,7 +102,7 @@ All seven start automatically when the plugin installs — they are declared in 
 | `kula` | [`@kula-ai/mcp-server`](https://github.com/kula-ai/kula-mcp-server) (MIT) | Yes — Kula's own server | `KULA_API_KEY`, one shared organizer key, delivered in the bundle | **No** — read-only, enforced by a hook; see below |
 | `zendesk` | [`zd-mcp-server`](https://www.npmjs.com/package/zd-mcp-server) (MIT) | No — community server | `ZENDESK_SUBDOMAIN` / `ZENDESK_EMAIL` / `ZENDESK_TOKEN`, one shared organizer token, delivered in the bundle | **No** — read-only, enforced by a hook; see below |
 | `clevertap` | [`clevertap-mcp@1.0.0`](https://www.npmjs.com/package/clevertap-mcp) (MIT in [the repo](https://github.com/ralphcorleone/clevertap-mcp); no license field on npm) | No — community server, 6 stars, 3 commits | `CLEVERTAP_ACCOUNT_ID` / `CLEVERTAP_PASSCODE` / `CLEVERTAP_REGION`, one shared organizer credential, delivered in the bundle | **No** — read-only, enforced by a hook; see below |
-| `insurwreck-data` | ours — `desk/api/mcp.js` | — | `INSURWRECK_TOKEN` | Allowlisted warehouse slices, same for everyone |
+| `insurwreck-data` | ours — `desk/api/mcp.js` | — | `INSURWRECK_TOKEN` | Allowlisted warehouse slices plus the live claims API, same for everyone |
 | `n8n` | organizer-hosted | — | `N8N_TOKEN` | Shared workspace |
 | `remotion` | [`@remotion/mcp`](https://github.com/remotion-dev/remotion/tree/main/packages/mcp) (MIT) | Yes — Remotion's own | none — unauthenticated, no key | n/a — searches public docs |
 
@@ -158,7 +158,14 @@ Ordering matters in that hook and there is a test for it: `clevertap_get_campaig
 
 A supply-chain note for whoever maintains this next: the npm package carries no `license`, `repository` or `author` field, and its maintainer (`leanderdperez`) is a different identity from the GitHub owner (`ralphcorleone`). The tarball ships its own `src/`, and it was diffed against the repo at review time — byte-identical apart from CRLF line endings and the two files above. Re-do that diff before moving the pin.
 
-Run the check with `bash plugin/hooks/scripts/test-block-clevertap-writes.sh`.
+**CleverTap is also the one service gated per participant.** `CLEVERTAP_EMAILS` on the desk is a comma-separated allowlist and it is **default deny** — unset means nobody is provisioned. `mintClevertap` throws for anyone not on it, which leaves their `clevertap` service `pending`, so `iw-connect` never writes the three `CLEVERTAP_*` variables and the server never starts on their machine. There is nothing to block and nothing to explain, because the tools are not there.
+
+That is a *delivery* gate, not an API scope — CleverTap has no per-user credential to scope to, which is precisely why the gate has to sit on our side. Two consequences worth writing down:
+
+- **It does not revoke.** Removing an email stops future mints. Anyone already provisioned keeps the passcode in their `~/.claude/settings.json`; taking it back means revoking their `credentials` row *and* clearing those three keys on their machine.
+- **`/api/admin` reports the allowlist size**, including a loud `allowlist EMPTY - nobody is provisioned`. An empty list and a broken credential look identical from a participant's seat, so the panel names which one it is.
+
+Run the checks with `bash plugin/hooks/scripts/test-block-clevertap-writes.sh` and `node desk/test-clevertap-gate.mjs` (the gate test asserts the empty-list default, case/whitespace handling, and that listing one person never implies the domain).
 
 ## Layout
 
@@ -205,6 +212,18 @@ Edit command files, then `/insurwreck:update` (or `/plugin marketplace update in
 
 Environment variables are documented in `desk/.env.example` — the credential store (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`), mail (`RESEND_API_KEY`, `RESEND_FROM`), minting (`VERCEL_API_TOKEN`, `VERCEL_TEAM_ID`, `VERCEL_TEAM_SLUG`, `VERCEL_USER_TOKEN`, `SUPABASE_MGMT_TOKEN`, `SUPABASE_ORG_ID`, `SUPABASE_REGION`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_PROJECT_ID`), and access control (`ADMIN_KEY`, `ALLOWED_DOMAIN`, `ALLOWED_EMAILS`).
 
+### Live claims: masked on the way out
+
+`list_claims` and `get_claim` on the same MCP server read the Plum base API rather than Metabase, so they keep working through a stats2 outage and stop working if `PLUM_API_TOKEN` is unset. Two things make them different from a published slice.
+
+A slice is frozen SQL an organizer read line by line, so its PII posture is settled at publish time. The claims API is not: `ClaimSerializer` upstream is `fields = '__all__'`, so a column added to the Claim model tomorrow lands in our output the same day. Masking therefore works by shape, not by a list — anything whose key names a person, or whose value looks like an email address or a phone number, is replaced, with a short exception table for the things that only look like PII (organisation and hospital names, filenames). An unknown key holding a PII-shaped value is masked without anyone having listed it. `desk/api/mask.test.mjs` is the check, and its last case is exactly that.
+
+Two classes of field are dropped rather than masked, because neither is a name, a phone number or an email and no pattern above would have caught either. **Signed object-store URLs**: `documents[].url` and `previewUrl` arrive as `storage.googleapis.com` links carrying `X-Goog-Signature` and a 24-hour expiry, and whoever holds one downloads the member's actual discharge summary, bills or Aadhaar scan — a larger leak than any name in the response, under a key called `url`. They are matched on the signature parameter, so the rule holds for any key and any future bucket, and replaced with a marker so a project can still see the document exists. **Bank and government-ID fields**: `userInputFields` carries `panCard`, `bankDetailsAccountNo` and `bankDetailsIFSC` — null on a cashless claim, filled in on any reimbursement where the member typed their account details in to get paid. Postal addresses and pin codes go the same way.
+
+Replacements are stable: the same person reads the same token in every field of every call, so participants can still group, count and dedupe by member without ever seeing who it is. Names are also removed from free text and filenames — `RAJESH_KUMAR_discharge.pdf` is the ordinary case, and masking `memberName` while shipping that filename would be theatre. `memberId` is deliberately **not** masked; it is the filter key.
+
+One project may see real email addresses. That is a per-participant `unmask_email` flag (`/api/admin` `set_unmask_email`), resolved in one function so it can move to idea-to-token mapping when that ships, and it relaxes email only — names and phone numbers stay masked for everyone.
+
 ## Security posture
 
 - OTP codes and session tokens are stored hashed (SHA-256); codes expire in 10 minutes, sessions in 24 hours.
@@ -212,3 +231,5 @@ Environment variables are documented in `desk/.env.example` — the credential s
 - All Supabase tables run RLS with no policies — only the desk's service role can touch them.
 - Minted keys are minimum-scope (Resend: sending only). Everything gets revoked after the event.
 - `debug_code` echo on `/api/otp` requires `ADMIN_KEY` and exists for the test phase only.
+- Claims responses are masked server-side in the desk, not by a hook — hooks fail open, and this one runs before anything reaches a participant's machine.
+- Outbound claims calls are GET-only, asserted in `guardRead` at the single place every request passes through. The claims viewset upstream accepts `put`, `patch`, `post` and `delete` on the same paths we read from, and the desk's credential is an org-wide service token — so the guard is there to keep a later edit honest, not because a participant can reach a write today.
