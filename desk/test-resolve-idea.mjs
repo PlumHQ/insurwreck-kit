@@ -39,13 +39,34 @@ test("one membership resolves to it, and carries the captain flag", () => {
   });
 });
 
-test("captaining exactly one of several resolves silently to that one", () => {
-  // The 8-person case. NOT a guess about intent: under captain-only minting
-  // their team cannot be provisioned by anyone else, so sending their bundle
-  // elsewhere would strand it.
+test("captaining exactly one of several STILL asks", () => {
+  // Changed deliberately from silently resolving to the captained idea.
+  // Guessing points somebody at a teammate's database and looks like nothing
+  // is wrong. 8 people are in this bucket on the current roster.
   const r = resolveIdea([m("a"), m("b", "owner"), m("c")]);
-  assert.deepEqual(r, { kind: "resolved", ideaId: "b", captain: true });
-  assert.equal(mayMint(r), true);
+  assert.equal(r.kind, "must_ask");
+  assert.equal(r.options.length, 3);
+  assert.equal(mayMint(r), false, "nothing is minted until they answer");
+});
+
+test("the prompt warns a single-captaincy holder what happens if they pick elsewhere", () => {
+  const r = resolveIdea([m("a", "member", "OTHER"), m("b", "owner", "MY TEAM")]);
+  const text = renderPrompt(r.options);
+  assert.match(text, /you're the captain of "MY TEAM"/);
+  assert.match(text, /nobody on that team can set it up/);
+  assert.match(text, /organizer/);
+});
+
+test("the prompt warns a multi-captaincy holder about the teams they do not pick", () => {
+  const r = resolveIdea([m("a", "owner", "ONE"), m("b", "owner", "TWO"), m("c")]);
+  const text = renderPrompt(r.options);
+  assert.match(text, /captain of 2 of these/);
+  assert.match(text, /tell an organizer about the others/);
+});
+
+test("no captain warning when they captain none of them", () => {
+  const text = renderPrompt(resolveIdea([m("a"), m("b")]).options);
+  assert.doesNotMatch(text, /captain/);
 });
 
 test("captaining several must ask", () => {
@@ -120,9 +141,8 @@ test("the prompt puts captained ideas first, then oldest", () => {
     ["CAPTAIN OLDER", "CAPTAIN NEWER", "MEMBER NEWER"]
   );
   const text = renderPrompt(r.options);
-  assert.match(text, /1\. CAPTAIN OLDER {3}\(you're the captain\)/);
+  assert.match(text, /1\. CAPTAIN OLDER {3}← you're the captain/);
   assert.match(text, /3\. MEMBER NEWER$/m);
-  assert.doesNotMatch(text, /3\. MEMBER NEWER.*captain/);
 });
 
 test("the blocked message names the captain", () => {

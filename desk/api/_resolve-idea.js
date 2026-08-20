@@ -7,22 +7,25 @@
 //
 // THE RULE
 //
-//   0 memberships              -> solo. A bundle keyed to their email.
-//   1 membership               -> that idea.
-//   >1, captains exactly one   -> the captained one, with NO prompt.
-//   >1, captains none or many  -> ask, with idea titles.
+//   0 memberships   -> solo. A bundle keyed to their email.
+//   1 membership    -> that idea.
+//   >1 memberships  -> ALWAYS ask, with idea titles. No exceptions.
 //
-// Why ">1 but captains exactly one" resolves silently rather than asking: under
-// captain-only minting, that person's team CANNOT be provisioned by anyone else.
-// Sending their bundle elsewhere would strand their whole team, so the captaincy
-// is not a hint about their intent - it is a hard operational constraint. On the
-// current roster that covers 8 of the 12 multi-idea people.
+// "Always ask" is a deliberate call, taken over a rule that silently resolved
+// anyone captaining exactly one of their ideas. Guessing is worse than asking:
+// the wrong guess points somebody at a teammate's database and nothing about it
+// looks broken. On the current roster this asks 12 people instead of 4.
+//
+// It does carry a real risk, and the prompt is where it gets mitigated. Under
+// captain-only minting, a captain who picks a DIFFERENT idea leaves their own
+// team with nobody able to provision it. So captained options are flagged in the
+// prompt with what happens if they are not chosen - see renderPrompt.
 //
 // Why solo is a bundle and not a rejection: everyone attending who is on no
 // published idea is an organizer. They need tooling to help people on the floor.
 //
-// The remaining 4 get asked once and the answer is persisted to
-// participants.idea_id, so it is a first-run question, not a per-session one.
+// The answer is persisted to participants.idea_id, so this is a first-run
+// question, not a per-session one.
 
 /** @typedef {{idea_id: string, role: 'owner'|'member', idea_title: string, published_at: string|null}} Membership */
 
@@ -53,13 +56,8 @@ export function resolveIdea(memberships, pinned = null) {
     return { kind: RESOLVED, ideaId: rows[0].idea_id, captain: rows[0].role === "owner" };
   }
 
-  const captained = rows.filter((r) => r.role === "owner");
-  if (captained.length === 1) {
-    return { kind: RESOLVED, ideaId: captained[0].idea_id, captain: true };
-  }
-
-  // Captains first, then oldest published - so the list a person is shown puts
-  // the ideas they are responsible for at the top.
+  // More than one membership always asks, even when only one of them is
+  // captained. See the note at the top of this file.
   return { kind: MUST_ASK, options: sortForPrompt(rows) };
 }
 
@@ -95,13 +93,32 @@ function sortForPrompt(rows) {
  */
 export function renderPrompt(options) {
   const lines = options.map((o, i) => {
-    const tag = o.role === "owner" ? "   (you're the captain)" : "";
+    const tag = o.role === "owner" ? "   ← you're the captain" : "";
     return `  ${i + 1}. ${o.idea_title}${tag}`;
   });
+
+  // The warning is the whole mitigation for "always ask". A captain who picks
+  // one of their other ideas leaves the team they captain with nobody able to
+  // provision it, and that team's first symptom is a database that never
+  // appears. Say so at the point of choosing, not in a runbook.
+  const captained = options.filter((o) => o.role === "owner");
+  const warning =
+    captained.length === 0
+      ? []
+      : [
+          "",
+          captained.length === 1
+            ? `Note: you're the captain of "${captained[0].idea_title}". If you pick something else, ` +
+              `nobody on that team can set it up - tell an organizer so they can do it for them.`
+            : `Note: you're the captain of ${captained.length} of these. Only the one you pick gets ` +
+              `set up automatically; tell an organizer about the others so they can set those teams up.`,
+        ];
+
   return [
     `You're on ${options.length} published ideas. Which one are you building today?`,
     "",
     ...lines,
+    ...warning,
     "",
     "This is asked once - it decides which team's database, hosting and inbox you get.",
   ].join("\n");
