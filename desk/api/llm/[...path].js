@@ -62,7 +62,7 @@ async function participantFor(token) {
   const rows = await sb(
     `credentials?service=eq.anthropic&revoked_at=is.null` +
       `&payload->>token_hash=eq.${sha256(token)}` +
-      `&select=participant_email,payload&limit=1`
+      `&select=participant_email,idea_id,payload&limit=1`
   );
   return rows.length ? rows[0] : null;
 }
@@ -70,22 +70,41 @@ async function participantFor(token) {
 // "Only the people who need it" is enforced here rather than by handing the key
 // out: an `openai` credentials row is the entitlement, and it carries no secret -
 // just the base URL and model to point their SDK at.
-async function entitledToOpenAI(email) {
+async function entitledToOpenAI(email, ideaId) {
+  // An idea-keyed entitlement covers the whole team; an email-keyed one covers
+  // the individual. Checking both means an organizer can grant it either way and
+  // a row written before the 5.0 switch-over keeps working.
+  const scope = ideaId
+    ? `idea_id=eq.${ideaId}`
+    : `participant_email=eq.${encodeURIComponent(email)}&idea_id=is.null`;
   const rows = await sb(
-    `credentials?participant_email=eq.${encodeURIComponent(email)}` +
-      `&service=eq.openai&revoked_at=is.null&select=service&limit=1`
+    `credentials?${scope}&service=eq.openai&revoked_at=is.null&select=service&limit=1`
   );
   return rows.length > 0;
 }
 
-async function spentSoFar(email) {
-  const rows = await sbAll(
-    `llm_usage?participant_email=eq.${encodeURIComponent(email)}&select=cost_usd&order=id`
-  );
+// The budget is one pool per idea, because the Anthropic key is one key per
+// idea. Summing by email would let each of three teammates spend the full
+// allowance off a single shared key - three times the intended cost, and
+// invisible until the invoice.
+//
+// Solo bundles (organizers, on no published idea) still sum by email, and the
+// `idea_id is null` filter matters: without it their sum would pick up any
+// idea-keyed row that happens to carry their address as the credential holder.
+async function spentSoFar(email, ideaId) {
+  const scope = ideaId
+    ? `idea_id=eq.${ideaId}`
+    : `participant_email=eq.${encodeURIComponent(email)}&idea_id=is.null`;
+  const rows = await sbAll(`llm_usage?${scope}&select=cost_usd&order=id`);
   return rows.reduce((total, row) => total + Number(row.cost_usd || 0), 0);
 }
 
-async function record(email, model, inTok, outTok) {
+// participant_email here is the CREDENTIAL HOLDER, not necessarily the person
+// who made the call. A team shares one key, so the proxy cannot tell three
+// teammates apart - there is no header, no per-user token, nothing to attribute
+// with. Recording the holder and the idea is the truthful pair; claiming
+// per-person attribution off a shared key would be a fiction.
+async function record(email, ideaId, model, inTok, outTok) {
   if (!inTok && !outTok) return;
   try {
     await sb("llm_usage", {
@@ -93,6 +112,7 @@ async function record(email, model, inTok, outTok) {
       headers: { Prefer: "return=minimal" },
       body: {
         participant_email: email,
+        idea_id: ideaId,
         model: model || "unknown",
         input_tokens: inTok,
         output_tokens: outTok,
@@ -135,6 +155,9 @@ export default async function handler(req, res) {
   }
 
   const email = row.participant_email;
+  // Present when the credential belongs to an idea, which is every team in 5.0.
+  // Null for a solo bundle, which is what organizers hold.
+  const ideaId = row.idea_id || null;
   const budget = Number(row.payload?.budget_usd || process.env.LLM_BUDGET_USD || 15);
 
   // Fail closed. If metering is unreachable we cannot enforce a budget, and an
@@ -142,7 +165,7 @@ export default async function handler(req, res) {
   // risk this endpoint exists to remove.
   let spent;
   try {
-    spent = await spentSoFar(email);
+    spent = await spentSoFar(email, ideaId);
   } catch (error) {
     console.error(`llm metering unavailable for ${email}:`, error);
     return res.status(503).json({
@@ -156,13 +179,20 @@ export default async function handler(req, res) {
   }
 
   if (spent >= budget) {
+    // Say whose budget it is. On a team this is one shared pool, so a member who
+    // has personally spent nothing can still hit it - and "you've used your
+    // budget" would read as a bug to them rather than as their teammates having
+    // used it.
     return res.status(429).json({
       type: "error",
       error: {
         type: "rate_limit_error",
-        message:
-          `You've used your $${budget.toFixed(2)} of model budget for the hackathon ` +
-          `($${spent.toFixed(2)} spent). Ask an organizer to raise it.`,
+        message: ideaId
+          ? `Your team has used its $${budget.toFixed(2)} of model budget for the ` +
+            `hackathon ($${spent.toFixed(2)} spent across everyone on the idea - ` +
+            `it is one shared pool, not one each). Ask an organizer to raise it.`
+          : `You've used your $${budget.toFixed(2)} of model budget for the hackathon ` +
+            `($${spent.toFixed(2)} spent). Ask an organizer to raise it.`,
       },
     });
   }
@@ -211,7 +241,7 @@ export default async function handler(req, res) {
     }
     let entitled;
     try {
-      entitled = await entitledToOpenAI(email);
+      entitled = await entitledToOpenAI(email, ideaId);
     } catch (error) {
       console.error(`openai entitlement check failed for ${email}:`, error);
       entitled = false;
@@ -277,6 +307,10 @@ export default async function handler(req, res) {
   res.setHeader("content-type", contentType);
   res.setHeader("x-insurwreck-budget-usd", budget.toFixed(2));
   res.setHeader("x-insurwreck-spent-usd", spent.toFixed(4));
+  // Whose pool the two numbers above describe. Without this, a participant
+  // watching the spend climb while they sit idle has no way to tell metering is
+  // broken from a teammate working.
+  res.setHeader("x-insurwreck-budget-scope", ideaId ? "team" : "individual");
 
   // Streaming: pass the SSE through untouched and read the usage numbers out
   // of the events as they go by, so metering costs the participant nothing.
@@ -315,7 +349,7 @@ export default async function handler(req, res) {
     }
 
     res.end();
-    await record(email, model, inTok, outTok);
+    await record(email, ideaId, model, inTok, outTok);
     return;
   }
 
@@ -331,6 +365,7 @@ export default async function handler(req, res) {
     const usage = parsed?.usage || {};
     await record(
       email,
+      ideaId,
       parsed?.model || model,
       usage.input_tokens ?? usage.prompt_tokens ?? 0,
       usage.output_tokens ?? usage.completion_tokens ?? 0
