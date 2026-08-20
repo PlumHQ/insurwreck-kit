@@ -62,6 +62,18 @@ pwsh -NoProfile -Command "
     \$problems += '--disable-interactivity is back - it hides the UAC password prompt'
   }
 
+  # Set-Content -Encoding utf8 writes a UTF-8 BOM on Windows PowerShell 5.1.
+  # git treats a BOM as part of the first .gitignore pattern, so .env* silently
+  # stops matching and the participant's minted credentials become committable;
+  # Node's JSON.parse throws outright on a BOM in settings.json. Neither warns.
+  # Every write goes through Write-Utf8NoBom - keep it that way.
+  if (\$code -match 'Set-Content[^\r\n]*-Encoding\s+utf8') {
+    \$problems += 'a Set-Content -Encoding utf8 write is back - it adds a BOM on PS 5.1; use Write-Utf8NoBom'
+  }
+  if (\$src -notmatch 'function Write-Utf8NoBom') {
+    \$problems += 'Write-Utf8NoBom is gone - every file write in go.ps1 depends on it'
+  }
+
   if (\$problems) {
     \$problems | ForEach-Object { Write-Host \"  \$_\" }
     exit 1

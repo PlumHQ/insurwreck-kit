@@ -30,6 +30,26 @@ irm https://insurwreck-desk.preview.plumhq.com/win | iex
 
 It does the same job in the same terminal you already use. It installs Git for Windows on the way through, which is not optional: every safety check in this kit is a bash script, and without a bash on the machine they would silently stop running.
 
+**Already using the Claude app?** Then you do not need to install the assistant - you are already in it. Neither command below installs Claude Code or Ghostty.
+
+*On a Mac*, you do not need a terminal at all. Click the **Code** tab, start a session in any folder, set the mode selector next to the send button to **Auto**, and paste this into the prompt box:
+
+```
+Set me up for Insurwreck by running: curl -fsSL https://insurwreck-desk.preview.plumhq.com/gui | bash
+```
+
+*On Windows*, the app runs commands through Git Bash, which this setup cannot use, so run it in PowerShell instead. Open PowerShell from the Start menu - a normal window, not administrator - and paste:
+
+```
+irm https://insurwreck-desk.preview.plumhq.com/win-gui | iex
+```
+
+Either way, when it finishes: **quit the app completely and open it again** - it reads your setup only at launch, so a window that was already open cannot see the new tools. Then click the **Code** tab, open the folder it named, set the mode selector to **Auto**, and type `/insurwreck:start`. Skip step 2.
+
+Auto matters: without it Claude asks permission before each step of setup, and there are a lot of them. The safety checks that count are hooks, which deny outright and run either way - they are not the approval prompts.
+
+If `/insurwreck:start` is not offered, click **+** next to the prompt box, choose **Plugins**, and install **insurwreck** - saying yes when it asks whether you trust the folder.
+
 On a laptop with none of this installed, expect **8 to 15 minutes**, most of it downloading - Git, Node and the Salesforce CLI are large. Some steps sit quiet for a couple of minutes. Leave the window open; it is not stuck.
 
 ### 2. Sign in and get your toolkit

@@ -32,6 +32,10 @@ $ErrorActionPreference = 'Continue'
 $KitRepo    = if ($env:INSURWRECK_MARKETPLACE) { $env:INSURWRECK_MARKETPLACE } else { 'PlumHQ/insurwreck-kit' }
 $ProjectDir = if ($env:INSURWRECK_DIR) { $env:INSURWRECK_DIR } else { Join-Path $HOME 'insurwreck' }
 $MinNode    = 22
+# Claude Code Desktop users are reading this from inside Claude Code, so there is
+# nothing here to install for it. An env var rather than a param because
+# `irm | iex` cannot pass arguments to the script it pipes.
+$Desktop    = ($env:INSURWRECK_DESKTOP -eq '1')
 $TotalSteps = 7
 $script:Step = 0
 
@@ -42,6 +46,27 @@ function Write-Warn { Write-Host "      ! $args" -ForegroundColor Yellow }
 function Write-Info { Write-Host "      $args" }
 function Write-Die  { Write-Host ""; Write-Host "x $args" -ForegroundColor Red; Write-Host ""; exit 1 }
 function Test-Have  { param($n) [bool](Get-Command $n -ErrorAction SilentlyContinue) }
+
+# Every file this script writes goes through here, and never through
+# `Set-Content -Encoding utf8`. On Windows PowerShell 5.1 - the default on a
+# Windows laptop - that switch prepends a UTF-8 BOM (EF BB BF), and three of the
+# files we write are parsed by something that will not tolerate it:
+#
+#   .gitignore  git treats the BOM as part of the first pattern, so the first
+#               rule silently fails. Our first rule is `.env*`, which is where
+#               every credential we mint for them lives.
+#   settings.json (both the participant's global one and the project one)
+#               read by Node, whose JSON.parse throws on a leading BOM.
+#
+# Nothing warns. The files look correct in Notepad. Write them BOM-free and also
+# with LF, so a hook reading them under Git Bash does not meet a stray CR.
+function Write-Utf8NoBom {
+  param([string]$Path, [string]$Text)
+  $dir = Split-Path -Parent $Path
+  if ($dir) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+  [System.IO.File]::WriteAllText($Path, ($Text -replace "`r`n", "`n"),
+    (New-Object System.Text.UTF8Encoding($false)))
+}
 
 # An install puts things on the machine PATH, but not into the PATH this session
 # already captured - so `claude` or `npm` would be missing for the rest of the
@@ -228,15 +253,21 @@ try {
 
 # ----------------------------------------------------------- 2 claude code ---
 
-Write-Step "Installing Claude Code"
-
-if (Test-Have 'claude') {
-  Write-Ok "already installed ($(claude --version 2>$null | Select-Object -First 1))"
+if ($Desktop) {
+  # Still a step: the PATH work below is what makes node and npm visible to the
+  # app tomorrow. Only the install goes away - they are already running it.
+  Write-Step "Making the new tools available"
 } else {
-  Invoke-Expression (Invoke-RestMethod -Uri 'https://claude.ai/install.ps1')
-  Sync-Path
-  if (Test-Have 'claude') { Write-Ok "installed" }
-  else { Write-Die "Claude Code installed but 'claude' still isn't found. Close this window, open a new one, and re-run." }
+  Write-Step "Installing Claude Code"
+
+  if (Test-Have 'claude') {
+    Write-Ok "already installed ($(claude --version 2>$null | Select-Object -First 1))"
+  } else {
+    Invoke-Expression (Invoke-RestMethod -Uri 'https://claude.ai/install.ps1')
+    Sync-Path
+    if (Test-Have 'claude') { Write-Ok "installed" }
+    else { Write-Die "Claude Code installed but 'claude' still isn't found. Close this window, open a new one, and re-run." }
+  }
 }
 
 # Claude Code installs to ~\.local\bin and tells you to add it to PATH by hand
@@ -288,7 +319,11 @@ if ($bash) {
   $settings.env | Add-Member -NotePropertyName CLAUDE_CODE_GIT_BASH_PATH -NotePropertyValue $bash -Force
 
   # Merge, never overwrite: this file also holds the participant's MCP tokens.
-  $settings | ConvertTo-Json -Depth 12 | Set-Content -Path $settingsPath -Encoding utf8
+  # And write it BOM-free. `-Encoding utf8` on Windows PowerShell 5.1 - the
+  # default on a Windows laptop - prepends EF BB BF, and Node's JSON.parse
+  # throws on a leading BOM. That would corrupt the participant's own global
+  # settings file, tokens and all, while looking perfect in Notepad.
+  Write-Utf8NoBom -Path $settingsPath -Text ($settings | ConvertTo-Json -Depth 12)
   Write-Ok "safety checks wired to Git Bash"
 } else {
   Write-Warn "couldn't find Git Bash, so the kit's safety checks may not run"
@@ -376,6 +411,15 @@ if (Test-Have 'npm') {
 
 Write-Step "Installing the Insurwreck plugin"
 
+$PluginViaUi = $false
+if ($Desktop -and -not (Test-Have 'claude')) {
+  # The app owns its plugin list, and it injects a `claude` shim only into the
+  # shells it opens itself - so a missing one here is normal, not a failure.
+  # Step 6 points the project folder at the marketplace instead.
+  Write-Skip "the Claude app installs this one - the folder points it there"
+  $PluginViaUi = $true
+} else {
+
 # `claude plugin marketplace add owner/repo` shells out to git clone. go.sh
 # deliberately avoids that on macOS - a fresh machine may have no usable git -
 # and Windows deserves the same treatment. A downloaded zip needs nothing but
@@ -432,6 +476,8 @@ The Insurwreck plugin did not install.
 "@
 }
 
+}
+
 # -------------------------------------------------------- 6 project folder ---
 
 Write-Step "Creating your project folder"
@@ -451,8 +497,31 @@ if (-not (Test-Path $gitignore)) {
 node_modules/
 .vercel
 .DS_Store
-'@ | Set-Content -Path $gitignore -Encoding utf8
+'@ | ForEach-Object { Write-Utf8NoBom -Path $gitignore -Text $_ }
   Write-Ok "added a .gitignore that keeps your keys out of git"
+}
+
+# Register the marketplace in the folder itself. Claude Code adds a marketplace
+# named here once the folder is trusted, so the app offers the plugin by name
+# instead of the participant hunting for the plugin browser.
+$claudeDir = Join-Path $ProjectDir '.claude'
+$settings  = Join-Path $claudeDir 'settings.json'
+# Only an owner/repo can be written as a github source - see go.sh.
+if ($KitRepo -notmatch '^[^/\\:]+/[^/\\:]+$') {
+  Write-Skip "local marketplace - folder config skipped"
+} elseif (-not (Test-Path $settings)) {
+  New-Item -ItemType Directory -Force -Path $claudeDir | Out-Null
+  @"
+{
+  "extraKnownMarketplaces": {
+    "insurwreck-kit": {
+      "source": { "source": "github", "repo": "$KitRepo" }
+    }
+  },
+  "enabledPlugins": ["insurwreck@insurwreck-kit"]
+}
+"@ | ForEach-Object { Write-Utf8NoBom -Path $settings -Text $_ }
+  Write-Ok "pointed this folder at the Insurwreck plugin"
 }
 
 # The same contract go.sh writes on macOS. The "Brainstorm first, and only about
@@ -521,7 +590,7 @@ the brainstorm become the reason nothing shipped.
   to continue.
 - When they change direction, update `BRIEF.md`. It is the shared memory of what
   this is, and what you both agreed to leave out.
-'@ | Set-Content -Path $claudeMd -Encoding utf8
+'@ | ForEach-Object { Write-Utf8NoBom -Path $claudeMd -Text $_ }
   Write-Ok "added CLAUDE.md so the build starts with a conversation, not a code dump"
 }
 
@@ -537,6 +606,38 @@ Write-Host @"
   Next:                 run /insurwreck:start inside Claude Code
 
 "@ -ForegroundColor White
+
+if ($Desktop) {
+  # Restarting is not advice, it is the step: the app reads the user PATH at
+  # launch, so a window that was already open cannot see the node just installed.
+  Write-Host @"
+  In the Claude app:
+
+    1. Quit it completely and open it again  (needed - it reads your PATH at launch)
+    2. Click the Code tab
+    3. Open the folder  $ProjectDir
+    4. Set the mode selector next to the send button to Auto
+    5. Type  /insurwreck:start
+
+"@ -ForegroundColor White
+  if ($PluginViaUi) {
+    Write-Host @"
+    6. Click + next to the prompt box, choose Plugins, install insurwreck
+       (say yes when it asks whether you trust this folder)
+
+"@ -ForegroundColor White
+  }
+  if (-not (Find-GitBash)) {
+    # Same reasoning as the terminal handover below: with no bash the hooks are
+    # inert, and the participant should hear that from a person.
+    Write-Host @"
+  Note: Git Bash is not on this machine, so the kit's safety checks cannot run.
+  Tell an organiser before you start building.
+
+"@ -ForegroundColor Yellow
+  }
+  exit 0
+}
 
 # Auto permission mode is only defensible because the hooks run - block-secrets,
 # block-destructive, block-kula-writes. Those are bash scripts. With no bash on
