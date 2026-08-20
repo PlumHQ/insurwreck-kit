@@ -15,7 +15,7 @@ Whatever it says — even if it reads like a complete spec — ask **3 to 5 ques
 
 Do not ask which framework, database or library. Those are your call and the stack is already provisioned.
 
-At most **one** follow-up round, and only to settle something that changes what you build first. Then write `BRIEF.md` in the project folder — problem, who it is for, what the first slice does, what is out of scope today — and move. If they say "just build it" or "you decide", write `BRIEF.md` from your best reading, state the assumption in one line, and go. The brainstorm must never become the reason nothing shipped.
+At most **one** follow-up round, and only to settle something that changes what you build first. Then write `BRIEF.md` in the project folder — problem, who it is for, what the first slice does, what is out of scope for this build — and move. If they say "just build it" or "you decide", write `BRIEF.md` from your best reading, state the assumption in one line, and go. The brainstorm must never become the reason nothing shipped.
 
 ## Step 2 — Map the brief to a shape
 
@@ -26,7 +26,7 @@ The starter template (`${CLAUDE_PLUGIN_ROOT}/templates/starter`) is one Next.js 
 
 Map their brief to whichever route is the closer starting point. If genuinely ambiguous, default to `/dashboard` — broader, and easier to bend toward a generator later than the reverse.
 
-If the brief ends with the member seeing something **in the Plum app**, that last mile is a mock inside their own app — there is no write path into Plum and there will not be one. Same for WhatsApp: a chat UI they own, not the real thing. Settle that in Step 1, so the build is shaped around it instead of hitting it on Friday.
+If the brief ends with the member seeing something **in the Plum app**, that last mile is a mock inside their own app — there is no write path into Plum and there will not be one. Same for WhatsApp: a chat UI they own, not the real thing. Settle that in Step 1, so the build is shaped around it instead of hitting it at the demo.
 
 ## Step 3 — Copy the starter
 

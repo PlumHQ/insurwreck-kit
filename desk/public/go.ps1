@@ -532,7 +532,7 @@ if (-not (Test-Path $claudeMd)) {
   @'
 # How to work on this project
 
-This is a one-day hackathon build. The person you are working with brought a real
+This is a two-day hackathon build. The person you are working with brought a real
 problem from their own work at Plum. Do not assume how technical they are - some
 are engineers, some have never opened a terminal, and you will find out by
 talking to them rather than by guessing. Either way the value of the day is their
@@ -577,7 +577,7 @@ This is a conversation, not an interview, and it must not become a loop.
 2. At most **one** follow-up round, and only to resolve something that would
    change what you build first.
 3. Then write `BRIEF.md` in this folder: the problem, who it is for, what the
-   first slice does, and what is explicitly out of scope for today.
+   first slice does, and what is explicitly out of scope for this build.
 4. Then start building that first slice.
 
 Once `BRIEF.md` exists, stop asking scoping questions and build. If they say

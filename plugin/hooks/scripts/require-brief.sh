@@ -75,7 +75,7 @@ databases, schemas or libraries - those are your call, and the stack is already
 provisioned.
 
 Then write BRIEF.md here (problem, who it is for, what the first slice does, what
-is out of scope today) and start building that first slice. Writing BRIEF.md
+is out of scope for this build) and start building that first slice. Writing BRIEF.md
 lifts this block permanently.
 
 If they have said 'just build it' or 'you decide', that is a valid answer: write

@@ -116,7 +116,7 @@ name: ask only in the solo case, tell them plainly it becomes the address they d
 on (`<name>.insurwreck.com`), lowercase letters, numbers and hyphens. If they have
 no name or ask you to pick, do not invent one - say they get a working address
 either way and can be given a nicer one later. A guess becomes a URL, and URLs get
-read out loud on Friday.
+read out loud at the demo.
 
 Then tell them their address: it's `services.vercel.app_url`. If that field is
 absent the domain isn't wired yet on the desk - say nothing about it rather than
