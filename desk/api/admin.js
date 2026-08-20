@@ -33,6 +33,7 @@ async function health() {
   for (const [name, key] of [
     ["anthropic key configured", "ANTHROPIC_API_KEY"],
     ["metabase key configured", "METABASE_API_KEY"],
+    ["claims api configured", "PLUM_API_TOKEN"],
     ["kula key configured", "KULA_API_KEY"],
     ["zendesk creds configured", "ZENDESK_TOKEN"],
     ["supabase mgmt token configured", "SUPABASE_MGMT_TOKEN"],
@@ -180,6 +181,30 @@ export default async function handler(req, res) {
         );
         console.warn(`FULL WAREHOUSE ACCESS ${enabled ? "GRANTED to" : "revoked for"} ${email} by ${who}`);
         return res.status(200).json({ ok: true, email, full_data_access: enabled });
+      }
+
+      // Let one project see real email addresses in the claims tools. Names and
+      // phone numbers stay masked for them like everyone else - this relaxes one
+      // field, not the masking.
+      //
+      // Per-email today because a token identifies a person, not an idea. When
+      // idea-to-token mapping lands, this sets the same flag for everyone on that
+      // idea and unmaskEmailFor() in _claims.js reads it from there instead.
+      case "set_unmask_email": {
+        const email = normalizeEmail(body.email);
+        const enabled = Boolean(body.enabled);
+        if (!email) return res.status(400).json({ error: "email required" });
+        const rows = await sb(
+          `credentials?participant_email=eq.${encodeURIComponent(email)}&service=eq.anthropic&select=payload`
+        );
+        if (!rows.length) return res.status(404).json({ error: "no anthropic credential for that address" });
+        const payload = { ...rows[0].payload, unmask_email: enabled };
+        await sb(
+          `credentials?participant_email=eq.${encodeURIComponent(email)}&service=eq.anthropic`,
+          { method: "PATCH", body: { payload } }
+        );
+        console.warn(`CLAIMS EMAIL UNMASKING ${enabled ? "GRANTED to" : "revoked for"} ${email} by ${who}`);
+        return res.status(200).json({ ok: true, email, unmask_email: enabled });
       }
 
       // Send someone a fresh OTP and hand the organizer the code, so a stuck

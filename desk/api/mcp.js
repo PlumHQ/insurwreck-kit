@@ -1,6 +1,11 @@
 import { sb, sha256 } from "./_lib.js";
+import { listClaims, getClaim, SECTION_NAMES } from "./_claims.js";
 
-// Read-only Plum data for participants, as an MCP server backed by Metabase.
+// Read-only Plum data for participants, as one MCP server over two sources: the
+// allowlisted Metabase saved questions below, and the live claims API in
+// _claims.js. Everything from here down is about the Metabase half - the claims
+// half carries its own boundary, which is masking rather than an allowlist,
+// because its shape is decided upstream and can change without us.
 //
 // The boundary is the TOOL SURFACE, not Metabase. stats2 runs the Enterprise
 // binary with no licence, so sandboxing, column masking and Blocked are all
@@ -70,7 +75,11 @@ async function participantFor(req) {
       `&select=participant_email,payload&limit=1`
   );
   if (!rows.length) return null;
-  return { email: rows[0].participant_email, full: Boolean(rows[0].payload?.full_data_access) };
+  return {
+    email: rows[0].participant_email,
+    full: Boolean(rows[0].payload?.full_data_access),
+    unmaskEmail: Boolean(rows[0].payload?.unmask_email),
+  };
 }
 
 // The escape hatch, off unless an organizer turns it on for one person.
@@ -257,6 +266,47 @@ const TOOLS = [
       additionalProperties: false,
     },
   },
+  {
+    name: "list_claims",
+    description:
+      "List real Plum claims from the claims API - live, not a warehouse snapshot. Names, phone " +
+      "numbers and email addresses come back as stable tokens: the same person reads the same " +
+      "token every time, so you can still group, count and dedupe by person. Pages until the " +
+      "filter is exhausted, so filter first rather than listing everything.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        filters: {
+          type: "object",
+          description:
+            "Any of: memberId, organisationId, insurerClaimId, stage, stageGroup, excludeStages, " +
+            "typeOfClaim, typeOfBenefit. Anything else is refused rather than ignored.",
+          additionalProperties: { type: ["string", "number", "boolean"] },
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "get_claim",
+    description:
+      "One claim in full by its id, e.g. CL7005, masked the same way as list_claims. Ask only for " +
+      "the sections you need - each one costs work upstream, and the default already covers " +
+      "documents and the status timeline.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        claim_id: { type: "string", description: "Plum claim id, e.g. CL7005" },
+        include: {
+          type: "array",
+          items: { type: "string", enum: SECTION_NAMES },
+          description: "Defaults to documents and status.",
+        },
+      },
+      required: ["claim_id"],
+      additionalProperties: false,
+    },
+  },
 ];
 
 const FULL_TOOL = {
@@ -284,8 +334,9 @@ const FULL_TOOL = {
 // kula and zendesk cannot be gated here at all: those run on the participant's
 // machine and talk to the vendor directly, so the desk was never in their path.
 const CLOSED_MESSAGE =
-  "Plum data access is closed. Insurwreck 4.0 has ended, so the warehouse " +
-  "slices are no longer served. Anything you already loaded into your own " +
+  "Plum data access is closed. Insurwreck 4.0 has ended, so neither the " +
+  "warehouse slices nor the claims API are served any more. Anything you " +
+  "already loaded into your own " +
   "Supabase or your app still works - this only stops new reads. If you need " +
   "access for something specific, ask the AI pod rather than retrying.";
 
@@ -295,6 +346,23 @@ async function callTool(name, args, participant) {
     console.warn(`closed-access attempt by ${email}: ${name}`);
     return CLOSED_MESSAGE;
   }
+  // The claims API, not Metabase. No card allowlist, no METABASE_API_KEY, nothing
+  // in data_slices - so this is dispatched before both checks below, and a
+  // stats2 outage does not take live claims down with it.
+  //
+  // Masking happens inside _claims.js, on the way out, for every path. There is
+  // no branch here that can return an unmasked response, which is the point:
+  // upstream serialises the Claim model with `fields = '__all__'`, so a column
+  // added there arrives here whether or not anyone told us about it.
+  if (name === "list_claims" || name === "get_claim") {
+    console.log(`mcp ${name} by ${email}`);
+    const result =
+      name === "list_claims"
+        ? await listClaims(args?.filters, participant)
+        : await getClaim(args?.claim_id, args?.include, participant);
+    return JSON.stringify(result, null, 2);
+  }
+
   if (!MB_KEY()) {
     return "The data connection isn't switched on yet. Tell an organizer that METABASE_API_KEY is unset on the desk.";
   }
@@ -461,6 +529,9 @@ export default async function handler(req, res) {
       metabase: upstream,
       metabase_key_set: Boolean(MB_KEY()),
       slices: (await allowlist().catch(() => new Set())).size,
+      // The claims tools don't touch Metabase, so they can be fine while the
+      // lines above are red, and broken while they're green.
+      claims_api_configured: Boolean(process.env.PLUM_API_BASE && process.env.PLUM_API_TOKEN),
     });
   }
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
@@ -487,8 +558,11 @@ export default async function handler(req, res) {
             capabilities: { tools: {} },
             serverInfo: { name: "insurwreck-data", version: "1.0.0" },
             instructions:
-              "Read-only Plum data slices for the hackathon. Call list_datasets first. " +
-              "This is confidential company data: don't screenshot it into Slack or put it on a slide.",
+              "Read-only Plum data for the hackathon, from two places. list_datasets covers the " +
+              "published warehouse slices - start there for anything aggregate. list_claims and " +
+              "get_claim read the live claims API, with names, phone numbers and email addresses " +
+              "replaced by stable tokens. This is confidential company data: don't screenshot it " +
+              "into Slack or put it on a slide.",
           })
         );
 
