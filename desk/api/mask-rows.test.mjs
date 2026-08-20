@@ -244,5 +244,61 @@ const eq = (label, a, b) => ok(`${label} (got ${JSON.stringify(a)})`, a === b);
   ok("join_keys still lists the real keys", out.join_keys.length === 4);
 }
 
+// --- real columns from the published slices, taken from Metabase card metadata ---
+{
+  // 19646 endorsement batch dump: institution words arrive with no separator at all
+  const cols = ["batchid","orgplumid","orgname","assigneduser","providername",
+                "currentstatus","Status Name","currentAccountManagerEmail"];
+  const row  = ["B1","O1","Acme Technologies","ops@plumhq.com","Niva Bupa",
+                "PENDING","Awaiting insurer","am@plumhq.com"];
+  const out = maskRows(cols, [row]);
+  const at = (c) => out.rows[0][out.columns.indexOf(c)];
+  eq("orgname is an org even with no separator", at("orgname"), "Acme Technologies");
+  eq("providername is an insurer, not a person", at("providername"), "Niva Bupa");
+  // Status Name IS over-masked, and that is the accepted trade. Passing it through
+  // needed label words (status/type/source/file/document) in INSTITUTION_COL, which
+  // let document_signer_name and report_author_name through as well. A mangled
+  // caption is cheaper than a leaked name.
+  ok("Status Name is over-masked, deliberately", /^Member [0-9a-f]{8}$/.test(at("Status Name")));
+  ok("currentAccountManagerEmail is masked", at("currentAccountManagerEmail").endsWith("@masked.invalid"));
+}
+{
+  // 19647 hospital lookup: bare phone/email/pincode are the hospital's own, and
+  // Metabase titles the card with a space while data_slices uses an underscore.
+  const cols = ["hospital_name","hospital_address","phone","email","pincode","city",
+                "hospital_phone","hospital_email"];
+  const row  = ["Manipal Hospital","98 Old Airport Road","08041234567","desk@manipal.test",
+                "560017","Bengaluru","08041234500","ops@manipal.test"];
+  for (const label of ["hospital_lookup", "hospital lookup", "Hospital Lookup"]) {
+    const out = maskRows(cols, [row], { dataset: label });
+    ok(`"${label}": pincode survives — the PIN search depends on it`, out.columns.includes("pincode"));
+    cols.forEach((c, i) => eq(`"${label}": ${c} intact`, out.rows[0][out.columns.indexOf(c)], row[i]));
+  }
+  // the same column names on a member slice are still member PII
+  const member = maskRows(["phone","email","pincode"], [["9876543210","r@x.com","560017"]],
+                          { dataset: "iw_lives_base" });
+  ok("bare phone still masked on a member slice", member.rows[0][0] !== "9876543210");
+  ok("bare email still masked on a member slice", member.rows[0][1] !== "r@x.com");
+  ok("pincode still dropped on a member slice", !member.columns.includes("pincode"));
+}
+{
+  // 19645 telehealth consultation dump: display names with spaces are still ids
+  const cols = ["Appointment Id","Member ID","Employee ID","Curable Patient No"];
+  const row  = ["A1","7000111222","9876543210","8123456789"];
+  const out = maskRows(cols, [row]);
+  cols.forEach((c, i) => eq(`${c} survives as a join key`, out.rows[0][i], row[i]));
+  ok("all four advertised as join keys", out.join_keys.length === 4);
+}
+
+// --- the label-word experiment must not come back ---
+// These all start with a word that looks like a category but carry a person's name.
+{
+  const cols = ["file_uploaded_by_name","document_signer_name","report_author_name",
+                "source_contact_email","type_of_contact","status_name"];
+  const out = maskRows(cols, [cols.map(() => "Rajesh Kumar")]);
+  cols.forEach((c, i) =>
+    ok(`${c} is masked, not treated as a category`, out.rows[0][i] !== "Rajesh Kumar"));
+}
+
 console.log(`maskRows: ${pass} pass, ${fail} fail`);
 process.exit(fail ? 1 : 0);
