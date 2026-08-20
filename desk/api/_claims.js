@@ -440,12 +440,27 @@ const NAME_SWEEP_CAP = 800;
 
 const colName = (c) => String(c && typeof c === "object" ? c.display_name || c.name : c || "");
 
+// The published slices mix conventions in the same result - claim_deductions alone
+// carries org, org_id, organisationId and organisationName - so every rule below
+// tests the column with camelCase humps split into words. Without this, `memberId`
+// never matches the identifier rule, falls through to free-text scrubbing, and a
+// ten-digit member id comes back as phone_<hash>: the precise failure this whole
+// function exists to prevent. `organisationName` misses the institution carve-out
+// the same way and masks a real org as a person, which then cascades - the org name
+// is collected as a known person and swept out of every other column too.
+const splitCase = (name) => name.replace(/([a-z0-9])([A-Z])/g, "$1 $2");
+
 // pass  - identifier or institution: leave exactly as-is, no scrubbing
 // whole - a person's name, phone or email: replace the entire cell
 // text  - anything else: sweep emails, phones and known names out of free text
 function classify(column) {
-  const name = colName(column);
-  if (ID_COL.test(name)) return "pass";
+  const name = splitCase(colName(column));
+  // PII is tested BEFORE the identifier rule, and the order is the whole point.
+  // `id`, `no` and `number` are identifier suffixes, so `emailId`, `phone_number`,
+  // `contact_no` and `mobile_no` all satisfy ID_COL - and Plum's own API calls the
+  // address `emailId`. Testing identifiers first passed every one of them through
+  // untouched. Nothing that is genuinely a join key carries a PII word, so putting
+  // PII first costs nothing and closes that hole.
   if (PII_KEY.test(name)) {
     if (PERSON_COL.test(name)) return "whole";
     if (INSTITUTION_COL.test(name)) return "pass";
@@ -454,6 +469,7 @@ function classify(column) {
     // their privacy. Fail closed.
     return "whole";
   }
+  if (ID_COL.test(name)) return "pass";
   return "text";
 }
 
@@ -497,7 +513,7 @@ const DROP_LOCATION = /address|pincode|postal|zip/;
 const DATASETS_WITH_BUSINESS_ADDRESSES = new Set(["hospital_lookup"]);
 
 function dropColumn(column, dataset) {
-  const name = colName(column);
+  const name = splitCase(colName(column));
   const flat = norm(name);
   if (flat.includes("email")) return false;              // email_address is masked, not dropped
   if (DROP_ALWAYS.test(flat)) return true;
@@ -569,7 +585,7 @@ export function maskRows(columns, rows, options = {}) {
       : { dropped_columns: all.filter((_, i) => drop[i]) }),
     // Identifier columns are deliberately untouched: they are how a participant
     // joins one slice to another, and to list_claims.
-    join_keys: cols.filter((c, i) => plan[i] === "pass" && ID_COL.test(c)),
+    join_keys: cols.filter((c, i) => plan[i] === "pass" && ID_COL.test(splitCase(c))),
     ...(swept
       ? {}
       : {
