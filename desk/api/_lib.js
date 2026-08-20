@@ -105,7 +105,13 @@ export async function participantFor(req) {
       `&select=participant_email,payload&limit=1`
   );
   if (!rows.length) return null;
-  return { email: rows[0].participant_email, full: Boolean(rows[0].payload?.full_data_access) };
+  return {
+    email: rows[0].participant_email,
+    full: Boolean(rows[0].payload?.full_data_access),
+    // Claims email unmasking for the one exempt project. Read here rather than
+    // in mcp.js so it survives this function living in _lib.js.
+    unmaskEmail: Boolean(rows[0].payload?.unmask_email),
+  };
 }
 
 export function readBody(req) {
