@@ -58,7 +58,7 @@ async function rest(base, key, path) {
 // ---------------------------------------------------------------- read hub ---
 
 const [ideas, members, profiles, notes] = await Promise.all([
-  rest(HUB_URL, HUB_KEY, "ideas?select=id,title,status,hidden,published_at"),
+  rest(HUB_URL, HUB_KEY, "ideas?select=id,title,brief,status,hidden,published_at"),
   rest(HUB_URL, HUB_KEY, "team_members?select=idea_id,member_id,role"),
   rest(HUB_URL, HUB_KEY, "profiles?select=user_id,email"),
   rest(HUB_URL, HUB_KEY, "idea_review_notes?select=idea_id,skipped_at"),
@@ -71,6 +71,26 @@ const live = new Map(
     .map((i) => [i.id, i])
 );
 const emailOf = new Map(profiles.map((p) => [p.user_id, String(p.email).trim().toLowerCase()]));
+
+// `summary` is plain prose and is what we want. `pitch` is HTML written in a rich
+// text editor, so it is stripped rather than shown raw - a brief full of <p> tags
+// is worse than no brief, because idea-to-template feeds it to a model verbatim.
+function briefText(brief) {
+  if (!brief || typeof brief !== "object") return null;
+  const raw = brief.summary || brief.pitch || "";
+  const text = String(raw)
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return text ? text.slice(0, 2000) : null;
+}
 
 const rows = [];
 const orphans = [];
@@ -90,6 +110,7 @@ for (const m of members) {
     member_email: email,
     role: m.role,
     idea_title: idea.title,
+    idea_brief: briefText(idea.brief),
     published_at: idea.published_at,
   });
 }

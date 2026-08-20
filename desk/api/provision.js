@@ -116,7 +116,7 @@ export default async function handler(req, res) {
     // Deliberately not a live read of the hub: onboarding for 136 people must
     // not depend on another project being reachable at 9am on the day.
     const memberships = await sb(
-      `idea_teams?member_email=eq.${q(email)}&select=idea_id,role,idea_title,published_at`
+      `idea_teams?member_email=eq.${q(email)}&select=idea_id,role,idea_title,idea_brief,published_at`
     );
 
     const existingRow = (
@@ -167,6 +167,21 @@ export default async function handler(req, res) {
         ? { email, ideaId: null }
         : { email, ideaId: resolution.ideaId };
     const idea = memberships.find((m) => m.idea_id === scope.ideaId) || null;
+
+    // The idea brief comes from the hub now, not from asking. Everyone on a
+    // published idea already wrote one there, and asking again produced a second
+    // divergent answer - the one the participant half-remembered at 9am, which is
+    // what idea-to-template then opened their first conversation from.
+    //
+    // Only filled when empty, so a brief an organizer deliberately edited, or one
+    // a solo participant typed, is never clobbered by a re-provision.
+    if (idea?.idea_brief && !participant.idea_brief) {
+      const filled = await sb(`participants?email=eq.${q(email)}`, {
+        method: "PATCH",
+        body: { idea_brief: String(idea.idea_brief).slice(0, 2000) },
+      });
+      if (filled[0]) participant.idea_brief = filled[0].idea_brief;
+    }
 
     let byService = await readCredentials(scope);
 

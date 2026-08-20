@@ -28,17 +28,24 @@ Then, in your own words and no more than two lines: wish them well, and say setu
 
 ## Step 2 — Registration
 
-Ask conversationally, one at a time (wait for each answer before asking the next):
+Ask two questions, conversationally, one at a time (wait for each answer):
 
 1. Their full name.
 2. Their work email. It should be an `@plumhq.com` address — if it isn't, mention that only Plum addresses (plus a small organizer allowlist) can be verified, and let them correct it or proceed to let the desk decide.
-3. Their idea brief: two sentences on the recurring problem they want to attack. If they don't have one yet, that's fine — capture "still exploring" and point them to https://insurwreck-4.preview.plumhq.com/#ideas for later.
-4. A short name for their site. Tell them plainly what it is for: **this becomes the web address they demo on**, `<name>.insurwreck.com`. Ask for one or two words about the project, not about them — `claims-copilot`, not `abel-p`. Lowercase, letters, numbers and hyphens; anything else gets folded to a hyphen.
 
-   If they don't have a name yet, or ask you to pick, don't invent one and don't
-   stall - say they'll get a working address either way and can be given a nicer
-   one later, then move on. Leave it out of the call below rather than sending a
-   guess: a guess becomes a URL and URLs are read out loud on Friday.
+**That is all. Do NOT ask for an idea brief here.** Their idea and its brief already
+exist on the hub — they wrote it when they published — and the desk fills it in
+automatically from the roster in Step 4. Asking again gets you a second, worse
+answer: the half-remembered version typed at 9am, which is then what
+`idea-to-template` opens their first build conversation from.
+
+It also cannot work here even if you wanted it to. Their idea is looked up by
+verified email, and at this point they have not verified yet, so nothing knows
+which of the 60 published ideas is theirs.
+
+**Do not ask for a site name here either**, for the same reason: the Vercel project
+belongs to the idea now, so the address is derived from the idea. Step 4 covers the
+one case where it still needs asking.
 
 ## Step 3 — Verify their email
 
@@ -69,7 +76,7 @@ Before running this call, tell the participant their **team's** infrastructure i
 curl -s --max-time 280 -X POST $DESK/api/provision \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{"name":"<name>","idea_brief":"<brief>","site_name":"<short-name>","agent":"claude-code"}'
+  -d '{"name":"<name>","agent":"claude-code"}'
 ```
 
 Omit `site_name` entirely if they didn't give one - an empty string is not the
@@ -96,6 +103,20 @@ When `shared_with_team` is true, say so plainly: this database, this URL and thi
 inbox are the **whole team's**, and their teammates will get these exact same
 credentials. Anything they push, their teammates see. That is the point, and it is
 worth one sentence so nobody is surprised later.
+
+`participant.idea_brief` comes back filled from the hub - the brief whoever
+published the idea actually wrote. Read it back to them in a sentence so they know
+the agent has the right idea, and do not ask them to retype or confirm it. If they
+want it changed, that is a hub edit, not something to patch here.
+
+**When `idea` is null** (a solo bundle - organizers, who are on no published idea),
+there is no brief to inherit. Only then ask for one: two sentences on the problem
+they want to attack, and re-run the call with `idea_brief` set. Same for a site
+name: ask only in the solo case, tell them plainly it becomes the address they demo
+on (`<name>.insurwreck.com`), lowercase letters, numbers and hyphens. If they have
+no name or ask you to pick, do not invent one - say they get a working address
+either way and can be given a nicer one later. A guess becomes a URL, and URLs get
+read out loud on Friday.
 
 Then tell them their address: it's `services.vercel.app_url`. If that field is
 absent the domain isn't wired yet on the desk - say nothing about it rather than
