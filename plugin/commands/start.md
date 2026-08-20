@@ -131,6 +131,13 @@ run `/insurwreck:start` again themselves and they will get the same setup. If th
 captain is unavailable, an organizer can provision the team for them. Then stop —
 do not continue to Step 4b or later steps, because there is nothing yet to connect.
 
+`captain_started: true` means the captain began and it did not finish — a laptop
+sleeping or Claude Code closing mid-run does this. The `message` already says the
+right thing, which is that the captain must run `/insurwreck:start` **again** rather
+than for the first time. Do not paraphrase it into "they haven't started yet": the
+captain has no reason to think anything is outstanding, and that wording sends both
+of them looking for the wrong problem.
+
 Store it (only on `"status": "ok"`):
 
 1. `mkdir -p ~/.insurwreck && chmod 700 ~/.insurwreck`

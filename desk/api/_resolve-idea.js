@@ -141,10 +141,26 @@ export function mayMint(resolution) {
 /**
  * What a blocked member is told. Names the captain, because "ask your captain"
  * without saying who sends them to find an organizer instead.
+ *
+ * Two cases, and they are different asks. "Not started" needs the captain to
+ * begin; "started and stopped" needs them to run it AGAIN, which is not obvious
+ * - a captain whose laptop slept mid-provision has no reason to think anything
+ * is outstanding, and telling their teammate "hasn't been set up yet" sends both
+ * of them looking for the wrong problem.
  */
-export function blockedMessage(ideaTitle, captainEmail) {
+export function blockedMessage(ideaTitle, captainEmail, partial = false) {
+  const who = captainEmail || "your captain";
+  if (partial) {
+    return (
+      `${who} started setting up "${ideaTitle}" but it did not finish - a laptop ` +
+      `sleeping or Claude Code closing mid-run will do that. Ask them to run ` +
+      `/insurwreck:start again; it picks up exactly where it stopped. Then run it ` +
+      `yourself and you will get the same database, hosting and inbox. If they ` +
+      `cannot right now, an organizer can finish it for the team.`
+    );
+  }
   return (
-    `Your team hasn't been set up yet. ${captainEmail} is the captain for ` +
+    `Your team hasn't been set up yet. ${who} is the captain for ` +
     `"${ideaTitle}" - once they run /insurwreck:start, run it again and you'll ` +
     `get the same database, hosting and inbox they do. If they can't right now, ` +
     `find an organizer: they can set it up for the team.`

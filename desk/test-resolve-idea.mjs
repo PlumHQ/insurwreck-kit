@@ -152,3 +152,22 @@ test("the blocked message names the captain", () => {
   assert.match(text, /WarMly/);
   assert.match(text, /organizer/);
 });
+
+test("a half-finished setup tells them to run it AGAIN, not to start", () => {
+  // The captain has no reason to know anything is outstanding, so "hasn't been
+  // set up yet" sends both of them after the wrong problem.
+  const text = blockedMessage("WarMly", "someone@plumhq.com", true);
+  assert.match(text, /again/i);
+  assert.match(text, /did not finish/i);
+  assert.doesNotMatch(text, /hasn't been set up yet/);
+  assert.match(text, /someone@plumhq\.com/);
+  assert.match(text, /organizer/);
+});
+
+test("the message survives an unknown captain", () => {
+  for (const partial of [false, true]) {
+    const text = blockedMessage("WarMly", null, partial);
+    assert.match(text, /your captain/);
+    assert.doesNotMatch(text, /null/);
+  }
+});
