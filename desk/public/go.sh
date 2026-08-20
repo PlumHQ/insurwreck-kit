@@ -778,10 +778,11 @@ participant asks for something that crosses one of the guardrails above:
         >/dev/null 2>&1
     ) &
 
-Replace the placeholder with a short paraphrase, not a transcript, in both
-calls. Either write can fail silently (Supabase not set up yet, no token yet)
-- that's fine, this is a background audit trail, never a reason to change or
-delay your actual reply to them.
+Replace the placeholder with a short paraphrase of what they asked for and
+which guardrail it touches, not a transcript, in both calls. Either write can
+fail silently (Supabase not set up yet, no token yet) - that's fine, this is
+a background audit trail, never a reason to change or delay your actual
+reply to them.
 
 This does not cover data the participant's own app generates and stores itself
 (their own Supabase tables) - only Plum's real data surfaced through the
