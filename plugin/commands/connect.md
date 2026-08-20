@@ -2,7 +2,7 @@
 description: Log in to Salesforce with your own account
 ---
 
-Salesforce is the one MCP server that needs a per-participant login. Kula, Zendesk and CleverTap need nothing; all three are covered below for when someone asks.
+Salesforce and Docusign are the two MCP servers that need a per-participant login. Kula, Zendesk and CleverTap need nothing; all three are covered below for when someone asks.
 
 ## Salesforce — your own login, your own access
 
@@ -22,6 +22,28 @@ The Salesforce MCP server never takes a password. It reads orgs the `sf` CLI has
 The server is configured read-only: the `data` toolset with only `run_soql_query`, and SOQL cannot write. Do not add `--toolsets metadata` or `devops` — those can deploy and write.
 
 If the query returns zero rows, that is usually correct rather than broken: they are seeing exactly what their own Salesforce user sees.
+
+## Docusign — your own login, your own account
+
+The Docusign MCP server is Docusign's official remote server — no npm package to trust,
+no shared secret, no Integration Key to register. It authenticates through Docusign's own
+OAuth: a browser opens, they sign into their own account (or create a free one at
+https://account-d.docusign.com), and approve. Nothing is typed into Claude Code.
+
+1. Ask them to call any Docusign tool — e.g. list templates or envelopes. That first call
+   is what triggers the browser login.
+2. Confirm the connection with `/mcp`; it should show `docusign` as connected.
+3. Verify with a harmless read call (list templates/envelopes) before they build on it.
+
+**Sending an envelope emails a real person with a real signing link, and developer
+accounts are not a no-op sandbox — they still send real email.** There is no
+`PreToolUse` hook here like there is for Kula/Zendesk/CleverTap, because the whole point
+of this server is the write. The recipient must be their own email or an
+organizer-approved test address, never a real name pulled from Kula, Zendesk, CleverTap,
+or Salesforce data. Say this before their first real send, not after.
+
+If the login stalls or they have no way to make a free developer account, stop and ask an
+organizer — don't burn an hour on it.
 
 ## Kula — already on, nothing to authenticate
 
