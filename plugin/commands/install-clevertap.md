@@ -47,8 +47,14 @@ those tools anyway, but the pin is what keeps them from being registered at all.
 
 ## Step 3 — Tell them what to expect
 
-The server is already declared in the plugin. If CleverTap showed as failed in this
-session it will connect after a restart.
+The server is already declared in the plugin, and the three values were already in
+`settings.json` before you ran this - Step 1 would have stopped you otherwise. So
+**`/reload-plugins` is enough**, not a full restart.
+
+The `env` block is only read when Claude Code starts, which is why onboarding needs a
+restart after `iw-connect`. This command does not touch it - it fills the npx cache -
+so asking for a restart here would be cargo-culting the one instruction that does
+matter.
 
 Then say the two things that matter:
 

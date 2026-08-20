@@ -49,10 +49,16 @@ is below that, run `iw-doctor` — it names the fix.
 
 ## Step 3 — Tell them what to expect
 
-The server is already declared in the plugin, so there is nothing to configure. If
-Kula showed as failed in this session it will connect after a restart; if they have
-not started Claude Code since `iw-connect` wrote the key, they need that restart
-anyway.
+The server is already declared in the plugin, so there is nothing to configure, and
+the key was already in `settings.json` before you ran this - otherwise Step 1 would
+have stopped you. So **`/reload-plugins` is enough**; a full quit and restart is not.
+
+Measured, not assumed: the `env` block in `settings.json` is snapshotted when Claude
+Code starts, which is why onboarding genuinely needs a restart after `iw-connect`
+writes a new key. Nothing about *this* command touches that block - it only fills the
+npx cache - so the cheaper reload is the correct instruction. Telling them to restart
+when they do not need to is how the instruction that does matter stops being
+believed.
 
 Then say the one thing that matters about Kula: **it is read-only, enforced by a
 hook, and the data is real.** Real candidates, real applications, real people. Reads

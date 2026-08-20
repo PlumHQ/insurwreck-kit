@@ -46,6 +46,10 @@ have still works, and they can retry later.
 npx -y @salesforce/mcp --version >/dev/null 2>&1 && echo cached || echo "will download on first use"
 ```
 
+Then `/reload-plugins` so the Salesforce server picks up the newly installed `sf`.
+A full restart is not needed: nothing here changed the `env` block in
+`settings.json`, which is the only thing that requires one.
+
 ## Step 4 — Hand off to the login, do not attempt it here
 
 Point them at `/insurwreck:connect`, which walks the browser login. Do not try to
