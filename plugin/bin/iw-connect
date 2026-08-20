@@ -73,7 +73,7 @@ if (fs.existsSync(settingsPath)) {
 }
 settings.env = settings.env || {};
 
-const set = [], skipped = [], unchanged = [];
+const set = [], skipped = [], unchanged = [], cleared = [];
 for (const [key, value] of Object.entries(wanted)) {
   if (!value) { skipped.push(key); continue; }
   if (settings.env[key] === value) { unchanged.push(key); continue; }
@@ -81,8 +81,29 @@ for (const [key, value] of Object.entries(wanted)) {
   set.push(key);
 }
 
-if (set.length) fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n");
-console.log(JSON.stringify({ set, skipped, unchanged, live: set.length === 0 && unchanged.length > 0 }));
+// Clear leftovers from a previous event. Assigning above already overwrites a
+// key whose value changed, but a key the bundle no longer issues at all was
+// previously just skipped, so a 4.0 participant kept the 4.0 INSURWRECK_TOKEN
+// sitting in settings.json while holding a 5.0 bundle. That token still
+// resolves at startup, so the data server does not look absent, it looks
+// REJECTED, which is a different and much more confusing diagnosis than a
+// server that was never connected.
+//
+// Guarded on the bundle actually having services: a failed or truncated fetch
+// must never be the thing that wipes a working setup.
+if (Object.keys(svc).length > 0) {
+  for (const key of Object.keys(wanted)) {
+    if (!wanted[key] && key in settings.env) {
+      delete settings.env[key];
+      cleared.push(key);
+    }
+  }
+}
+
+if (set.length || cleared.length) {
+  fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n");
+}
+console.log(JSON.stringify({ set, skipped, unchanged, cleared, live: set.length === 0 && unchanged.length > 0 }));
 ' "$CREDS" "$SETTINGS" > /tmp/iw-connect.$$ 2>/dev/null
 STATUS=$?
 
@@ -106,8 +127,10 @@ printf "\n${B}Connecting your data servers${R}\n\n"
 SET="$(printf '%s' "$RESULT" | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).set.join(" ")')"
 SKIPPED="$(printf '%s' "$RESULT" | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).skipped.join(" ")')"
 UNCHANGED="$(printf '%s' "$RESULT" | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).unchanged.join(" ")')"
+CLEARED="$(printf '%s' "$RESULT" | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).cleared?.join(" ") || ""')"
 
 for key in $SET;       do printf "  ${GRN}✓${R} %s written to settings.json\n" "$key"; done
+for key in $CLEARED;   do printf "  ${DIM}·${R} ${DIM}%s cleared, left over from a previous event${R}\n" "$key"; done
 for key in $UNCHANGED; do printf "  ${GRN}✓${R} %s already set\n" "$key"; done
 for key in $SKIPPED; do
   # Only the data token is expected for everyone. n8n and kula are shared

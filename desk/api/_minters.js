@@ -38,6 +38,29 @@ export function slugFor(email) {
   return `iw-${local}-${suffix}`;
 }
 
+// The 5.0 naming key. Resources belong to an IDEA, not to whoever on the team
+// happened to run /insurwreck:start first - so a three-person team building
+// "meridian" gets iw-meridian-7e1c, not iw-arsh-g-1a2b. That name is externally
+// visible: it is the Vercel project name and therefore the deploy URL, the
+// Supabase project name, the AgentMail address suffix, and the n8n workflow
+// prefix.
+//
+// The hash is over the idea_id and not the title, because titles collide - the
+// roster currently holds two ideas both called "Insurwreck - The Collective
+// Brain", which would otherwise produce the same slug and have the second mint
+// silently adopt the first one's project.
+export function slugForIdea(ideaId, title = "") {
+  const words = String(title)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 24)
+    .replace(/-+$/, "");
+  const suffix = createHash("sha256").update(String(ideaId)).digest("hex").slice(0, 4);
+  // A title of nothing but punctuation would otherwise give "iw--7e1c".
+  return words ? `iw-${words}-${suffix}` : `iw-idea-${suffix}`;
+}
+
 function finalize(payload, pendingParts) {
   if (pendingParts.length) {
     payload.incomplete = true;
