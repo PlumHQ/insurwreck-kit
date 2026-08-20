@@ -203,5 +203,46 @@ const eq = (label, a, b) => ok(`${label} (got ${JSON.stringify(a)})`, a === b);
   ok("name NOT rewritten inside the signed path", rows[0][1].includes("RAJESH_KUMAR"));
 }
 
+// --- real column names from the published slices, mixed conventions in one row ---
+// claim_deductions alone carries org, org_id, organisationId and organisationName.
+{
+  const cols = ["memberId","employeeId","organisationId","emp_name","nominee_name",
+                "organisationName","org","typeOfBenefit","claim_ref","member_ref_hash"];
+  const row  = ["9876543210","7000111222","12345","Rajesh Kumar","Priya Nair",
+                "Acme Technologies","Acme Technologies","GMC","CL7005","a1b2c3d4"];
+  const out = maskRows(cols, [row]);
+  const at = (c) => out.rows[0][out.columns.indexOf(c)];
+  eq("camelCase memberId is an identifier, not a phone", at("memberId"), "9876543210");
+  eq("camelCase employeeId survives", at("employeeId"), "7000111222");
+  eq("camelCase organisationId survives", at("organisationId"), "12345");
+  ok("memberId is advertised as a join key", out.join_keys.includes("memberId"));
+  ok("emp_name is masked despite the abbreviation", /^Member /.test(at("emp_name")));
+  ok("nominee_name is masked", /^Member /.test(at("nominee_name")));
+  eq("camelCase organisationName is an org, not a person", at("organisationName"), "Acme Technologies");
+  eq("and the bare org column is not swept either", at("org"), "Acme Technologies");
+  eq("typeOfBenefit untouched", at("typeOfBenefit"), "GMC");
+  eq("claim_ref untouched", at("claim_ref"), "CL7005");
+}
+
+// --- PII columns that end in an identifier suffix must not read as identifiers ---
+// id / no / number are all identifier suffixes, and Plum's API calls the address
+// emailId. Testing identifiers first let every one of these through untouched.
+{
+  const cols = ["emailId","phone_number","contact_no","mobile_no","phoneNumber",
+                "member_id","org_id","claim_ref","policy_number","hospital_phone"];
+  const row  = ["rajesh@example.com","9876543210","9812345678","9811111111","9822222222",
+                "7000111222","12345","CL7005","P/900123","08041234567"];
+  const out = maskRows(cols, [row]);
+  const at = (c) => out.rows[0][out.columns.indexOf(c)];
+  ok("emailId is an address, not an id", at("emailId").endsWith("@masked.invalid"));
+  for (const c of ["phone_number","contact_no","mobile_no","phoneNumber"])
+    ok(`${c} is masked despite the id-ish suffix`, /^phone_[0-9a-f]{8}$/.test(at(c)));
+  for (const c of ["member_id","org_id","claim_ref","policy_number"])
+    eq(`${c} still passes through`, at(c), row[cols.indexOf(c)]);
+  eq("a hospital switchboard is not a member phone", at("hospital_phone"), "08041234567");
+  ok("join_keys excludes the PII columns", !out.join_keys.some((k) => /phone|email|contact|mobile/i.test(k)));
+  ok("join_keys still lists the real keys", out.join_keys.length === 4);
+}
+
 console.log(`maskRows: ${pass} pass, ${fail} fail`);
 process.exit(fail ? 1 : 0);
