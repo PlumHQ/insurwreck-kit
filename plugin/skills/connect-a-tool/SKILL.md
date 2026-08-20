@@ -100,7 +100,7 @@ only when they genuinely need comment text.
 
 There is **no official server** for these. Community options exist but each needs a Google
 Cloud OAuth client configured, which is a 20-30 minute detour with a real chance of
-failing. For a one-day build, the faster path is almost always:
+failing. For a two-day build, the faster path is almost always:
 
 1. Ask them to **export the sheet as CSV**.
 2. Use the `load-your-data` skill to parse and seed it into their Supabase project.
@@ -115,7 +115,7 @@ honestly what it will cost them in time.
 - **A write path into the Plum app** - there isn't one, and no MCP server creates one. When
   an idea ends with "and the member sees it in the Plum app", that last mile is a mock inside
   their own web UI, and the Next starter already gives them the surface for it. Say so in the
-  first conversation rather than on Friday.
+  first conversation rather than at the demo.
 - **WhatsApp and Periskope** - no BSP account, no registered number, no Periskope access, and
   none is being provisioned. Build the chatbot and show the conversation flow in a chat UI
   they own. That demos the flow honestly and is strictly less work than the integration.
