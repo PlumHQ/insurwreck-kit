@@ -16,3 +16,8 @@ create table if not exists claims (
 alter table claims enable row level security;
 -- No policies added — the app talks to Supabase with the service_role key
 -- (server-side only), which bypasses RLS by design.
+
+-- `risks` is different from `claims` above: it already exists in your
+-- project. The desk creates it automatically when your Supabase project is
+-- provisioned, and Claude Code logs a row here whenever it builds an
+-- export/download feature for Plum data, so don't be surprised to find it.

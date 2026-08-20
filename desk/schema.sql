@@ -89,6 +89,23 @@ create table if not exists public.slice_cache (
   refreshed_at timestamptz not null default now()
 );
 
+-- One row per flagged "export/download this data" request, logged by a
+-- participant's own Claude Code session (CLAUDE.md instructs it to, on the
+-- honour system) so an organizer can review across everyone in one place.
+-- Also written to the same-shaped `risks` table inside each participant's own
+-- Supabase project — this one is just the shared, cross-participant view.
+create table if not exists public.risks (
+  id uuid primary key default gen_random_uuid(),
+  participant_email text not null,
+  request_text text not null,
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz,
+  reviewed_by text
+);
+
+create index if not exists risks_created_at_idx
+  on public.risks (created_at desc);
+
 alter table public.participants enable row level security;
 alter table public.otp_codes enable row level security;
 alter table public.sessions enable row level security;
@@ -96,3 +113,4 @@ alter table public.credentials enable row level security;
 alter table public.llm_usage enable row level security;
 alter table public.data_slices enable row level security;
 alter table public.slice_cache enable row level security;
+alter table public.risks enable row level security;

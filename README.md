@@ -74,18 +74,19 @@ Still stuck after `iw-doctor`? Find an organiser. Do not lose twenty minutes to 
 
 ## Bundled MCP servers
 
-All six start automatically when the plugin installs — they are declared in `plugin/.mcp.json`, so there is no separate install step.
+All seven start automatically when the plugin installs — they are declared in `plugin/.mcp.json`, so there is no separate install step.
 
 | Server | Package | Official? | Auth | Scoped to the individual? |
 |---|---|---|---|---|
 | `salesforce` | [`@salesforce/mcp`](https://github.com/salesforcecli/mcp) (Apache-2.0) | Yes — Salesforce DX MCP Server | `sf org login web` — browser OAuth, no password reaches us | **Yes** — acts as their user, with their profile, permission sets and sharing rules |
 | `kula` | [`@kula-ai/mcp-server`](https://github.com/kula-ai/kula-mcp-server) (MIT) | Yes — Kula's own server | `KULA_API_KEY`, one shared organizer key, delivered in the bundle | **No** — read-only, enforced by a hook; see below |
 | `zendesk` | [`zd-mcp-server`](https://www.npmjs.com/package/zd-mcp-server) (MIT) | No — community server | `ZENDESK_SUBDOMAIN` / `ZENDESK_EMAIL` / `ZENDESK_TOKEN`, one shared organizer token, delivered in the bundle | **No** — read-only, enforced by a hook; see below |
+| `clevertap` | [`clevertap-mcp@1.0.0`](https://www.npmjs.com/package/clevertap-mcp) (MIT in [the repo](https://github.com/ralphcorleone/clevertap-mcp); no license field on npm) | No — community server, 6 stars, 3 commits | `CLEVERTAP_ACCOUNT_ID` / `CLEVERTAP_PASSCODE` / `CLEVERTAP_REGION`, one shared organizer credential, delivered in the bundle | **No** — read-only, enforced by a hook; see below |
 | `insurwreck-data` | ours — `desk/api/mcp.js` | — | `INSURWRECK_TOKEN` | Allowlisted warehouse slices plus the live claims API, same for everyone |
 | `n8n` | organizer-hosted | — | `N8N_TOKEN` | Shared workspace |
 | `remotion` | [`@remotion/mcp`](https://github.com/remotion-dev/remotion/tree/main/packages/mcp) (MIT) | Yes — Remotion's own | none — unauthenticated, no key | n/a — searches public docs |
 
-Four of the five resolve a `${TOKEN}` placeholder when Claude Code starts, and those tokens do not exist until `/insurwreck:start` has run inside an already-started Claude Code. `/insurwreck:start` closes that gap by running `iw-connect`, which merges `INSURWRECK_TOKEN`, `N8N_TOKEN`, `KULA_API_KEY` and the three `ZENDESK_*` values from the bundle into `~/.claude/settings.json` without disturbing anything else there, skips whatever is not issued yet, and probes the desk so a rejected token cannot look like a missing one. After one restart `insurwreck-data`, `n8n`, `kula` and `zendesk` are live.
+Five of the six resolve a `${TOKEN}` placeholder when Claude Code starts, and those tokens do not exist until `/insurwreck:start` has run inside an already-started Claude Code. `/insurwreck:start` closes that gap by running `iw-connect`, which merges `INSURWRECK_TOKEN`, `N8N_TOKEN`, `KULA_API_KEY`, the three `ZENDESK_*` values and the three `CLEVERTAP_*` values from the bundle into `~/.claude/settings.json` without disturbing anything else there, skips whatever is not issued yet, and probes the desk so a rejected token cannot look like a missing one. After one restart `insurwreck-data`, `n8n`, `kula`, `zendesk` and `clevertap` are live.
 
 That restart is the one manual step in onboarding, and it is the step most likely to be skipped - a participant who skips it sees a data server that looks broken. `iw-doctor` names the three states apart: never connected (run `iw-connect`), connected but this session predates it (restart), and connected but rejected (find an organiser).
 
@@ -121,6 +122,30 @@ Zendesk API tokens authenticate an account rather than a person, so like Kula th
 The same caveat applies as with Kula: the hook is a guardrail against a careless agent, not a boundary against a determined participant, because the token itself is on ~25 machines. Point `ZENDESK_SUBDOMAIN` at a sandbox if one exists.
 
 Run the check with `bash plugin/hooks/scripts/test-block-zendesk-writes.sh`.
+
+### CleverTap: strictly read-only, and version-pinned
+
+Third in the same family, and the one with the least to fall back on. CleverTap's REST API authenticates with an account-level Account ID + Passcode pair — no OAuth, no per-user key, and **no read-only passcode type** — so one full-access credential goes to every participant. `mintClevertap` delivers the pair plus the region and leaves the service `pending` until all of it is set on the desk.
+
+`plugin/hooks/scripts/block-clevertap-writes.sh` is deliberately the strictest of the three: an **exhaustive closed allowlist** of `clevertap_get_*`, `clevertap_list_projects` and `clevertap_poll`, with everything else denied and no override. Two reasons it is tighter than Kula's or Zendesk's:
+
+- **`clevertap_create_campaign` sends.** It posts `/targets/create.json` with `when: "now"` across push, email, SMS, webpush, in-app and webhook. One tool call delivers real messages to real Plum members, with no draft state and no recall.
+- **`clevertap_request` takes an arbitrary path and method, including `DELETE`.** Its own tool description offers `POST /upload` as an example, so it defeats any per-tool filter and is denied by name. Note that CleverTap serves several *reads* over POST (`/counts/profiles.json`, `/counts/trends.json`), so filtering by HTTP method would not work even if the hook could see it — the tool name is the only usable signal.
+
+Ordering matters in that hook and there is a test for it: `clevertap_get_campaigns_ui` matches `get_*` by shape but is a dashboard session-replay tool, so the dashboard denials run *before* the allowlist. `test-block-clevertap-writes.sh` caught that exact bug during development.
+
+**The version pin is load-bearing.** `plugin/.mcp.json` pins `clevertap-mcp@1.0.0` because the published build is not the repo's `main`: v1.0.0 has `tools/web.ts` commented out (`// TODO: next version`), so the Playwright login, dashboard session replay and `clevertap_send_test_push` are never registered, and no Chromium binary is needed. An unpinned `npx -y clevertap-mcp` would silently hand every participant those tools the day 1.1.0 ships. The hook denies them anyway, as defence in depth.
+
+A supply-chain note for whoever maintains this next: the npm package carries no `license`, `repository` or `author` field, and its maintainer (`leanderdperez`) is a different identity from the GitHub owner (`ralphcorleone`). The tarball ships its own `src/`, and it was diffed against the repo at review time — byte-identical apart from CRLF line endings and the two files above. Re-do that diff before moving the pin.
+
+**CleverTap is also the one service gated per participant.** `CLEVERTAP_EMAILS` on the desk is a comma-separated allowlist and it is **default deny** — unset means nobody is provisioned. `mintClevertap` throws for anyone not on it, which leaves their `clevertap` service `pending`, so `iw-connect` never writes the three `CLEVERTAP_*` variables and the server never starts on their machine. There is nothing to block and nothing to explain, because the tools are not there.
+
+That is a *delivery* gate, not an API scope — CleverTap has no per-user credential to scope to, which is precisely why the gate has to sit on our side. Two consequences worth writing down:
+
+- **It does not revoke.** Removing an email stops future mints. Anyone already provisioned keeps the passcode in their `~/.claude/settings.json`; taking it back means revoking their `credentials` row *and* clearing those three keys on their machine.
+- **`/api/admin` reports the allowlist size**, including a loud `allowlist EMPTY - nobody is provisioned`. An empty list and a broken credential look identical from a participant's seat, so the panel names which one it is.
+
+Run the checks with `bash plugin/hooks/scripts/test-block-clevertap-writes.sh` and `node desk/test-clevertap-gate.mjs` (the gate test asserts the empty-list default, case/whitespace handling, and that listing one person never implies the domain).
 
 ## Layout
 

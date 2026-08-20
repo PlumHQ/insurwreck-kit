@@ -319,7 +319,41 @@ export async function mintSupabase(email, existing = {}) {
     }
   }
 
-  return finalize(payload, payload.service_role_key ? [] : ["api_keys"]);
+  // Every participant gets a `risks` table in their own project from day one,
+  // so Claude Code always has somewhere to log a flagged export/download
+  // request (see CLAUDE.md) without depending on build order. Mirrors the DDL
+  // pattern mintGoogleAuth already uses against a participant's project.
+  // Must never throw: a hiccup here can't cost someone their real Supabase
+  // credentials, and the guard makes it free to retry on the next repair.
+  if (payload.service_role_key && !payload.risks_table_ready) {
+    const ddl = `
+      create table if not exists public.risks (
+        id uuid primary key default gen_random_uuid(),
+        request_text text not null,
+        created_at timestamptz not null default now()
+      );
+      alter table public.risks enable row level security;
+    `;
+    try {
+      const res = await fetch(`${SUPABASE_API}/projects/${payload.project_ref}/database/query`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ query: ddl }),
+      });
+      if (res.ok) {
+        payload.risks_table_ready = true;
+      } else {
+        console.error(`risks table create failed for ${email}: ${res.status} ${await res.text()}`);
+      }
+    } catch (error) {
+      console.error(`risks table create failed for ${email}:`, error.message);
+    }
+  }
+
+  const pending = [];
+  if (!payload.service_role_key) pending.push("api_keys");
+  if (!payload.risks_table_ready) pending.push("risks_table");
+  return finalize(payload, pending);
 }
 
 // ------------------------------------------------------------- agentmail ---
@@ -492,6 +526,75 @@ export async function mintZendesk(email, existing = {}) {
     "Shared hackathon Zendesk credentials, reachable as the `zendesk` MCP server in Claude Code. Read-only - " +
     "the ticket data is real customer support traffic, and the write tools would reply to actual customers, " +
     "so they are blocked. Search and read freely; persist anything you generate in your own Supabase.";
+  return finalize(payload, []);
+}
+
+// ------------------------------------------------------------- clevertap ---
+
+// Third in the shared-credential family, and the sharpest of the three.
+// CleverTap's REST API authenticates with an Account ID + Passcode pair that
+// belongs to the ACCOUNT, not a person - there is no OAuth, no per-user key,
+// and no read-only passcode type. So the one organizer-issued pair would have to
+// go to every participant, exactly like kula and zendesk. It does not: this is the
+// only service gated to an explicit email allowlist (CLEVERTAP_EMAILS), because it
+// is the only one whose blast radius is messages to real members.
+//
+// Read this before switching it on: the passcode this delivers has full write
+// access to a live engagement platform. clevertap-mcp exposes
+// clevertap_create_campaign, which posts /targets/create.json with when:"now"
+// across push, email, SMS, webpush, in-app and webhook - one tool call sends
+// real messages to real Plum members, and there is no recall. It also exposes
+// clevertap_delete_profile and clevertap_request (arbitrary path + method,
+// including DELETE). block-clevertap-writes.sh denies every one of them and is
+// the only control that exists, because CleverTap gives us no scoped credential
+// to fall back on. Point CLEVERTAP_ACCOUNT_ID at a non-production project if
+// one exists; the hook stays on either way.
+// Who may hold the CleverTap credential at all. Default deny: unset means nobody,
+// because the alternative is a forgotten config silently handing a production
+// engagement passcode to 25 people. Comma-separated, same shape as ALLOWED_EMAILS.
+//
+// This is a DELIVERY gate, not an API scope - CleverTap has no per-user credential
+// to scope to, which is exactly why the gate has to live here. A blocked
+// participant gets no clevertap entry in their bundle, so iw-connect never writes
+// the CLEVERTAP_* variables, the placeholders never resolve, and the server does
+// not start on their machine. Nothing to block, nothing to explain.
+//
+// It does NOT revoke. Removing someone stops future mints; they keep whatever is
+// already in their ~/.claude/settings.json. Taking it back means revoking their
+// credentials row AND clearing those three keys on their machine.
+export function clevertapAllowed(email) {
+  const allowed = (process.env.CLEVERTAP_EMAILS || "")
+    .toLowerCase()
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  return allowed.includes(String(email || "").trim().toLowerCase());
+}
+
+export async function mintClevertap(email, existing = {}) {
+  if (!clevertapAllowed(email)) {
+    // Expected outcome for most participants, not a misconfiguration.
+    // provision.js logs every mint failure and leaves the service pending.
+    throw new Error(`clevertap not enabled for ${email} (not in CLEVERTAP_EMAILS)`);
+  }
+
+  const accountId = process.env.CLEVERTAP_ACCOUNT_ID;
+  const passcode = process.env.CLEVERTAP_PASSCODE;
+  const region = process.env.CLEVERTAP_REGION || "in1";
+  if (!accountId || !passcode) {
+    throw new Error("CLEVERTAP_ACCOUNT_ID and CLEVERTAP_PASSCODE not both set");
+  }
+
+  const payload = { ...existing };
+  payload.account_id = accountId;
+  payload.passcode = passcode;
+  payload.region = region;
+  payload.shared = true;
+  payload.scoped_to_you = false;
+  payload.note =
+    "Shared hackathon CleverTap credentials, reachable as the `clevertap` MCP server in Claude Code. Read-only - " +
+    "every write tool is blocked, because this is a live engagement account and a campaign here would send real " +
+    "push, email and SMS to real members. Read the analytics freely; write anything you generate to your own Supabase.";
   return finalize(payload, []);
 }
 

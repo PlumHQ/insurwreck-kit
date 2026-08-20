@@ -36,6 +36,8 @@ async function health() {
     ["claims api configured", "PLUM_API_TOKEN"],
     ["kula key configured", "KULA_API_KEY"],
     ["zendesk creds configured", "ZENDESK_TOKEN"],
+    ["clevertap creds configured", "CLEVERTAP_PASSCODE"],
+    ["clevertap email allowlist set", "CLEVERTAP_EMAILS"],
     ["supabase mgmt token configured", "SUPABASE_MGMT_TOKEN"],
   ]) {
     add(name, env(key), env(key) ? "" : "missing - that service will stay pending");
@@ -65,6 +67,41 @@ async function health() {
     return {
       ok: sharedMode || used < 10,
       detail: `${used} inboxes used` + (sharedMode ? ", shared mode" : " of a 10 cap"),
+    };
+  });
+
+  await probe("clevertap creds work", async () => {
+    if (!env("CLEVERTAP_ACCOUNT_ID") || !env("CLEVERTAP_PASSCODE")) {
+      return { ok: false, detail: "no creds" };
+    }
+    // Say plainly how many people the gate lets through. "Configured" told an
+    // organizer nothing about whether the allowlist was empty, which is the
+    // state where CleverTap looks broken to every participant by design.
+    const allowed = (process.env.CLEVERTAP_EMAILS || "")
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean).length;
+    // A read the account always answers: an unknown identity is a clean 400/200,
+    // while bad creds are a 401. Deliberately a GET - this panel must never be
+    // the thing that writes to a live engagement account.
+    const region = process.env.CLEVERTAP_REGION || "in1";
+    const r = await fetch(
+      `https://${region}.api.clevertap.com/1/profile.json?identity=insurwreck-probe@example.com`,
+      {
+        headers: {
+          "X-CleverTap-Account-Id": process.env.CLEVERTAP_ACCOUNT_ID,
+          "X-CleverTap-Passcode": process.env.CLEVERTAP_PASSCODE,
+        },
+        signal: AbortSignal.timeout(8000),
+      }
+    );
+    return {
+      ok: r.status !== 401 && r.status !== 403,
+      detail:
+        `HTTP ${r.status}, region ${region}, ` +
+        (allowed
+          ? `${allowed} email${allowed === 1 ? "" : "s"} allowlisted`
+          : "allowlist EMPTY - nobody is provisioned"),
     };
   });
 

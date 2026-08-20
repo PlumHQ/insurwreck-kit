@@ -44,6 +44,15 @@
         "ZENDESK_TOKEN": "${ZENDESK_TOKEN}"
       }
     },
+    "clevertap": {
+      "command": "npx",
+      "args": ["-y", "clevertap-mcp@1.0.0"],
+      "env": {
+        "CLEVERTAP_ACCOUNT_ID": "${CLEVERTAP_ACCOUNT_ID}",
+        "CLEVERTAP_PASSCODE": "${CLEVERTAP_PASSCODE}",
+        "CLEVERTAP_REGION": "${CLEVERTAP_REGION}"
+      }
+    },
     "remotion": {
       "command": "npx",
       "args": ["-y", "@remotion/mcp"]

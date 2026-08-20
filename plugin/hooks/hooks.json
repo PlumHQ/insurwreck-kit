@@ -45,6 +45,15 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/block-zendesk-writes.sh"
           }
         ]
+      },
+      {
+        "matcher": "mcp__clevertap__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/block-clevertap-writes.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [
