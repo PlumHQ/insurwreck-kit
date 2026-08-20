@@ -133,3 +133,22 @@ commit;
 --    where tablename = 'credentials' and indexname like '%uidx';
 --
 --   select count(*) from public.idea_teams;   -- 0 until the refresh runs
+
+-- ---------------------------------------------------------------------------
+-- Applied separately as iw5_llm_usage_idea_id. Kept here so this file remains
+-- the whole story of the 5.0 re-key.
+--
+-- The Anthropic key is one key per idea, so the budget has to be one pool per
+-- idea. Summing spend by email would let each of three teammates spend the full
+-- allowance off a single shared key - three times the intended cost, and
+-- invisible until the invoice arrives.
+--
+-- participant_email stays, and stays meaningful as the CREDENTIAL HOLDER, but it
+-- is not the caller: a team shares one key and the proxy has no way to tell
+-- three teammates apart. Recording the holder and the idea is the truthful pair.
+alter table public.llm_usage
+  add column if not exists idea_id uuid;
+
+-- The budget check runs on every single model call, so it gets its own index.
+create index if not exists llm_usage_idea_id_idx
+  on public.llm_usage (idea_id) where idea_id is not null;
