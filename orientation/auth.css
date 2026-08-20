@@ -1,0 +1,203 @@
+/* Sign-in gate for internal pages. Three document states, set by auth.js:
+   .auth-pending (checking), .auth-blocked (show gate), .auth-ok (show page).
+
+   NOTE: this hides content, it does not protect it. The HTML is still served
+   to anyone who fetches the URL, so treat it as a "not for you" sign rather
+   than a security boundary. Genuinely restricting a page means checking the
+   token server-side before serving it. */
+
+.auth-gate {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  place-items: center;
+  padding: 24px;
+  background: #fff;
+}
+
+/* Nothing renders until the check resolves, so content never flashes. */
+.auth-pending body > *:not(.auth-gate):not(.svg-sprite),
+.auth-blocked body > *:not(.auth-gate):not(.svg-sprite) {
+  visibility: hidden;
+}
+
+/* Hidden content keeps its layout box, so lock scrolling too — otherwise the
+   gate sits over a page you can still scroll behind it. */
+.auth-pending,
+.auth-blocked,
+.auth-pending body,
+.auth-blocked body {
+  overflow: hidden;
+  max-height: 100vh;
+}
+
+.auth-blocked .auth-gate {
+  display: grid;
+}
+
+.auth-gate-card {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 460px);
+  padding: 44px 40px 40px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  text-align: center;
+}
+
+.auth-gate-logo {
+  width: 78px;
+  height: auto;
+  display: block;
+  margin: 0 auto 18px;
+}
+
+/* Event wordmark, centred under the logo. */
+.auth-gate-mark {
+  margin: 0 0 22px;
+  color: var(--plum);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.auth-gate-mark span {
+  color: var(--faint);
+}
+
+.auth-gate-card h1 {
+  margin: 0 0 14px;
+  color: var(--plum-ink);
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 750;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.auth-gate-card > p {
+  margin: 0 auto 26px;
+  max-width: 34ch;
+  color: var(--stone);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.auth-gate-card .button {
+  width: 100%;
+  justify-content: center;
+}
+
+.auth-gate-note:empty {
+  display: none;
+}
+
+.auth-gate .auth-gate-note {
+  margin: 18px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--signal);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+/* Signed-in identity in the nav */
+
+.auth-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  color: var(--plum-ink);
+  background: var(--plum-wash);
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.auth-who svg {
+  width: 15px;
+  height: 15px;
+}
+
+.auth-who button {
+  padding: 0 0 0 10px;
+  margin-left: 2px;
+  color: var(--stone);
+  background: none;
+  border: 0;
+  border-left: 1px solid rgb(122 49 93 / 25%);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10.5px;
+}
+
+.auth-who button:hover {
+  color: var(--plum);
+}
+
+@media (max-width: 540px) {
+  .auth-gate-card {
+    padding: 28px;
+  }
+
+  .auth-who [data-auth-email] {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------- generative field --- */
+
+/* ASCII interference field, ordered-dithered, in the theme's plum. Two layers
+   so density reads as tone without a span per character. Sits behind the card,
+   masked so the middle stays calm and the edges fade out. */
+
+.auth-art {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  /* Dither dots underneath the characters, denser than the site's base grid. */
+  background-image: radial-gradient(circle at 1px 1px, rgb(122 49 93 / 7%) 1px, transparent 0);
+  background-size: 6px 6px;
+  mask-image: radial-gradient(circle at 50% 50%, transparent 30%, rgb(0 0 0 / 70%) 44%,
+      #000 62%, rgb(0 0 0 / 40%) 90%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 30%, rgb(0 0 0 / 70%) 44%,
+      #000 62%, rgb(0 0 0 / 40%) 90%, transparent 100%);
+}
+
+.auth-art pre {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 15px;
+  letter-spacing: 0;
+  white-space: pre;
+  user-select: none;
+}
+
+.auth-art-faint {
+  color: rgb(122 49 93 / 20%);
+}
+
+.auth-art-strong {
+  color: rgb(122 49 93 / 42%);
+}
+
+@media (max-width: 640px) {
+  .auth-art {
+    mask-image: radial-gradient(circle at 50% 50%, transparent 34%, #000 68%,
+        rgb(0 0 0 / 40%) 94%, transparent 100%);
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 34%, #000 68%,
+        rgb(0 0 0 / 40%) 94%, transparent 100%);
+  }
+}

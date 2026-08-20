@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="auth-pending">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -18,9 +18,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="auth.css" />
     <link rel="stylesheet" href="deck.css" />
-    <script src="auth.js" defer></script>
     <script src="deck.js" defer></script>
   </head>
   <body>
@@ -59,7 +57,6 @@
           <a href="#examples">Examples</a>
           <a href="/landing">Event page</a>
         </nav>
-        <span data-auth-slot></span>
       </div>
       <div class="read-progress"><span data-progress></span></div>
     </header>
@@ -67,7 +64,7 @@
     <main id="top">
       <!-- hero ------------------------------------------------------------->
       <section class="wrap orient-hero">
-        <p class="eyebrow">Insurwreck 4.0 · Orientation · 31 July 2026</p>
+        <p class="eyebrow">Insurwreck 4.0 · Orientation</p>
         <h1>Let's get your<br />hackathon running.</h1>
         <p class="hero-promise">By the end of this page you have a working build environment.</p>
         <p class="hero-lede">
@@ -119,56 +116,153 @@
             <li class="step">
               <div class="step-head"><span class="step-num">01</span><h3>Paste one line</h3></div>
               <div class="step-body">
-                <p>
-                  Not yet installed? <a href="https://claude.ai/download" target="_blank">Download Claude Code</a>.
-                </p>
-                <p>
-                  On a Mac press <kbd>⌘</kbd><kbd>Space</kbd>, type <em>Terminal</em>, hit enter. Then
-                  paste this and press enter.
-                </p>
-                <div class="term">
-                  <div class="term-bar">
-                    <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-                    <span class="term-title">Terminal</span>
-                    <button class="term-copy" type="button" data-copy="cmd-install">
-                      <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
-                    </button>
+                <div class="setup-picker">
+                  <div class="idea-tabs" role="tablist" aria-label="Operating system" data-os-tabs>
+                    <button type="button" class="idea-tab active" data-os="mac" aria-pressed="true">macOS</button>
+                    <button type="button" class="idea-tab" data-os="win" aria-pressed="false">Windows</button>
                   </div>
-                  <pre><span class="t-prompt">$</span> <span id="cmd-install">curl -fsSL https://insurwreck-desk.preview.plumhq.com/go | bash</span>
+                  <div class="idea-tabs" role="tablist" aria-label="How you'll install" data-path-tabs>
+                    <button type="button" class="idea-tab active" data-path="terminal" aria-pressed="true">Terminal</button>
+                    <button type="button" class="idea-tab" data-path="app" aria-pressed="false">Claude app</button>
+                  </div>
+                </div>
+
+                <div class="setup-variant is-active" data-os="mac" data-path="terminal">
+                  <ol class="setup-steps">
+                    <li>Press <kbd>⌘</kbd><kbd>Space</kbd>, type <em>Terminal</em>, hit enter.</li>
+                    <li>
+                      Paste this and press enter.
+                      <div class="term">
+                        <div class="term-bar">
+                          <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                          <span class="term-title">Terminal</span>
+                          <button class="term-copy" type="button" data-copy="cmd-install">
+                            <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+                          </button>
+                        </div>
+                        <pre><span class="t-prompt">$</span> <span id="cmd-install">curl -fsSL https://insurwreck-desk.preview.plumhq.com/go | bash</span>
 
 <span class="t-ok">✓</span> Ghostty installed
 <span class="t-ok">✓</span> Claude Code installed
-<span class="t-ok">✓</span> node ready
+<span class="t-ok">✓</span> node and Salesforce CLI ready
 <span class="t-ok">✓</span> Insurwreck toolkit installed
 <span class="t-ok">✓</span> Project folder at <span class="t-dim">~/insurwreck</span>
 </pre>
+                      </div>
+                    </li>
+                  </ol>
+                  <p class="step-note">
+                    Three to five minutes, with a tick per step. If it asks for your Mac password,
+                    that's the installer needing permission to install software. Type it and carry on.
+                    Safe to run twice; it skips whatever is already done.
+                  </p>
                 </div>
-                <p>
-                  On a Windows laptop press the <kbd>Windows</kbd> button, type <em>Terminal</em>, hit
-                  enter. Then paste this and press enter.
-                </p>
-                <div class="term">
-                  <div class="term-bar">
-                    <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-                    <span class="term-title">Terminal</span>
-                    <button class="term-copy" type="button" data-copy="cmd-install-win">
-                      <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
-                    </button>
-                  </div>
-                  <pre><span class="t-prompt">$</span> <span id="cmd-install-win">irm https://insurwreck-desk.preview.plumhq.com/win | iex</span>
+
+                <div class="setup-variant" data-os="win" data-path="terminal">
+                  <ol class="setup-steps">
+                    <li>Press the <kbd>Windows</kbd> button, type <em>Terminal</em>, hit enter.</li>
+                    <li>
+                      Paste this and press enter.
+                      <div class="term">
+                        <div class="term-bar">
+                          <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                          <span class="term-title">Terminal</span>
+                          <button class="term-copy" type="button" data-copy="cmd-install-win">
+                            <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+                          </button>
+                        </div>
+                        <pre><span class="t-prompt">$</span> <span id="cmd-install-win">irm https://insurwreck-desk.preview.plumhq.com/win | iex</span>
 
 <span class="t-ok">✓</span> Claude Code installed
 <span class="t-ok">✓</span> Git installed
-<span class="t-ok">✓</span> node ready
+<span class="t-ok">✓</span> node and Salesforce CLI ready
 <span class="t-ok">✓</span> Insurwreck toolkit installed
 <span class="t-ok">✓</span> Project folder at <span class="t-dim">%USERPROFILE%\insurwreck</span>
 </pre>
+                      </div>
+                    </li>
+                  </ol>
+                  <p class="step-note">
+                    Eight to fifteen minutes, with a tick per step. If it asks for a Windows
+                    administrator password, that's the installer needing permission to install
+                    software. Type it and carry on. Safe to run twice; it skips whatever is already
+                    done.
+                  </p>
                 </div>
-                <p class="step-note">
-                  Three to five minutes, with a tick per step. If it asks for your Mac password, that's
-                  the installer needing permission to install software — type it and carry on. Safe to
-                  run twice; it skips whatever is already done.
-                </p>
+
+                <div class="setup-variant" data-os="mac" data-path="app">
+                  <ol class="setup-steps">
+                    <li>
+                      You already have the assistant, so this skips installing it. Download and sign in
+                      first at <a href="https://claude.com/download" target="_blank" rel="noopener"><code>claude.com/download</code></a>, with your Plum Google account.
+                    </li>
+                    <li>
+                      Open the <strong>Code</strong> tab, start a session in any folder, and set the mode
+                      selector next to the send button to <strong>Auto</strong>.
+                    </li>
+                    <li>
+                      Paste this into the prompt box. It is an instruction to Claude, not a terminal
+                      command.
+                      <div class="term term-chat">
+                        <div class="term-bar">
+                          <span class="term-title">Claude app · prompt box</span>
+                          <button class="term-copy" type="button" data-copy="cmd-install-gui">
+                            <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+                          </button>
+                        </div>
+                        <div class="chat-bubble">
+                          <span id="cmd-install-gui">Set me up for Insurwreck by running: curl -fsSL https://insurwreck-desk.preview.plumhq.com/gui | bash</span>
+                        </div>
+                      </div>
+                    </li>
+                  </ol>
+                  <p class="step-note">
+                    When it finishes, <strong>quit the app completely and open it again</strong> — it
+                    reads your setup only at launch. Then open the folder it named, say yes when it asks
+                    whether you trust the folder, set the mode selector back to <strong>Auto</strong>,
+                    and type <code>/insurwreck:start</code>. If that command isn't offered, click
+                    <strong>+</strong> next to the prompt box, choose <strong>Plugins</strong>, install
+                    <strong>insurwreck</strong>, and try again.
+                  </p>
+                </div>
+
+                <div class="setup-variant" data-os="win" data-path="app">
+                  <ol class="setup-steps">
+                    <li>
+                      You already have the assistant, so this skips installing it. Download and sign in
+                      first at <a href="https://claude.com/download" target="_blank" rel="noopener"><code>claude.com/download</code></a>, with your Plum Google account.
+                    </li>
+                    <li>
+                      Open the <strong>Code</strong> tab, start a session in any folder, and set the mode
+                      selector next to the send button to <strong>Auto</strong>.
+                    </li>
+                    <li>
+                      Paste this into the prompt box. It tells Claude to run the installer through
+                      PowerShell itself, since the app's own commands go through Git Bash, which can't run
+                      it directly.
+                      <div class="term term-chat">
+                        <div class="term-bar">
+                          <span class="term-title">Claude app · prompt box</span>
+                          <button class="term-copy" type="button" data-copy="cmd-install-wingui">
+                            <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+                          </button>
+                        </div>
+                        <div class="chat-bubble">
+                          <span id="cmd-install-wingui">Set me up for Insurwreck by running this in PowerShell: irm https://insurwreck-desk.preview.plumhq.com/win-gui | iex</span>
+                        </div>
+                      </div>
+                    </li>
+                  </ol>
+                  <p class="step-note">
+                    When it finishes, <strong>quit the app completely and open it again</strong> — it
+                    reads your setup only at launch. Then open the folder it named, say yes when it asks
+                    whether you trust the folder, set the mode selector back to <strong>Auto</strong>,
+                    and type <code>/insurwreck:start</code>. If that command isn't offered, click
+                    <strong>+</strong> next to the prompt box, choose <strong>Plugins</strong>, install
+                    <strong>insurwreck</strong>, and try again.
+                  </p>
+                </div>
+
                 <label class="gate"><input type="checkbox" value="install" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>My install finished and printed a command to run next</span></label>
               </div>
             </li>
@@ -177,31 +271,42 @@
             <li class="step">
               <div class="step-head"><span class="step-num">02</span><h3>Tell it who you are</h3></div>
               <div class="step-body">
-                <p>
-                  The installer ends by printing a line to paste, finishing in
-                  <code>claude --permission-mode auto</code>. Paste that. Nothing happens on its own
-                  after that — once the agent starts, remember to type <code>/insurwreck:start</code> in
-                  the same terminal:
-                </p>
-                <div class="term">
-                  <div class="term-bar">
-                    <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-                    <span class="term-title">Claude Code</span>
-                    <button class="term-copy" type="button" data-copy="cmd-start">
-                      <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
-                    </button>
-                  </div>
-                  <pre><span class="t-prompt">&gt;</span> <span id="cmd-start">/insurwreck:start</span>
-
-<span class="t-plum">?</span> Your name   <span class="t-dim">→</span>
+                <ol class="setup-steps">
+                  <li>
+                    Paste the line the installer printed, finishing in
+                    <code>claude --permission-mode auto</code>.
+                  </li>
+                  <li>
+                    Once the agent starts, type <code>/insurwreck:start</code> in the same terminal.
+                    <div class="term">
+                      <div class="term-bar">
+                        <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                        <span class="term-title">Claude Code</span>
+                        <button class="term-copy" type="button" data-copy="cmd-start">
+                          <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+                        </button>
+                      </div>
+                      <pre><span class="t-prompt">&gt;</span> <span id="cmd-start">/insurwreck:start</span></pre>
+                    </div>
+                  </li>
+                  <li>
+                    It answers back with two questions. Nothing to copy here — just type your answer and
+                    press enter, one at a time.
+                    <div class="term">
+                      <div class="term-bar">
+                        <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                        <span class="term-title">Claude Code</span>
+                      </div>
+                      <pre><span class="t-plum">?</span> Your name   <span class="t-dim">→</span>
 <span class="t-plum">?</span> Work email  <span class="t-dim">→ your @plumhq.com address</span>
-<span class="t-plum">?</span> Idea brief  <span class="t-dim">→ two sentences are enough</span>
 </pre>
-                </div>
-                <p>
-                  Then it emails you a six-digit code from
-                  <code>insurwreck@badge.plumhq.com</code>. Paste it back. Check spam the first time.
-                </p>
+                    </div>
+                  </li>
+                  <li>
+                    Then it emails you a six-digit code from
+                    <code>insurwreck@badge.plumhq.com</code>. Paste it back. Check spam the first time.
+                  </li>
+                </ol>
                 <p class="step-note">
                   No idea yet? Say <em>"still exploring"</em>. It's a valid answer and we'll help you
                   pick one later.
@@ -364,7 +469,7 @@
             <table class="matrix">
               <thead><tr><th scope="col">Connection</th><th scope="col">Ask for things like</th><th scope="col">What you can see</th></tr></thead>
               <tbody>
-                <tr><td>Plum data<small>insurwreck-data</small></td><td>"Show me claims by status" · "what's our NPS trend"</td><td>Ten read-only slices, de-identified</td></tr>
+                <tr><td>Plum data<small>insurwreck-data</small></td><td>"Show me claims by status" · "what's our NPS trend"</td><td>29 read-only slices, partly unmasked</td></tr>
                 <tr><td>Salesforce</td><td>"What's this account's history?"</td><td><strong>Your own</strong> login and permissions — run <code>/insurwreck:connect</code></td></tr>
                 <tr><td>Kula</td><td>"Show the current hiring pipeline"</td><td>Read-only, same view for everyone</td></tr>
                 <tr><td>n8n</td><td>"Run this every morning at 9"</td><td>Shared workspace</td></tr>
@@ -433,10 +538,10 @@
             <article class="panel">
               <h3>What you get</h3>
               <p>
-                Ten read-only slices: claims, covered lives, support tickets, NPS, policy schedules and
+                29 read-only slices: claims, covered lives, support tickets, NPS, policy schedules and
                 more. Ask for what you want — you don't need to know table names.
               </p>
-              <p class="panel-foot">De-identified: no member names, ages banded, free-text notes stripped out.</p>
+              <p class="panel-foot">Read-only, and real. Some slices are masked, others are not — expect real organisation names, dates of birth and raw claim comment text. Confidential either way: nothing into Slack, no raw rows on a slide. Aggregates and charts in your demo are fine.</p>
             </article>
             <article class="panel panel-signal">
               <h3>Read this once</h3>
@@ -508,7 +613,7 @@
     <footer class="site-footer">
       <div class="wrap footer-inner">
         <span>Plum · Insurwreck 4.0</span>
-        <span>Orientation · 31 July 2026</span>
+        <span>Orientation · Insurwreck 4.0</span>
       </div>
     </footer>
   </body>
