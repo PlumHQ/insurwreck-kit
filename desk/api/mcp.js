@@ -49,14 +49,22 @@ const envAllowlist = () =>
 async function allowlist() {
   const ids = new Set(envAllowlist());
   try {
-    const rows = await sb("data_slices?select=card_id&enabled=is.true");
+    // Read every row, not just the enabled ones. A union with the env seed made
+    // MCP_CARD_IDS unconditionally win, so an organizer pulling a slice back from
+    // the console got a success response and no change - for exactly the ten
+    // cards the seed names. If a slice turns out to expose something mid-event,
+    // "disable" has to actually close it.
+    const rows = await sb("data_slices?select=card_id,enabled");
     for (const row of rows) {
       const id = parseInt(row.card_id, 10);
-      if (Number.isInteger(id)) ids.add(id);
+      if (!Number.isInteger(id)) continue;
+      if (row.enabled) ids.add(id);
+      else ids.delete(id);
     }
   } catch (error) {
     // Table missing or unreachable: fall back to the env seed rather than
-    // cutting everyone off mid-build.
+    // cutting everyone off mid-build. Keeping the seed is why this is a
+    // subtraction rather than dropping the env var altogether.
     console.error("data_slices unavailable, using env allowlist:", error.message);
   }
   return ids;
