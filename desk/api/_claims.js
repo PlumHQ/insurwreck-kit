@@ -428,10 +428,21 @@ const ID_COL = /(^|[\s_-])(id|ids|uuid|guid|code|key|ref|number|no)$|_id$|^id$/i
 
 // A person-word anywhere beats an institution prefix, so policy_holder_name is a
 // person while policy_name is not.
+// Widened alongside the separator-optional institution match above. When in doubt
+// a word goes HERE rather than in INSTITUTION_COL: this list fails toward masking.
 const PERSON_COL =
-  /member|patient|employee|holder|nominee|dependen|beneficiar|customer|assignee|assigned|owner|manager|staff|agent|caller|guardian|spouse|father|mother|insured/i;
+  /member|patient|employee|holder|nominee|dependen|beneficiar|customer|assignee|assigned|owner|manager|staff|agent|caller|guardian|spouse|father|mother|insured|author|signer|signatory|uploader|uploaded|createdby|submitted|requester|approver|reviewer|person|individual|contact/i;
+// Matched against the column with separators stripped, because the slices carry
+// `orgname` and `providername` with no separator at all - requiring one masked a
+// real org as a person. The trailing group is therefore optional.
+//
+// Only genuine institutions belong here. Label words like status/type/source were
+// tried and reverted: they stopped `Status Name` being over-masked, but in exchange
+// let a person through on document_signer_name, report_author_name and the like.
+// Over-masking a status label costs a caption; under-masking costs a member. So
+// `Status Name` stays masked, which is the fail-closed branch working as intended.
 const INSTITUTION_COL =
-  /^(org|organisation|organization|brand|company|corporate|employer|insurer|insurance|provider|hospital|clinic|tpa|network|plan|benefit|policy|section|category|template|bank|branch|city|state|country)([\s_-]|$)/i;
+  /^(org|organisation|organization|brand|company|corporate|employer|insurer|insurance|provider|hospital|clinic|tpa|network|bank|branch|city|state|country|plan|benefit|policy|section|category|template)/i;
 
 // Above this many distinct people in one result we stop cross-column name removal
 // and say so in the payload, rather than compiling a regex big enough to time the
@@ -439,6 +450,10 @@ const INSTITUTION_COL =
 const NAME_SWEEP_CAP = 800;
 
 const colName = (c) => String(c && typeof c === "object" ? c.display_name || c.name : c || "");
+const norm = (name) => String(name).toLowerCase().replace(/[^a-z0-9]/g, "");
+// Slice names differ by source: data_slices says hospital_lookup, Metabase's card
+// is titled "hospital lookup". Compare on the flattened form so either matches.
+const sameDataset = (a, b) => norm(String(a || "")) === norm(String(b || ""));
 
 // The published slices mix conventions in the same result - claim_deductions alone
 // carries org, org_id, organisationId and organisationName - so every rule below
@@ -453,8 +468,18 @@ const splitCase = (name) => name.replace(/([a-z0-9])([A-Z])/g, "$1 $2");
 // pass  - identifier or institution: leave exactly as-is, no scrubbing
 // whole - a person's name, phone or email: replace the entire cell
 // text  - anything else: sweep emails, phones and known names out of free text
-function classify(column) {
+function classify(column, dataset) {
   const name = splitCase(colName(column));
+  // Same slice, same reason as the drop rule: on hospital_lookup a bare `phone` or
+  // `email` is the hospital's own switchboard. It also carries hospital_phone and
+  // hospital_email alongside, so both spellings appear in one result.
+  if (
+    PII_KEY.test(name) &&
+    !PERSON_COL.test(name) &&
+    [...DATASETS_WITH_BUSINESS_ADDRESSES].some((d) => sameDataset(d, dataset))
+  ) {
+    return "pass";
+  }
   // PII is tested BEFORE the identifier rule, and the order is the whole point.
   // `id`, `no` and `number` are identifier suffixes, so `emailId`, `phone_number`,
   // `contact_no` and `mobile_no` all satisfy ID_COL - and Plum's own API calls the
@@ -463,7 +488,7 @@ function classify(column) {
   // PII first costs nothing and closes that hole.
   if (PII_KEY.test(name)) {
     if (PERSON_COL.test(name)) return "whole";
-    if (INSTITUTION_COL.test(name)) return "pass";
+    if (INSTITUTION_COL.test(norm(name))) return "pass";
     // Unrecognised shape at a PII-looking column: mask it. Over-masking a hospital
     // switchboard costs a participant a phone number; under-masking costs a member
     // their privacy. Fail closed.
@@ -501,8 +526,6 @@ function sweeper(names) {
 // hospital_lookup's city and pincode would break searching for a hospital by PIN,
 // which is the entire point of that slice - so institution-scoped columns are kept,
 // and DATASETS_WITH_BUSINESS_ADDRESSES covers the ones whose columns are unscoped.
-const norm = (name) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
-
 // Two rules, because the institution carve-out is only sound for one of them.
 // A bank account number, IFSC, PAN or Aadhaar is a person's no matter what the
 // column is called - and `bank_account_no` begins with "bank", so a single rule
@@ -518,8 +541,8 @@ function dropColumn(column, dataset) {
   if (flat.includes("email")) return false;              // email_address is masked, not dropped
   if (DROP_ALWAYS.test(flat)) return true;
   if (!DROP_LOCATION.test(flat)) return false;
-  if (INSTITUTION_COL.test(name) && !PERSON_COL.test(name)) return false;
-  if (DATASETS_WITH_BUSINESS_ADDRESSES.has(String(dataset || "")) && !PERSON_COL.test(name)) return false;
+  if (INSTITUTION_COL.test(flat) && !PERSON_COL.test(name)) return false;
+  if ([...DATASETS_WITH_BUSINESS_ADDRESSES].some((d) => sameDataset(d, dataset)) && !PERSON_COL.test(name)) return false;
   return true;
 }
 
@@ -529,7 +552,7 @@ export function maskRows(columns, rows, options = {}) {
   const drop = all.map((c) => dropColumn(c, options.dataset));
   const keep = all.map((_, i) => i).filter((i) => !drop[i]);
   const cols = keep.map((i) => all[i]);
-  const plan = cols.map(classify);
+  const plan = cols.map((c) => classify(c, options.dataset));
   const body = (Array.isArray(rows) ? rows : []).map((row) =>
     keep.map((i) => (Array.isArray(row) ? row[i] : undefined))
   );
