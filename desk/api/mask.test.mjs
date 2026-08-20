@@ -148,9 +148,19 @@ ok(
 check("sectionTag is untouched", masked.documents[1].sectionTag, "bills");
 
 // A signed object-store URL is a download link to the member's actual discharge
-// summary, valid for 24 hours. Caught by the value, because the key is `url`.
-check("a signed document url is removed", masked.documents[0].url, "[signed document url removed]");
-check("including nested preview urls", masked.documents[0].previewUrl["64"], "[signed document url removed]");
+// summary, valid for 24 hours. It is returned whole and unscrubbed on purpose:
+// projects need the document, and the object path is inside what the signature
+// covers, so any edit to the string yields a link that looks right and 403s.
+check(
+  "a signed document url is returned intact",
+  masked.documents[0].url,
+  "https://storage.googleapis.com/claims/CL7005/d1/summary.pdf?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Expires=86400&X-Goog-Signature=deadbeef"
+);
+check(
+  "including nested preview urls",
+  masked.documents[0].previewUrl["64"],
+  "https://storage.googleapis.com/t/x.png?X-Goog-Signature=beef"
+);
 ok("but the document is still visibly there", masked.documents[0].documentId === undefined && masked.documents[0].sectionTag === "discharge");
 
 // Bank and government-ID fields, which no name pattern would have touched.
@@ -180,11 +190,25 @@ check("nulls survive", masked.closedAt, null);
 check("ids survive", masked.memberId, "mem_abc123");
 check("arrays stay arrays", masked.documents.length, 2);
 
-// Nothing real leaks anywhere in the tree.
+// Nothing real leaks anywhere in the tree. Signed URLs are deliberately NOT in this
+// list any more - they are returned whole so projects can open the documents - so
+// the check below asserts the exception is confined to them rather than absent.
 const dump = JSON.stringify(masked);
-for (const secret of ["Rajesh Kumar", "Priya", "9876543210", "rajesh@example.com", "ops@plumhq.com", "49.207.183.22", "ABCDE1234F", "50100234567890", "X-Goog-Signature", "Residency Road"]) {
+for (const secret of ["Rajesh Kumar", "Priya", "9876543210", "rajesh@example.com", "ops@plumhq.com", "49.207.183.22", "ABCDE1234F", "50100234567890", "Residency Road"]) {
   ok(`"${secret}" is absent from the output`, !dump.includes(secret));
 }
+// The signed-URL exception is exactly that: an exception, not a hole. A member name
+// sitting in a NON-signed url still gets scrubbed.
+ok(
+  "an unsigned url carrying a name is still scrubbed",
+  !maskClaim({ memberName: "Rajesh Kumar", link: "https://x.test/Rajesh_Kumar/report.pdf" })
+    .link.includes("Rajesh")
+);
+ok(
+  "a signed url carrying a name is left whole, so it still verifies",
+  maskClaim({ memberName: "Rajesh Kumar", url: "https://x.test/Rajesh_Kumar/r.pdf?X-Goog-Signature=ab" })
+    .url === "https://x.test/Rajesh_Kumar/r.pdf?X-Goog-Signature=ab"
+);
 
 // The one project that may see email addresses sees ONLY email addresses.
 const unmasked = maskClaim(CLAIM, { unmaskEmail: true });
