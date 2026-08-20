@@ -120,6 +120,23 @@ honestly what it will cost them in time.
   none is being provisioned. Build the chatbot and show the conversation flow in a chat UI
   they own. That demos the flow honestly and is strictly less work than the integration.
 
+### Embeddings (only some ideas)
+
+Anthropic serves no embedding model, so vectors come from OpenAI through the same
+desk gateway. Check `services.openai` in `~/.insurwreck/credentials.json`:
+
+- **Present** - use their existing `INSURWRECK_TOKEN` as the API key with
+  `services.openai.api_base`. There is no OpenAI key to hold and none to ask for.
+  `pgvector` is already enabled in their Supabase project, so the vectors have
+  somewhere to go.
+- **Absent** - embeddings aren't enabled for this idea. Don't route around it:
+  the gateway refuses on the server side. If their idea genuinely needs semantic
+  search, raise it with an organizer rather than reaching for another provider.
+
+Only `/v1/embeddings` is proxied. Text generation goes to the Anthropic endpoint,
+which is what their budget is priced for - a chat call to the OpenAI path is
+refused, by design.
+
 ## After any install
 
 MCP servers load at startup, so tell them to restart Claude Code once. Then confirm it
