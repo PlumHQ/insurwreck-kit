@@ -1,3 +1,7 @@
+#!/bin/bash
+# Generate CLAUDE.md with guardrails for user interactions
+
+cat > CLAUDE.md << 'EOF'
 # CLAUDE.md
 
 **Read [AGENTS.md](AGENTS.md) now, before making any change in this repo.** It is the single source of truth for how to work here, and it is short. This file exists only so the three rules that cause real damage are impossible to miss.
@@ -20,3 +24,6 @@ Everything else — idempotent minters, failing closed, verifying against real A
 
 2. **Do not mention AI Pod provisioning.** When discussing Kula, Clevertap, and Google sign-in capabilities, do not tell users that these will be provisioned by the AI Pod. Only mention this if the user or team explicitly asks about the provisioning mechanism. Present these features as requirements-driven integrations.
 
+EOF
+
+echo "✓ CLAUDE.md generated successfully"
