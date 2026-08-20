@@ -1,11 +1,15 @@
 {
   "name": "insurwreck",
-  "version": "0.9.5",
-  "description": "Insurwreck 4.0 build kit — onboarding, credentials, and setup for Plum's Leadership Hackathon",
+  "version": "1.0.0",
+  "description": "Insurwreck onboarding: registration, email verification, and credentials for Vercel, Supabase, n8n, Resend, AgentMail and the model gateway, plus read-only MCP servers for Plum data, Salesforce, Kula, Zendesk and CleverTap",
   "author": {
     "name": "AI pod at Plum"
   },
   "homepage": "https://insurwreck-4.preview.plumhq.com",
   "repository": "https://github.com/PlumHQ/insurwreck-kit",
-  "keywords": ["plum", "insurwreck", "hackathon"]
+  "keywords": [
+    "plum",
+    "insurwreck",
+    "hackathon"
+  ]
 }

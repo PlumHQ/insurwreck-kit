@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Insurwreck 4.0 — render the participant's setup from their stored bundle.
+# Insurwreck — render the participant's setup from their stored bundle.
 #
 # Exists so the status table is identical every time instead of being
 # re-improvised by the agent on each run. Prints plain text when stdout is not

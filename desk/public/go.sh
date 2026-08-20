@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Insurwreck 4.0 — one-paste setup.
+# Insurwreck — one-paste setup.
 #
 #   curl -fsSL https://insurwreck-desk.preview.plumhq.com/go | bash
 #
@@ -134,7 +134,7 @@ cat <<'BANNER'
   ██║██║ ╚████║███████║╚██████╔╝██║  ██║╚███╔███╔╝██║  ██║███████╗╚██████╗██║  ██╗
   ╚═╝╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝  ╚═╝
 
-  4.0 · Leadership Hackathon · Bring one real problem. Leave with a prototype.
+  Insurwreck · Bring one real problem. Leave with a prototype.
 
 BANNER
 printf "  ${DIM}%s · %s · setting up %d things${R}\n" "$PLATFORM" "$ARCH" "$TOTAL_STEPS"
@@ -644,9 +644,11 @@ if [ ! -f "$PROJECT_DIR/CLAUDE.md" ]; then
   cat > "$PROJECT_DIR/CLAUDE.md" <<'CM'
 # How to work on this project
 
-This is a one-day hackathon build. The person you are working with is a Plum
-leader who brought a real problem. They are not a developer, and the value of
-the day is their judgement about the problem - not how fast you can produce code.
+This is a one-day hackathon build. The person you are working with brought a real
+problem from their own work at Plum. Do not assume how technical they are - some
+are engineers, some have never opened a terminal, and you will find out by
+talking to them rather than by guessing. Either way the value of the day is their
+judgement about the problem, not how fast you can produce code.
 
 ## Do not build the whole thing in one go
 

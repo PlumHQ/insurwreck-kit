@@ -1,8 +1,14 @@
 {
   "name": "insurwreck-organizer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Organizer tools for Insurwreck 4.0: publish new data slices to participants without a deploy",
-  "author": { "name": "Plum PS team" },
+  "author": {
+    "name": "Plum PS team"
+  },
   "repository": "https://github.com/PlumHQ/insurwreck-kit",
-  "keywords": ["plum", "insurwreck", "organizer"]
+  "keywords": [
+    "plum",
+    "insurwreck",
+    "organizer"
+  ]
 }
