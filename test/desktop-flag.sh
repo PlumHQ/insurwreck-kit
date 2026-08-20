@@ -33,7 +33,8 @@ import json,sys
 d = json.load(sys.stdin)
 assert "insurwreck-kit" in d["extraKnownMarketplaces"], "marketplace name must match marketplace.json"
 assert d["extraKnownMarketplaces"]["insurwreck-kit"]["source"]["repo"] == "PlumHQ/insurwreck-kit"
-assert d["enabledPlugins"] == ["insurwreck@insurwreck-kit"], d["enabledPlugins"]
+assert isinstance(d["enabledPlugins"], dict), "enabledPlugins must be a RECORD, not an array - Claude Code rejects the array form and then skips the whole file"
+assert d["enabledPlugins"] == {"insurwreck@insurwreck-kit": True}, d["enabledPlugins"]
 ' || fail "settings.json is not valid or names the plugin wrongly"
 
 # Desktop mode must not install Claude Code or Ghostty - the participant is
@@ -88,7 +89,8 @@ import json,sys
 d = json.load(sys.stdin)
 assert "insurwreck-kit" in d["extraKnownMarketplaces"]
 assert d["extraKnownMarketplaces"]["insurwreck-kit"]["source"]["repo"] == "PlumHQ/insurwreck-kit"
-assert d["enabledPlugins"] == ["insurwreck@insurwreck-kit"], d["enabledPlugins"]
+assert isinstance(d["enabledPlugins"], dict), "enabledPlugins must be a RECORD, not an array - Claude Code rejects the array form and then skips the whole file"
+assert d["enabledPlugins"] == {"insurwreck@insurwreck-kit": True}, d["enabledPlugins"]
 ' || fail "go.ps1 settings.json is invalid or disagrees with go.sh"
 
 echo "ok - macOS and Windows: desktop switch, no reinstall, folder config, one handoff"
