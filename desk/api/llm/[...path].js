@@ -169,7 +169,15 @@ export default async function handler(req, res) {
 
   // Rebuild the upstream path from the catch-all segments, so /api/llm/v1/messages
   // forwards to https://api.anthropic.com/v1/messages.
-  const segments = [].concat(req.query?.path || []);
+  // Vercel hands this catch-all its path as a SINGLE STRING with slashes in it,
+  // not as an array of segments - so [].concat() yields ["openai/v1/embeddings"]
+  // and indexing segment 0 never matches "openai". Anthropic then 404s the
+  // request with an empty body, which reads like a routing failure rather than a
+  // parsing one. Normalise both shapes before looking at the first segment.
+  const segments = []
+    .concat(req.query?.path || [])
+    .flatMap((part) => String(part).split("/"))
+    .filter(Boolean);
   const search = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
 
   // /api/llm/...        -> Anthropic, unchanged.

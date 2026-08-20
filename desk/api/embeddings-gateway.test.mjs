@@ -44,4 +44,18 @@ assert.match(src, /upstreamSegments\.join\("\/"\) !== "v1\/embeddings"/,
   "the openai branch must whitelist v1/embeddings only");
 assert.match(src, /entitledToOpenAI/, "the openai branch must check entitlement");
 
-console.log("ok - embeddings pricing, metering fields, path whitelist and entitlement all present");
+// 4 - the catch-all path arrives as a single slash-joined string, not an array.
+// Indexing segment 0 without splitting sent every 3-segment request to Anthropic,
+// which 404s with an empty body - it reads like a routing bug, not a parsing one.
+assert.match(src, /\.flatMap\(\(part\) => String\(part\)\.split\("\/"\)\)/,
+  "path segments must be split before segments[0] is compared to 'openai'");
+
+const normalise = (path) =>
+  [].concat(path || []).flatMap((p) => String(p).split("/")).filter(Boolean);
+for (const shape of ["openai/v1/embeddings", ["openai", "v1", "embeddings"]]) {
+  assert.deepEqual(normalise(shape), ["openai", "v1", "embeddings"],
+    `both catch-all shapes must normalise the same: ${JSON.stringify(shape)}`);
+}
+assert.deepEqual(normalise("v1/messages"), ["v1", "messages"], "anthropic path must be unaffected");
+
+console.log("ok - pricing, metering fields, path whitelist, entitlement and segment parsing");
