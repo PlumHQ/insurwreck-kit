@@ -3,7 +3,7 @@
 #   irm https://insurwreck-desk.preview.plumhq.com/win | iex
 #
 # Native Windows, normal terminal - no WSL, no reboot. Installs Claude Code, Git
-# for Windows, Node 22+, the Salesforce CLI, the insurwreck plugin, and a project
+# for Windows, Node 22+, the insurwreck plugin, and a project
 # folder, then prints the line that starts you building.
 #
 # Git for Windows is NOT optional here even though Claude Code treats it as such.
@@ -331,10 +331,11 @@ if ($bash) {
 }
 
 # ------------------------------------------------------------------ 4 node ---
-# @kula-ai/mcp-server declares node >=22 and @salesforce/mcp >=20. An older node
+# @kula-ai/mcp-server declares node >=22, the highest floor among the npx-
+# launched MCP servers, and none of them are pre-installed here now. An older node
 # leaves those servers dead with no obvious cause, so check the version.
 
-Write-Step "Setting up the Salesforce and Kula tools"
+Write-Step "Setting up node and the Zendesk tool"
 
 function Get-NodeMajor {
   if (-not (Test-Have 'node')) { return 0 }
@@ -347,7 +348,7 @@ $nodeMajor = Get-NodeMajor
 if ($nodeMajor -ge $MinNode) {
   Write-Ok "node $(node --version)"
 } else {
-  if ($nodeMajor -gt 0) { Write-Info "node v$nodeMajor is too old for the Salesforce and Kula servers; installing $MinNode+..." }
+  if ($nodeMajor -gt 0) { Write-Info "node v$nodeMajor is too old for the MCP servers; installing $MinNode+..." }
   else { Write-Info "installing node..." }
   Install-WinGetPackage -Id 'OpenJS.NodeJS.LTS' -Label 'Node (~30 MB)' -Expect '1-2 minutes'
   $nodeMajor = Get-NodeMajor
@@ -357,7 +358,7 @@ if ($nodeMajor -ge $MinNode) {
     $nodeMajor = Get-NodeMajor
   }
   if ($nodeMajor -ge $MinNode) { Write-Ok "node $(node --version)" }
-  else { Write-Warn "node $MinNode+ is missing - the salesforce and kula servers will not start" }
+  else { Write-Warn "node $MinNode+ is missing - the npx MCP servers will not start" }
 }
 
 if (Test-Have 'npm') {
@@ -369,28 +370,18 @@ if (Test-Have 'npm') {
   # the participant never reaches the plugin, the project folder, or the CLAUDE.md
   # - which is exactly what happened: an ExecutionPolicy error at step 4 meant
   # steps 5 to 7 never executed. The plugin matters far more than the CLI.
-  if (-not $npm) {
-    Write-Warn "couldn't find a usable npm - skipping the Salesforce CLI"
-  } elseif (Test-Have 'sf') {
-    Write-Skip "salesforce cli already installed"
-  } else {
-    Write-Info "Salesforce CLI - the biggest download here, usually 3-6 minutes."
-    Write-Info "npm prints little while it works; that is normal, not a hang."
-    $sfStart = Get-Date
-    try {
-      & $npm install -g @salesforce/cli --loglevel http
-      Write-Info "Salesforce CLI finished in $([int]((Get-Date) - $sfStart).TotalSeconds)s"
-      Sync-Path
-    } catch {
-      Write-Warn "salesforce cli install failed: $($_.Exception.Message)"
-    }
-    if (Test-Have 'sf') { Write-Ok "salesforce cli installed" }
-    else { Write-Warn "salesforce cli is missing - Salesforce tools will not work until it is installed" }
-  }
+  # The Salesforce CLI is no longer installed here, and on Windows it was by far
+  # the most expensive thing in the whole script - this file used to warn the
+  # participant it was "the biggest download here, usually 3-6 minutes". Paid by
+  # every machine, to serve the minority who actually complete a Salesforce
+  # browser login. Anyone who needs it installs it when /insurwreck:connect walks
+  # them through the login.
 
   # Populate the npx cache so the first MCP launch isn't racing its own download.
   if ($npx) {
-    $pkgs = @('@salesforce/mcp', '@kula-ai/mcp-server', 'zd-mcp-server', 'clevertap-mcp@1.0.0')
+    # Kula and CleverTap are gated to ~15 and ~11 people; prewarming them on
+    # every machine cost everyone else the download. They fetch on first use.
+    $pkgs = @('zd-mcp-server')
     for ($i = 0; $i -lt $pkgs.Count; $i++) {
       Write-Info "caching $($pkgs[$i]) ($($i + 1) of $($pkgs.Count)) - about a minute each"
       try {
@@ -402,7 +393,7 @@ if (Test-Have 'npm') {
     }
   }
 } else {
-  Write-Warn "no npm, so the salesforce and kula servers will not start"
+  Write-Warn "no npm, so the npx MCP servers will not start"
 }
 
 # ---------------------------------------------------------------- 5 plugin ---
