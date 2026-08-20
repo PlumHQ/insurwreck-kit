@@ -1,4 +1,4 @@
-# Insurwreck 4.0 - one-paste setup for Windows.
+# Insurwreck - one-paste setup for Windows.
 #
 #   irm https://insurwreck-desk.preview.plumhq.com/win | iex
 #
@@ -210,7 +210,7 @@ function Find-GitBash {
 Write-Host @"
 
   INSURWRECK 4.0
-  Leadership Hackathon | 31 July 2026 | Plum
+  Insurwreck | Plum
 
   Bring one real problem. Leave with a working prototype.
 
@@ -532,9 +532,11 @@ if (-not (Test-Path $claudeMd)) {
   @'
 # How to work on this project
 
-This is a one-day hackathon build. The person you are working with is a Plum
-leader who brought a real problem. They are not a developer, and the value of
-the day is their judgement about the problem - not how fast you can produce code.
+This is a one-day hackathon build. The person you are working with brought a real
+problem from their own work at Plum. Do not assume how technical they are - some
+are engineers, some have never opened a terminal, and you will find out by
+talking to them rather than by guessing. Either way the value of the day is their
+judgement about the problem, not how fast you can produce code.
 
 ## Do not build the whole thing in one go
 

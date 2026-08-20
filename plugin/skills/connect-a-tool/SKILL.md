@@ -33,7 +33,7 @@ Kula has no OAuth and no per-user keys, so don't send anyone to https://develope
 expecting to self-serve - the key is organizer-issued and already in their bundle. Three
 things to know:
 - **Kula is read-only and enforced that way.** The event key is Kula's "full access"
-  Application API type and it's shared by all ~25 participants, so a `block-kula-writes.sh`
+  Application API type and it's shared by every participant, so a `block-kula-writes.sh`
   hook denies every non-read tool (`create_candidate`, `update_application_stage`, the
   webhook tools, and anything a future release adds). There is no override. If a project
   needs to persist a change, it writes to its own Supabase and demos from there - don't go

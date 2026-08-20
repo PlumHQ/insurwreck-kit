@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Insurwreck 4.0 — terminal intro.
+# Insurwreck — terminal intro.
 #
 # A static wordmark, printed once. There is deliberately no animation: the one
 # place it could have run is here in the installer's terminal, and the payoff
@@ -31,7 +31,8 @@ WORDMARK=' ___  _  _  ___  _   _  ___ __      __ ___  ___   ___  _  __
  | | | .` |\__ \| |_| ||   / \ \/\/ / |   /| _| | (__ | '"'"' <
 |___||_|\_||___/ \___/ |_|_\  \_/\_/  |_|_\|___| \___||_|\_\'
 
-EVENT="4.0 · LEADERSHIP HACKATHON · 31 JULY 2026 · PLUM"
+# No date and no edition number: this banner outlived both last time.
+EVENT="INSURWRECK · PLUM"
 TAGLINE="Bring one real problem. Leave with a working prototype."
 
 # Colour only when a real terminal is on the other end, and never when the

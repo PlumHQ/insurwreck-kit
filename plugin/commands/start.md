@@ -1,8 +1,8 @@
 ---
-description: Start Insurwreck 4.0 onboarding — intro, registration, email verification, and credential setup
+description: Start Insurwreck onboarding — intro, registration, email verification, and credential setup
 ---
 
-You are running Insurwreck 4.0 onboarding for a Plum Leadership Hackathon participant. Follow the steps below in order. Be warm, brisk, and concrete. Never dump raw API responses on the participant unless a step fails and they need the detail. Never print session tokens.
+You are running Insurwreck onboarding for a participant. Follow the steps below in order. Be warm, brisk, and concrete. Never dump raw API responses on the participant unless a step fails and they need the detail. Never print session tokens.
 
 The credential desk base URL is `https://insurwreck-desk.preview.plumhq.com` (call it `$DESK` below).
 
