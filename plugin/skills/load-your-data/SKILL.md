@@ -11,6 +11,7 @@ Figure out which of three shapes this is, then act. Don't ask more than you need
 2. Read a sample of it (first ~20 rows) to infer columns and types — don't assume, look.
 3. Create a table in their own Supabase project that matches, and seed it:
    - Get connection details from `~/.insurwreck/credentials.json` → `services.supabase` (`url`, `service_role_key`).
+   - `pgvector` is already enabled on that project, so an `embedding vector(1536)` column works without any setup. Vectors come from `services.openai` if their idea has it - see `connect-a-tool`.
    - Write a small one-off script (Node, using `@supabase/supabase-js` or plain `fetch` to PostgREST) that creates the table if missing and inserts the parsed rows in batches. Keep it disposable — this is a hackathon seed script, not production migration tooling.
    - Run it, then confirm row count matches the source file.
 4. Tell them the table name and that it's now queryable from their app.
