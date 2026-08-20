@@ -629,7 +629,7 @@ elif [ ! -f "$PROJECT_DIR/.claude/settings.json" ]; then
       "source": { "source": "github", "repo": "$KIT_REPO" }
     }
   },
-  "enabledPlugins": ["insurwreck@insurwreck-kit"]
+  "enabledPlugins": { "insurwreck@insurwreck-kit": true }
 }
 SET
   ok "pointed this folder at the Insurwreck plugin"

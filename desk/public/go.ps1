@@ -518,7 +518,7 @@ if ($KitRepo -notmatch '^[^/\\:]+/[^/\\:]+$') {
       "source": { "source": "github", "repo": "$KitRepo" }
     }
   },
-  "enabledPlugins": ["insurwreck@insurwreck-kit"]
+  "enabledPlugins": { "insurwreck@insurwreck-kit": true }
 }
 "@ | ForEach-Object { Write-Utf8NoBom -Path $settings -Text $_ }
   Write-Ok "pointed this folder at the Insurwreck plugin"
