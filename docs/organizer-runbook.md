@@ -1,4 +1,4 @@
-# Organizer runbook — Insurwreck
+# Organizer runbook — Insurwreck 4.0
 
 Base URL for everything below: `$DESK` = `https://insurwreck-desk.preview.plumhq.com`. You'll need `ADMIN_KEY` (from the desk's Vercel project env vars) — export it once:
 

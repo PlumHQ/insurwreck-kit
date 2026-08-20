@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Insurwreck — one-paste setup.
+# Insurwreck 4.0 — one-paste setup.
 #
 #   curl -fsSL https://insurwreck-desk.preview.plumhq.com/go | bash
 #
@@ -134,7 +134,7 @@ cat <<'BANNER'
   ██║██║ ╚████║███████║╚██████╔╝██║  ██║╚███╔███╔╝██║  ██║███████╗╚██████╗██║  ██╗
   ╚═╝╚═╝  ╚═══╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝  ╚═╝
 
-  Insurwreck · Bring one real problem. Leave with a prototype.
+  Insurwreck 4.0 · Bring one real problem. Leave with a prototype.
 
 BANNER
 printf "  ${DIM}%s · %s · setting up %d things${R}\n" "$PLATFORM" "$ARCH" "$TOTAL_STEPS"

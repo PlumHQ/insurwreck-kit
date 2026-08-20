@@ -1,4 +1,4 @@
-# Insurwreck — one-page cheatsheet
+# Insurwreck 4.0 — one-page cheatsheet
 
 You don't need to know git, slash commands, or env vars. Just talk to Claude Code. Here's what happens when you say things.
 

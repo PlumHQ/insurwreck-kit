@@ -5,14 +5,14 @@
     "url": "https://github.com/PlumHQ"
   },
   "metadata": {
-    "description": "Insurwreck build kit - onboarding, credentials and read-only Plum data for participants",
+    "description": "Insurwreck 4.0 build kit - onboarding, credentials and read-only Plum data for participants",
     "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "insurwreck",
       "source": "./plugin",
-      "description": "Insurwreck onboarding: terminal or Claude app setup, registration, email verification, and credentials for Vercel, Supabase, n8n, Resend and AgentMail, plus read-only MCP servers for Plum data, Salesforce, Kula, Zendesk and CleverTap."
+      "description": "Insurwreck 4.0 onboarding: terminal or Claude app setup, registration, email verification, and credentials for Vercel, Supabase, n8n, Resend and AgentMail, plus read-only MCP servers for Plum data, Salesforce, Kula, Zendesk and CleverTap."
     },
     {
       "name": "insurwreck-organizer",

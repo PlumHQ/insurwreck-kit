@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <div className="space-y-12">
       <section className="space-y-3">
-        <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">Insurwreck starter</p>
+        <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">Insurwreck 4.0 starter</p>
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
           {name ? `Welcome, ${name}.` : "Two working demos, one app."}
         </h1>
