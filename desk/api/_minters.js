@@ -74,6 +74,37 @@ export function slugForIdea(ideaId, title = "") {
   return words ? `iw-${words}-${suffix}` : `iw-idea-${suffix}`;
 }
 
+// Shared by every per-email gated service. Two of them now use the identical
+// rule, and a copied-and-edited second copy is how one of them quietly stops
+// matching the other - a gate that silently allows is indistinguishable from a
+// gate that works.
+//
+// DEFAULT DENY. An unset variable allows nobody, which is the only safe reading:
+// these variables gate live production credentials, and the alternative failure
+// is a forgotten config handing them to 136 people. Comma-separated, same shape
+// as ALLOWED_EMAILS in _lib.js.
+//
+// It gates DELIVERY, not the API. Neither Kula nor CleverTap offers a per-user
+// credential to scope to, which is exactly why the gate has to live on our side.
+// A blocked participant gets no entry in their bundle, so iw-connect writes no
+// environment variables for it and the MCP server never starts on their machine.
+// Nothing to block, nothing to explain.
+//
+// It does NOT revoke. Removing an email stops future mints; anyone already
+// provisioned keeps what is in their ~/.claude/settings.json until their
+// credentials row is revoked AND those keys are cleared from their machine.
+export function emailAllowedFor(envName, email) {
+  const allowed = (process.env[envName] || "")
+    .toLowerCase()
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  return allowed.includes(String(email || "").trim().toLowerCase());
+}
+
+export const clevertapAllowed = (email) => emailAllowedFor("CLEVERTAP_EMAILS", email);
+export const kulaAllowed = (email) => emailAllowedFor("KULA_EMAILS", email);
+
 function finalize(payload, pendingParts) {
   if (pendingParts.length) {
     payload.incomplete = true;
@@ -583,8 +614,9 @@ export async function mintN8n(email, existing = {}, context = {}) {
 
 // Kula authenticates the MCP server with an API key and nothing else - there is
 // no OAuth flow and no email/password login, so unlike Keka this CANNOT be
-// scoped to the individual participant. One organizer-generated key is handed to
-// everyone, exactly like n8n.
+// scoped to the individual participant. One organizer-generated key, and since
+// it cannot be narrowed at the API it is narrowed at delivery instead: KULA_EMAILS
+// is an explicit allowlist and, like CLEVERTAP_EMAILS, it is default deny.
 //
 // Read this before switching it on: Kula's own docs classify the Application API
 // key as "Full access", and the MCP server exposes 11 write tools including
@@ -593,6 +625,12 @@ export async function mintN8n(email, existing = {}, context = {}) {
 // and move real applications between stages. Point KULA_API_KEY at a sandbox or
 // demo workspace, not production, unless an organizer has decided otherwise.
 export async function mintKula(email, existing = {}) {
+  if (!kulaAllowed(email)) {
+    // Expected for most participants, not a misconfiguration. provision.js logs
+    // every mint failure and leaves the service pending.
+    throw new Error(`kula not enabled for ${email} (not in KULA_EMAILS)`);
+  }
+
   const token = process.env.KULA_API_KEY;
   if (!token) throw new Error("KULA_API_KEY not set");
 
@@ -673,14 +711,7 @@ export async function mintZendesk(email, existing = {}) {
 // It does NOT revoke. Removing someone stops future mints; they keep whatever is
 // already in their ~/.claude/settings.json. Taking it back means revoking their
 // credentials row AND clearing those three keys on their machine.
-export function clevertapAllowed(email) {
-  const allowed = (process.env.CLEVERTAP_EMAILS || "")
-    .toLowerCase()
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-  return allowed.includes(String(email || "").trim().toLowerCase());
-}
+
 
 export async function mintClevertap(email, existing = {}) {
   if (!clevertapAllowed(email)) {

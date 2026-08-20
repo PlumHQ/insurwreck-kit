@@ -38,6 +38,7 @@ async function health() {
     ["zendesk creds configured", "ZENDESK_TOKEN"],
     ["clevertap creds configured", "CLEVERTAP_PASSCODE"],
     ["clevertap email allowlist set", "CLEVERTAP_EMAILS"],
+    ["kula email allowlist set", "KULA_EMAILS"],
     ["supabase mgmt token configured", "SUPABASE_MGMT_TOKEN"],
   ]) {
     add(name, env(key), env(key) ? "" : "missing - that service will stay pending");

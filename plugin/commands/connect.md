@@ -59,7 +59,13 @@ restart. If they ask, tell them two things:
 - **What they read is real.** Real candidates, real applications, real people. Not a
   de-identified snapshot like the warehouse slices. Nothing goes on a slide or into Slack.
 
-If the `kula` server is failing, it is almost always one of these, in order of likelihood:
+**Check first whether they are meant to have it at all.** Kula is now restricted to
+an explicit email allowlist (`KULA_EMAILS` on the desk), exactly like CleverTap, so
+for most participants `kula` staying `pending` is the correct outcome rather than a
+fault. Do not send them chasing a fix — tell them Kula is limited to a named group
+for this event, and point them at the warehouse slices, which everyone has.
+
+If they ARE on the allowlist and the `kula` server is still failing, it is almost always one of these, in order of likelihood:
 they haven't restarted since `/insurwreck:start`; `kula` was still `pending` in their bundle
 when it ran, so re-run `/insurwreck:status` to repair it and restart again; or an organizer
 hasn't set `KULA_API_KEY` on the desk yet. Check `~/.claude/settings.json` for the key
