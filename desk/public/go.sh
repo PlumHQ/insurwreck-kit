@@ -5,7 +5,7 @@
 #   curl -fsSL https://insurwreck-desk.preview.plumhq.com/go | bash
 #
 # Installs Ghostty, installs Claude Code, repairs PATH, installs Node 22+ and the
-# Salesforce CLI the bundled MCP servers need, installs the insurwreck plugin,
+# node the bundled MCP servers need, installs the insurwreck plugin,
 # scaffolds a project folder, and launches you into it.
 #
 # Supports macOS and Linux. Native Windows shells (Git Bash, MSYS, Cygwin) are
@@ -378,7 +378,7 @@ fi
 # Nothing here is fatal. Claude Code, the desk, and the Plum data server all
 # work without Salesforce or Kula, so a failure warns and moves on.
 
-step "Setting up the Salesforce and Kula tools"
+step "Setting up node and the Zendesk tool"
 
 # Official prebuilt tarball into ~/.local — same place claude lives, already on
 # PATH from step 4, and needs no sudo or package manager.
@@ -405,8 +405,10 @@ install_node_tarball() {
   have node
 }
 
-# @kula-ai/mcp-server declares node >=22 and @salesforce/mcp declares >=20, so
-# an older node leaves those two servers dead with no obvious cause. Ubuntu
+# The npx-launched MCP servers still need a current node even though none of
+# them are pre-installed here any more: @kula-ai/mcp-server declares >=22, which
+# is the highest floor and therefore the one that matters. An older node leaves
+# those servers dead with no obvious cause. Ubuntu
 # 24.04 - which is what WSL2 installs by default - ships node 18.19.1 from apt,
 # already end-of-life upstream. So the version is checked, not just the presence,
 # and the official tarball is the only install path: it is current, needs no
@@ -421,7 +423,7 @@ if have node && have npx && [ "$(node_major || echo 0)" -ge "$MIN_NODE" ] 2>/dev
   ok "node $(node --version 2>/dev/null)"
 else
   if have node; then
-    info "node $(node --version 2>/dev/null) is too old for the Salesforce and Kula servers; installing $MIN_NODE+…"
+    info "node $(node --version 2>/dev/null) is too old for the MCP servers; installing $MIN_NODE+…"
   else
     info "installing node…"
   fi
@@ -434,19 +436,26 @@ else
 fi
 
 if have npm; then
-  # `sf` is how the Salesforce MCP server gets a session: it reads orgs the CLI
-  # already authorised, and never takes a password itself.
-  if have sf; then
-    skip "salesforce cli already installed"
-  elif npm i -g @salesforce/cli >/dev/null 2>&1; then
-    ok "salesforce cli installed"
-  else
-    warn "salesforce cli didn't install — run: npm i -g @salesforce/cli"
-  fi
+  # Salesforce, Kula and CleverTap are deliberately NOT installed here any more.
+  #
+  # The Salesforce CLI is a large global npm install and the three MCP packages
+  # are tens of megabytes between them, paid by every one of ~137 machines on the
+  # morning - while Kula and CleverTap are now gated to an explicit email
+  # allowlist of roughly 15 and 11 people, and Salesforce needs a per-person
+  # browser login that most participants never do. Prewarming all of it for
+  # everyone bought a faster first call for a small minority and cost everyone
+  # else several minutes of download on the worst possible day.
+  #
+  # Their servers still work: npx fetches on first use. That first call is slower
+  # and, on a cold cache inside the MCP startup window, can report failed and
+  # succeed on the retry - which is the tradeoff being accepted here.
+  #
+  # `sf` is how the Salesforce MCP gets a session, so anyone who needs Salesforce
+  # installs the CLI when /insurwreck:connect walks them through it.
 
   # Populate the npx cache so the first MCP launch doesn't race its own
   # download. --version exits immediately once the package is fetched.
-  for pkg in "@salesforce/mcp" "@kula-ai/mcp-server" "zd-mcp-server" "clevertap-mcp@1.0.0"; do
+  for pkg in "zd-mcp-server"; do
     if npx -y "$pkg" --version >/dev/null 2>&1; then
       ok "cached $pkg"
     else
@@ -456,7 +465,7 @@ if have npm; then
     fi
   done
 else
-  warn "no npm, so the salesforce and kula servers will not start"
+  warn "no npm, so the MCP servers that run through npx will not start"
   info "install node from https://nodejs.org, then run: iw-doctor"
 fi
 

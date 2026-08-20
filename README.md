@@ -50,7 +50,7 @@ Auto matters: without it Claude asks permission before each step of setup, and t
 
 If `/insurwreck:start` is not offered, click **+** next to the prompt box, choose **Plugins**, and install **insurwreck** - saying yes when it asks whether you trust the folder.
 
-On a laptop with none of this installed, expect **8 to 15 minutes**, most of it downloading - Git, Node and the Salesforce CLI are large. Some steps sit quiet for a couple of minutes. Leave the window open; it is not stuck.
+On a laptop with none of this installed, expect **5 to 10 minutes**, most of it downloading - Git and Node are large. Some steps sit quiet for a couple of minutes. Leave the window open; it is not stuck.
 
 ### 2. Sign in and get your toolkit
 
