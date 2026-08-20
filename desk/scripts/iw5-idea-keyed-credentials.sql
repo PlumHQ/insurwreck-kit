@@ -86,9 +86,18 @@ alter table public.credentials
 --
 -- So both modes get their own partial unique index, and provision.js claims a
 -- row BEFORE calling any provider. The database is the lock.
-drop index if exists public.credentials_participant_email_service_key;
+-- Constraint FIRST, then the index. A unique CONSTRAINT owns its backing index,
+-- and Postgres refuses to drop that index directly:
+--
+--   2BP01: cannot drop index credentials_participant_email_service_key because
+--   constraint ... requires it
+--
+-- Dropping the constraint takes the index with it, so the second statement is a
+-- no-op on a database where the constraint existed - and still does the right
+-- thing on one where only a bare index was ever created.
 alter table public.credentials
   drop constraint if exists credentials_participant_email_service_key;
+drop index if exists public.credentials_participant_email_service_key;
 
 create unique index if not exists credentials_idea_service_uidx
   on public.credentials (idea_id, service) where idea_id is not null;
