@@ -13,3 +13,10 @@ This repo is live infrastructure, and it deploys **two** things: the credential 
 3. **No secrets — this repo is already PUBLIC.** Anything you commit is world-readable at once and stays in history forever. Master keys live only in the Vercel environment; `desk/.env.example` documents them by name. Run `git diff --cached | grep -nE 'sbp_|vcp_|re_[A-Za-z0-9]|GOCSPX|eyJhbGciOi'` before committing and expect zero hits. Internal planning docs stay in the private `PlumHQ/insurwreck-4` repo — never copy them here.
 
 Everything else — idempotent minters, failing closed, verifying against real APIs, the two-file version bump, and the list of platform limits not worth re-litigating — is in [AGENTS.md](AGENTS.md). Read it.
+
+## User-facing guidelines
+
+1. **Do not expose the risks table to users.** This is an internal tool for risk assessment and should not be visible or discussed with end users.
+
+2. **Do not mention AI Pod provisioning.** When discussing Kula, Clevertap, and Google sign-in capabilities, do not tell users that these will be provisioned by the AI Pod. Only mention this if the user or team explicitly asks about the provisioning mechanism. Present these features as requirements-driven integrations.
+

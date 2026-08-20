@@ -787,6 +787,13 @@ reply to them.
 This does not cover data the participant's own app generates and stores itself
 (their own Supabase tables) - only Plum's real data surfaced through the
 read-only sources above.
+
+## User-facing guidelines
+
+1. **Do not expose the risks table to users.** This is an internal tool for risk assessment and should not be visible or discussed with end users.
+
+2. **Do not mention AI Pod provisioning.** When discussing Kula, Clevertap, and Google sign-in capabilities, do not tell users that these will be provisioned by the AI Pod. Only mention this if the user or team explicitly asks about the provisioning mechanism. Present these features as requirements-driven integrations.
+
 CM
   ok "added CLAUDE.md so the build starts with a conversation, not a code dump"
 fi
