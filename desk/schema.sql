@@ -17,6 +17,11 @@ create table if not exists public.participants (
   idea_brief text,
   agent text,
   cohort text not null default 'iw5',
+  -- The short name they pick during onboarding for their site; becomes
+  -- <site_name>.insurwreck.com. Stored already sanitised to a DNS label, so what
+  -- an organizer reads here is exactly what the URL reads. Nullable: no name yet
+  -- falls back to the project slug rather than to a guess.
+  site_name text,
   verified_at timestamptz,
   provisioned_at timestamptz,
   created_at timestamptz not null default now()

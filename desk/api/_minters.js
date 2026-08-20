@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { resendFrom } from "./_lib.js";
+import { resendFrom, sb } from "./_lib.js";
 
 const VERCEL_API = "https://api.vercel.com";
 const SUPABASE_API = "https://api.supabase.com/v1";
@@ -7,6 +7,26 @@ const AGENTMAIL_API = "https://api.agentmail.to/v0";
 const TOKEN_TTL_DAYS = 45;
 
 // Deterministic per-participant resource name: iw-<local-part>-<hash4>.
+// A DNS label for a human to read out loud.
+//
+// Two things a naive slugify gets wrong here, both on real ideas in the pool:
+//   - "deja" is spelled "déjà". Stripping non-ascii leaves "d-j", so fold the
+//     accents first rather than deleting the letters under them.
+//   - a hard 30-char cut lands mid-word: "insurwreck-the-collective-brai".
+//     Cut back to the last whole word instead.
+export function slugHost(value) {
+  const flat = String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (flat.length <= 30) return flat;
+  const cut = flat.slice(0, 30);
+  const lastWord = cut.lastIndexOf("-");
+  return (lastWord > 8 ? cut.slice(0, lastWord) : cut).replace(/-+$/g, "");
+}
+
 export function slugFor(email) {
   const local = email
     .split("@")[0]
@@ -141,15 +161,31 @@ export async function mintVercel(email, existing = {}) {
   // participant sees a broken custom domain in their dashboard and asks why.
   const appDomain = process.env.INSURWRECK_APP_DOMAIN;
   if (appDomain && !payload.app_url) {
-    // Prefer the readable name; fall back to the unique project slug if it is
-    // taken. Never steal a host that another project holds - reusing a friendly
-    // name once clobbered a live production alias on a different project.
-    const readable = email
-      .split("@")[0]
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-    for (const host of [`${readable}.${appDomain}`, `${payload.project_name}.${appDomain}`]) {
+    // The URL names the PROJECT, not the person - it goes on a slide and gets
+    // read out loud. Onboarding asks the participant for a short site name and
+    // stores it on their row; nothing we could derive from an email or an idea
+    // title beats what they choose themselves.
+    //
+    // No site name yet - they provisioned before answering, or skipped it - and
+    // it falls back to the project slug, iw-<name>-<hash>, which is unique by
+    // construction. Never the bare email local part: that is the person, not the
+    // project.
+    let chosen = "";
+    try {
+      const rows = await sb(
+        `participants?email=eq.${encodeURIComponent(email)}&select=site_name&limit=1`
+      );
+      chosen = slugHost(rows[0]?.site_name);
+    } catch (error) {
+      console.error(`site_name lookup failed for ${email}:`, error.message);
+    }
+    const candidates = [
+      ...(chosen ? [`${chosen}.${appDomain}`] : []),
+      `${payload.project_name}.${appDomain}`,
+    ];
+    // Never steal a host another project holds - reusing a friendly name once
+    // clobbered a live production alias on an unrelated project.
+    for (const host of candidates) {
       const res = await fetch(
         `${VERCEL_API}/v10/projects/${payload.project_id}/domains?teamId=${teamId}`,
         { method: "POST", headers: auth(master), body: JSON.stringify({ name: host }) }

@@ -33,6 +33,12 @@ Ask conversationally, one at a time (wait for each answer before asking the next
 1. Their full name.
 2. Their work email. It should be an `@plumhq.com` address — if it isn't, mention that only Plum addresses (plus a small organizer allowlist) can be verified, and let them correct it or proceed to let the desk decide.
 3. Their idea brief: two sentences on the recurring problem they want to attack. If they don't have one yet, that's fine — capture "still exploring" and point them to https://insurwreck-4.preview.plumhq.com/#ideas for later.
+4. A short name for their site. Tell them plainly what it is for: **this becomes the web address they demo on**, `<name>.insurwreck.com`. Ask for one or two words about the project, not about them — `claims-copilot`, not `abel-p`. Lowercase, letters, numbers and hyphens; anything else gets folded to a hyphen.
+
+   If they don't have a name yet, or ask you to pick, don't invent one and don't
+   stall - say they'll get a working address either way and can be given a nicer
+   one later, then move on. Leave it out of the call below rather than sending a
+   guess: a guess becomes a URL and URLs are read out loud on Friday.
 
 ## Step 3 — Verify their email
 
@@ -63,8 +69,16 @@ Before running this call, tell the participant their personal infrastructure is 
 curl -s --max-time 280 -X POST $DESK/api/provision \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{"name":"<name>","idea_brief":"<brief>","agent":"claude-code"}'
+  -d '{"name":"<name>","idea_brief":"<brief>","site_name":"<short-name>","agent":"claude-code"}'
 ```
+
+Omit `site_name` entirely if they didn't give one - an empty string is not the
+same thing, and sending one would replace a name they already chose on an earlier
+run. Their address falls back to their project slug, which always works.
+
+Once it returns, tell them their address: it's `services.vercel.app_url`. If that
+field is absent the domain isn't wired yet on the desk - say nothing about it
+rather than promising a URL that won't resolve.
 
 The response is their credential bundle: `{ participant, services: {...}, pending: [...] }`. A service entry with `"incomplete": true` is partially provisioned — its `pending_parts` lists what's still coming (for example Supabase `api_keys` that need another minute). Re-running this same call later repairs incomplete entries; it never duplicates anything.
 
