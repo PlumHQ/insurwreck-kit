@@ -37,13 +37,21 @@
       "destination": "/go.ps1"
     },
     {
+      "source": "/gui",
+      "destination": "/go-gui.sh"
+    },
+    {
+      "source": "/win-gui",
+      "destination": "/go-gui.ps1"
+    },
+    {
       "source": "/api/llm/:path*",
       "destination": "/api/llm/[...path]"
     }
   ],
   "headers": [
     {
-      "source": "/(go|go.sh|win|go.ps1)",
+      "source": "/(go|go.sh|gui|go-gui.sh|win|go.ps1|win-gui|go-gui.ps1)",
       "headers": [
         {
           "key": "content-type",

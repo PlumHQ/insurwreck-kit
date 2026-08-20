@@ -28,14 +28,40 @@ GHOSTTY_CONFIG_XDG="${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/config"
 # Highest floor among the bundled MCP servers (@kula-ai/mcp-server needs 22).
 MIN_NODE=22
 
+# `curl ... | bash` hands bash the SCRIPT on stdin. Any command below that reads
+# stdin therefore eats the rest of the script, bash hits EOF early and exits 0 -
+# a setup that stops halfway and reports success. It happened: the node step
+# swallowed steps 5-7, so nobody got the plugin, the project folder or the
+# handoff, and the run looked clean.
+#
+# Rather than chase `< /dev/null` onto every command that might read stdin, and
+# re-chase it every time someone adds one, fetch a real copy once and re-exec
+# from a file. After this block stdin is nobody's script and the class of bug
+# is gone.
+SELF_URL="${INSURWRECK_SELF_URL:-https://insurwreck-desk.preview.plumhq.com/go.sh}"
+if [ -z "${IW_REEXEC:-}" ] && [ ! -f "$0" ]; then
+  _self="$(mktemp "${TMPDIR:-/tmp}/insurwreck-go.XXXXXX")" || _self=""
+  if [ -n "$_self" ] && curl -fsSL "$SELF_URL" -o "$_self" 2>/dev/null && [ -s "$_self" ]; then
+    IW_REEXEC=1 exec bash "$_self" "$@"
+  fi
+  # Unreachable or curl-less: carry on piped rather than refuse to install.
+  # Steps that read stdin may still truncate, which is why the check below runs.
+  [ -n "$_self" ] && rm -f "$_self"
+fi
+
 WITH_GHOSTTY=1
 LAUNCH=1
+DESKTOP=0
 for arg in "$@"; do
   case "$arg" in
     --no-ghostty) WITH_GHOSTTY=0 ;;
     --no-launch)  LAUNCH=0 ;;
+    # Claude Code Desktop users already have Claude Code, and a second terminal
+    # is the opposite of what they came for. Same install, no Ghostty, no
+    # terminal handover - they open the project folder in the app's Code tab.
+    --desktop)    WITH_GHOSTTY=0; LAUNCH=0; DESKTOP=1 ;;
     --help|-h)
-      echo "usage: go.sh [--no-ghostty] [--no-launch]"
+      echo "usage: go.sh [--desktop] [--no-ghostty] [--no-launch]"
       exit 0 ;;
   esac
 done
@@ -70,12 +96,18 @@ case "$OS" in
     if grep -qi microsoft /proc/version 2>/dev/null; then PLATFORM="wsl"; fi
     ;;
   MINGW*|MSYS*|CYGWIN*)
-    die "Windows shells (Git Bash / MSYS) aren't supported.
-  Install WSL2 first — open PowerShell as Administrator and run:
+    # Not WSL2. Claude Code plugins do not load in WSL sessions at all, so
+    # sending a Windows participant there costs them the entire kit. go.ps1 is
+    # the supported native path, and it is what the Claude app can actually use.
+    die "This is a Windows shell (Git Bash / MSYS), which this script can't use.
+  Windows has its own setup. Open PowerShell — a normal window, not
+  administrator — and paste:
 
-      wsl --install
+      irm https://insurwreck-desk.preview.plumhq.com/win | iex
 
-  Reboot, open the Ubuntu app, and paste this same command there."
+  Already inside the Claude app? Use the desktop switch instead:
+
+      \$env:INSURWRECK_DESKTOP=1; irm https://insurwreck-desk.preview.plumhq.com/win | iex"
     ;;
   *) die "Unsupported system: $OS" ;;
 esac
@@ -89,6 +121,7 @@ fi
 
 TOTAL_STEPS=7
 [ "$WITH_GHOSTTY" = "1" ] && TOTAL_STEPS=8
+[ "$DESKTOP" = "1" ] && TOTAL_STEPS=6
 
 # ----------------------------------------------------------------- banner ----
 
@@ -267,6 +300,11 @@ fi
 
 # --------------------------------------------------------- 3 claude code ----
 
+# In desktop mode the participant is reading this from inside Claude Code, so
+# installing Claude Code is installing what is already running. Skipped, not
+# soft-skipped: it is not a step in their sequence at all.
+if [ "$DESKTOP" = "0" ]; then
+
 step "Installing Claude Code"
 
 if have claude; then
@@ -278,12 +316,18 @@ else
   ok "installed"
 fi
 
+fi
+
 # ------------------------------------------------------------- 4 the PATH ----
 # The installer drops the binary at ~/.local/bin/claude. If that directory
 # isn't on PATH, `claude` reports command-not-found even though the install
 # worked — the single most common way this goes wrong.
 
-step "Making the 'claude' command available"
+if [ "$DESKTOP" = "1" ]; then
+  step "Making the new tools available"
+else
+  step "Making the 'claude' command available"
+fi
 
 LOCAL_BIN="$HOME/.local/bin"
 export PATH="$LOCAL_BIN:$PATH"
@@ -307,6 +351,11 @@ done
 
 if have claude; then
   [ -n "$added_to" ] && ok "added to PATH in:$added_to" || ok "already on your PATH"
+elif [ "$DESKTOP" = "1" ]; then
+  # The desktop app injects its own `claude` shim into the shells it opens, so
+  # whether one is on PATH here says nothing about whether the app works. Step 6
+  # handles the plugin without it.
+  ok "using the Claude app's own copy"
 else
   die "Claude Code installed but the 'claude' command still isn't found.
   Expected it at $LOCAL_BIN/claude — check that the file exists."
@@ -416,6 +465,14 @@ fi
 
 step "Installing the Insurwreck plugin"
 
+PLUGIN_VIA_UI=0
+if ! have claude; then
+  # Nothing to do from a shell: the app owns its plugin list, and step 7 points
+  # the project folder at the marketplace so the app offers it by name.
+  skip "the Claude app installs this one - the folder points it there"
+  PLUGIN_VIA_UI=1
+else
+
 plugin_log="$(mktemp)"
 
 # `claude plugin marketplace add owner/repo` shells out to `git clone`. On a
@@ -479,7 +536,14 @@ else
 
 EOF
   rm -f "$plugin_log"
-  exit 1
+  # In desktop mode this is recoverable in the app itself, and step 7 is what
+  # makes it recoverable - it writes the folder config the plugin browser reads.
+  # Exiting here would take away the fallback along with the failure.
+  if [ "$DESKTOP" = "1" ]; then
+    PLUGIN_VIA_UI=1
+  else
+    exit 1
+  fi
 fi
 rm -f "$plugin_log"
 
@@ -514,6 +578,8 @@ else
   skip "iw-* commands are available inside Claude Code only"
 fi
 
+fi
+
 # -------------------------------------------------------- 7 project folder ----
 
 step "Creating your project folder"
@@ -535,6 +601,38 @@ node_modules/
 .DS_Store
 GI
   ok "added a .gitignore that keeps your keys out of git"
+fi
+
+# Register the marketplace in the folder itself. Claude Code adds a marketplace
+# named here as soon as the folder is trusted, so a participant who opens this
+# folder in the Desktop app gets the plugin offered by name instead of having to
+# find the plugin browser. It does not replace the user-scope install in step 6 -
+# a plugin from an external source still installs there - but it means the folder
+# is self-describing on any machine, including a fresh one.
+# Only an owner/repo can be written as a github source. The rehearsal harness
+# points KIT_REPO at a local checkout, and emitting that as a github repo would
+# hand the participant a settings.json naming a repository that cannot exist.
+kit_is_github=0
+case "$KIT_REPO" in
+  /*|.*|*/*/*) ;;
+  ?*/?*) kit_is_github=1 ;;
+esac
+
+if [ "$kit_is_github" = "0" ]; then
+  skip "local marketplace - folder config skipped"
+elif [ ! -f "$PROJECT_DIR/.claude/settings.json" ]; then
+  mkdir -p "$PROJECT_DIR/.claude"
+  cat > "$PROJECT_DIR/.claude/settings.json" <<SET
+{
+  "extraKnownMarketplaces": {
+    "insurwreck-kit": {
+      "source": { "source": "github", "repo": "$KIT_REPO" }
+    }
+  },
+  "enabledPlugins": ["insurwreck@insurwreck-kit"]
+}
+SET
+  ok "pointed this folder at the Insurwreck plugin"
 fi
 
 # A project-scoped CLAUDE.md, written before Claude ever starts so the very
@@ -650,6 +748,43 @@ fi
 # ------------------------------------------------------------- 8 hand off ----
 
 step "Ready"
+
+if [ "$DESKTOP" = "1" ]; then
+  # Restarting matters: on macOS the app reads ~/.zshrc for PATH only at launch,
+  # so an app that was already open cannot see the node and claude we just
+  # installed. Every desktop support question last time was this.
+  cat <<EOF
+
+  ${B}Everything is installed.${R}
+
+  ${DIM}Your project folder:${R}  $PROJECT_DIR
+
+  ${B}In the Claude app:${R}
+
+    1. Quit it completely and open it again  ${DIM}(needed - it reads your PATH at launch)${R}
+    2. Click the ${B}Code${R} tab
+    3. Open the folder  ${B}$PROJECT_DIR${R}
+    4. Set the mode selector next to the send button to ${B}Auto${R}
+    5. Type  ${B}/insurwreck:start${R}
+
+EOF
+  if [ "$PLUGIN_VIA_UI" = "1" ]; then
+    # The plugin genuinely is not installed yet, so this is a step and not a
+    # footnote. Trusting the folder is what makes the app offer it by name.
+    cat <<EOF
+    6. Click ${B}+${R} next to the prompt box, choose ${B}Plugins${R}, install ${B}insurwreck${R}
+       ${DIM}(say yes when it asks whether you trust this folder)${R}
+
+EOF
+  else
+    cat <<EOF
+  ${DIM}If /insurwreck:start is not offered, click ${R}${DIM}+${R}${DIM} next to the prompt box,${R}
+  ${DIM}choose Plugins, and install ${R}${B}insurwreck${R}${DIM} - then try again.${R}
+
+EOF
+  fi
+  exit 0
+fi
 
 cat <<EOF
 
