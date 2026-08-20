@@ -1,4 +1,4 @@
-# Insurwreck - one-paste setup for Windows.
+# Insurwreck 4.0 - one-paste setup for Windows.
 #
 #   irm https://insurwreck-desk.preview.plumhq.com/win | iex
 #
@@ -210,7 +210,7 @@ function Find-GitBash {
 Write-Host @"
 
   INSURWRECK 4.0
-  Insurwreck | Plum
+  Insurwreck 4.0 | Plum
 
   Bring one real problem. Leave with a working prototype.
 
