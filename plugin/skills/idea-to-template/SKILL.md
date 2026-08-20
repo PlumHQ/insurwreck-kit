@@ -26,6 +26,8 @@ The starter template (`${CLAUDE_PLUGIN_ROOT}/templates/starter`) is one Next.js 
 
 Map their brief to whichever route is the closer starting point. If genuinely ambiguous, default to `/dashboard` — broader, and easier to bend toward a generator later than the reverse.
 
+If the brief ends with the member seeing something **in the Plum app**, that last mile is a mock inside their own app — there is no write path into Plum and there will not be one. Same for WhatsApp: a chat UI they own, not the real thing. Settle that in Step 1, so the build is shaped around it instead of hitting it on Friday.
+
 ## Step 3 — Copy the starter
 
 ```bash
