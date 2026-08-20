@@ -76,11 +76,12 @@ don't burn an hour on it.
 
 ### Zendesk (tickets, comments)
 
-Prefer the warehouse slices first: `support_tickets` already carries ticket metadata and
-the real SLA numbers, with none of the free-text bodies. Only reach for a live Zendesk
-server if they genuinely need comment text, and ask an organizer which repo is pinned for
-the event rather than picking one yourself - several competing implementations exist and
-they are all community-maintained.
+Already installed and already authenticated - see the table above. Nothing to run, and
+don't go looking for a repo to pin.
+
+Prefer the warehouse slices first anyway: `support_tickets` already carries ticket metadata
+and the real SLA numbers, with none of the free-text bodies. Reach for the Zendesk server
+only when they genuinely need comment text.
 
 ### Google Sheets / Forms / Drive
 
@@ -100,6 +101,13 @@ honestly what it will cost them in time.
   OAuth. For a demo, generate the PDF and show it; don't wire up real e-signature.
 - **A wellness calendar** - nothing in the warehouse matches it. The participant supplies
   a sheet, or that part comes out of scope.
+- **A write path into the Plum app** - there isn't one, and no MCP server creates one. When
+  an idea ends with "and the member sees it in the Plum app", that last mile is a mock inside
+  their own web UI, and the Next starter already gives them the surface for it. Say so in the
+  first conversation rather than on Friday.
+- **WhatsApp and Periskope** - no BSP account, no registered number, no Periskope access, and
+  none is being provisioned. Build the chatbot and show the conversation flow in a chat UI
+  they own. That demos the flow honestly and is strictly less work than the integration.
 
 ## After any install
 
