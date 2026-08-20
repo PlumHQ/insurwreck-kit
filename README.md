@@ -131,7 +131,13 @@ Two deliberate choices in that hook:
 
 The hook fails open on malformed input — a broken hook must not take Kula down mid-build — so it is a guardrail against an agent doing something careless, not a security boundary against a determined participant. Note what that means concretely: the shared full-access key is written to `~/.claude/settings.json` on ~25 machines, so anyone who wants to can bypass the hook with their own `claude mcp add kula`. The real boundary remains the key's own permissions. Closing that properly means proxying Kula through the desk and exposing read tools only, so the key never leaves Vercel — worth doing if this outlives the hackathon.
 
-Run the check with `bash plugin/hooks/scripts/test-block-kula-writes.sh`.
+**Kula is also gated per participant.** `KULA_EMAILS` on the desk is a comma-separated allowlist and it is **default deny** — unset means nobody is provisioned. `mintKula` throws for anyone not on it, leaving their `kula` service `pending`, so `iw-connect` never writes `KULA_API_KEY` and the server never starts on their machine. Same shape and same helper as `CLEVERTAP_EMAILS`: both call `emailAllowedFor()` in `desk/api/_minters.js`, deliberately one implementation, because a copied second one is how one list quietly starts honouring the other's variable.
+
+Both lists are ordinary Vercel environment variables, editable in the dashboard. A change takes effect on the next deploy and applies only to mints after that — it is a delivery gate, not revocation. Removing an email stops future mints; anyone already provisioned keeps the key in their `~/.claude/settings.json` until their `credentials` row is revoked **and** that key is cleared from their machine.
+
+`/api/admin` reports both lists and their sizes, including a loud `allowlist EMPTY - nobody is provisioned`, because an empty list and a dead credential look identical from a participant's seat.
+
+Run the checks with `bash plugin/hooks/scripts/test-block-kula-writes.sh` and `node desk/test-email-gates.mjs`.
 
 ### Zendesk: same shape, sharper edge
 
