@@ -182,15 +182,20 @@ export default async function handler(req, res) {
     // up" while none of it exists.
     const realRows = [...byService.values()].filter((row) => !row.payload?.claiming);
     if (!canMint && realRows.length === 0) {
+      // A claim with no payload means the captain started and stopped, which is
+      // a different instruction than never having started - they have to run it
+      // again, and nothing tells them so unless we do.
+      const partial = byService.size > 0;
       const captain = await sb(
         `idea_teams?idea_id=eq.${scope.ideaId}&role=eq.owner&select=member_email&limit=1`
       );
       return res.status(200).json({
         ok: false,
         status: "waiting_for_captain",
+        captain_started: partial,
         idea: { id: scope.ideaId, title: idea?.idea_title },
         captain: captain[0]?.member_email || null,
-        message: blockedMessage(idea?.idea_title || "your idea", captain[0]?.member_email || "your captain"),
+        message: blockedMessage(idea?.idea_title || "your idea", captain[0]?.member_email, partial),
       });
     }
 
