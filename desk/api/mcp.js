@@ -1,5 +1,5 @@
 import { sb, participantFor } from "./_lib.js";
-import { listClaims, getClaim, SECTION_NAMES } from "./_claims.js";
+import { listClaims, getClaim, maskRows, unmaskEmailFor, SECTION_NAMES } from "./_claims.js";
 
 // Read-only Plum data for participants, as one MCP server over two sources: the
 // allowlisted Metabase saved questions below, and the live claims API in
@@ -184,14 +184,30 @@ function bindParameters(card, supplied) {
     });
 }
 
-function toRows(result) {
+// Every Metabase result leaves through here, and it leaves masked. The slices are
+// published unmasked on purpose - iw_claims_base carries real names next to real
+// org names - so without this a participant reads through run_dataset the same
+// member that get_claim just pseudonymised. Same masker, same salt, so one person
+// is one pseudonym on both halves of this server.
+//
+// Identifier columns are exempt, which is the whole reason maskRows exists rather
+// than maskClaim: member_id is how a participant joins these slices to each other
+// and to list_claims, and a ten-digit member id is indistinguishable from a mobile
+// number to any regex. See the note above maskRows in _claims.js.
+function toRows(result, participant, dataset) {
   if (result?.status === "failed") {
     // Never surface Metabase's raw SQL error - it can echo the query text.
     throw new Error("That query failed to run. Try different parameters.");
   }
   const cols = (result?.data?.cols || []).map((c) => c.display_name || c.name);
-  const rows = (result?.data?.rows || []).slice(0, ROW_CAP);
-  return { cols, rows, truncated: (result?.data?.rows || []).length > ROW_CAP };
+  const raw = (result?.data?.rows || []).slice(0, ROW_CAP);
+  // Take the columns back from the masker, not the ones we sent it: dropped columns
+  // change the row shape, and a stale header would mislabel every cell after the gap.
+  const { columns, rows, ...how } = maskRows(cols, raw, {
+    unmaskEmail: unmaskEmailFor(participant),
+    dataset,
+  });
+  return { cols: columns, rows, truncated: (result?.data?.rows || []).length > ROW_CAP, ...how };
 }
 
 // ----------------------------------------------------------------- tools ---
@@ -360,8 +376,8 @@ async function callTool(name, args, participant) {
       body: JSON.stringify({ type: "native", database: 2, native: { query: sql } }),
     });
     if (!res.ok) throw new Error(`warehouse refused the query (${res.status})`);
-    const { cols, rows, truncated } = toRows(await res.json());
-    return JSON.stringify({ columns: cols, row_count: rows.length, truncated, rows }, null, 2);
+    const { cols, rows, truncated, ...how } = toRows(await res.json(), participant, "query_warehouse");
+    return JSON.stringify({ columns: cols, row_count: rows.length, truncated, ...how, rows }, null, 2);
   }
 
   const allowed = await allowlist();
@@ -399,7 +415,7 @@ async function callTool(name, args, participant) {
       const card = await mb(`card/${id}`);
       const result = await mb(`card/${id}/query`, { method: "POST", body: { parameters: [] } })
         .catch(() => null);
-      const sample = result ? toRows(result) : { cols: [], rows: [] };
+      const sample = result ? toRows(result, participant, card.name) : { cols: [], rows: [] };
       return JSON.stringify(
         { ...summarize(card), sample_rows: sample.rows.slice(0, 3), sample_columns: sample.cols },
         null,
@@ -414,9 +430,9 @@ async function callTool(name, args, participant) {
         const card = await mb(`card/${id}`);
         const parameters = bindParameters(card, args?.filters);
         const result = await mb(`card/${id}/query`, { method: "POST", body: { parameters } });
-        const { cols, rows, truncated } = toRows(result);
+        const { cols, rows, truncated, ...how } = toRows(result, participant, card.name);
         return JSON.stringify(
-          { dataset: card.name, columns: cols, row_count: rows.length, truncated, rows },
+          { dataset: card.name, columns: cols, row_count: rows.length, truncated, ...how, rows },
           null,
           2
         );
@@ -428,15 +444,22 @@ async function callTool(name, args, participant) {
         const note = Object.keys(args?.filters || {}).length
           ? "Filters were ignored: this came from a snapshot, not a live query. Filter the rows yourself."
           : undefined;
-        const rows = (snap.rows || []).slice(0, ROW_CAP);
+        // slice_cache stores what Metabase returned, unmasked, so the fallback path
+        // masks here too - otherwise a stats2 outage becomes a disclosure.
+        const capped = (snap.rows || []).slice(0, ROW_CAP);
+        const { columns, rows, ...how } = maskRows(snap.columns, capped, {
+          unmaskEmail: unmaskEmailFor(participant),
+          dataset: snap.name,
+        });
         return JSON.stringify(
           {
             dataset: snap.name,
             source: `snapshot, ${staleness(snap.refreshed_at)}`,
             ...(note ? { note } : {}),
-            columns: snap.columns,
+            columns,
             row_count: rows.length,
             truncated: (snap.rows || []).length > ROW_CAP,
+            ...how,
             rows,
           },
           null,
