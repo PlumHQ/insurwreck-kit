@@ -132,9 +132,48 @@ export async function mintVercel(email, existing = {}) {
     }
   }
 
+  // Put their app on insurwreck.com rather than a vercel.app URL, so what they
+  // demo carries the event's name.
+  //
+  // Gated on INSURWRECK_APP_DOMAIN so this is inert until the domain is actually
+  // on Vercel nameservers. Assigning a subdomain before DNS resolves leaves it
+  // sitting in "Invalid Configuration" - the project still deploys, but every
+  // participant sees a broken custom domain in their dashboard and asks why.
+  const appDomain = process.env.INSURWRECK_APP_DOMAIN;
+  if (appDomain && !payload.app_url) {
+    // Prefer the readable name; fall back to the unique project slug if it is
+    // taken. Never steal a host that another project holds - reusing a friendly
+    // name once clobbered a live production alias on a different project.
+    const readable = email
+      .split("@")[0]
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    for (const host of [`${readable}.${appDomain}`, `${payload.project_name}.${appDomain}`]) {
+      const res = await fetch(
+        `${VERCEL_API}/v10/projects/${payload.project_id}/domains?teamId=${teamId}`,
+        { method: "POST", headers: auth(master), body: JSON.stringify({ name: host }) }
+      );
+      if (res.ok) {
+        payload.app_url = `https://${host}`;
+        break;
+      }
+      const err = await res.json().catch(() => ({}));
+      const message = err?.error?.message || "";
+      // Already attached to THIS project - idempotent re-provision, not a clash.
+      if (res.status === 409 && /already (in use|assigned|exists)/i.test(message)
+          && message.includes(payload.project_name)) {
+        payload.app_url = `https://${host}`;
+        break;
+      }
+      console.error(`vercel domain ${host} failed for ${email}: ${res.status} ${message}`);
+    }
+  }
+
   const vercelPending = [];
   if (!payload.token) vercelPending.push("token");
   if (!payload.public_deployments) vercelPending.push("public_access");
+  if (appDomain && !payload.app_url) vercelPending.push("app_domain");
   return finalize(payload, vercelPending);
 }
 
