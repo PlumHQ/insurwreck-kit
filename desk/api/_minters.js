@@ -38,6 +38,16 @@ export function slugFor(email) {
   return `iw-${local}-${suffix}`;
 }
 
+// The name every provisioned resource carries. In 5.0 that is the IDEA slug,
+// supplied by provision.js under a reserved context key; the email slug stays as
+// the fallback for a solo bundle (organizers, who are on no published idea).
+//
+// Reserved key rather than a new parameter because context is otherwise a
+// service->payload map, and __slug cannot collide with a service name.
+function resourceSlug(email, context = {}) {
+  return context.__slug || slugFor(email);
+}
+
 // The 5.0 naming key. Resources belong to an IDEA, not to whoever on the team
 // happened to run /insurwreck:start first - so a three-person team building
 // "meridian" gets iw-meridian-7e1c, not iw-arsh-g-1a2b. That name is externally
@@ -50,7 +60,10 @@ export function slugFor(email) {
 // Brain", which would otherwise produce the same slug and have the second mint
 // silently adopt the first one's project.
 export function slugForIdea(ideaId, title = "") {
-  const words = String(title)
+  // `?? ""` and not just the parameter default: an explicit null argument
+  // overrides a default, and String(null) is "null" - which produced the real
+  // slug "iw-null-4079" until a test caught it.
+  const words = String(title ?? "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
@@ -99,11 +112,11 @@ export async function mintResend(email, existing = {}) {
 
 // ---------------------------------------------------------------- vercel ---
 
-export async function mintVercel(email, existing = {}) {
+export async function mintVercel(email, existing = {}, context = {}) {
   const master = process.env.VERCEL_API_TOKEN;
   const teamId = process.env.VERCEL_TEAM_ID;
   const teamSlug = process.env.VERCEL_TEAM_SLUG || "insurwreck";
-  const slug = slugFor(email);
+  const slug = resourceSlug(email, context);
   const payload = { ...existing };
   const auth = (token) => ({
     Authorization: `Bearer ${token}`,
@@ -363,7 +376,7 @@ export async function mintGoogleAuth(email, existing = {}, context = {}) {
 
 // -------------------------------------------------------------- supabase ---
 
-export async function mintSupabase(email, existing = {}) {
+export async function mintSupabase(email, existing = {}, context = {}) {
   const token = process.env.SUPABASE_MGMT_TOKEN;
   const org = process.env.SUPABASE_ORG_ID;
   const region = process.env.SUPABASE_REGION || "ap-south-1";
@@ -377,7 +390,7 @@ export async function mintSupabase(email, existing = {}) {
       headers,
       body: JSON.stringify({
         organization_id: org,
-        name: slugFor(email),
+        name: resourceSlug(email, context),
         region,
         db_pass: dbPass,
       }),
@@ -460,12 +473,12 @@ export async function mintSupabase(email, existing = {}) {
 // not by inbox. So every participant shares one org key (kept to the minimum
 // permission set) and gets their own inbox under it. `client_id` is the
 // idempotency handle — re-provisioning returns the same inbox, never a second.
-export async function mintAgentmail(email, existing = {}) {
+export async function mintAgentmail(email, existing = {}, context = {}) {
   const key = process.env.AGENTMAIL_API_KEY;
   if (!key) throw new Error("AGENTMAIL_API_KEY not set");
 
   const payload = { ...existing };
-  const slug = slugFor(email);
+  const slug = resourceSlug(email, context);
   const headers = { Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
 
   // The account is capped at 10 inboxes and the cap cannot be raised, which is
@@ -550,7 +563,7 @@ export async function mintAnthropic(email, existing = {}) {
 // so there is nothing to create - the "mint" just hands out the shared endpoint
 // and token. Doing it here beats hand-inserting 25 credentials rows, and means
 // /insurwreck:status repairs it automatically once the env var is set.
-export async function mintN8n(email, existing = {}) {
+export async function mintN8n(email, existing = {}, context = {}) {
   const token = process.env.N8N_TOKEN;
   if (!token) throw new Error("N8N_TOKEN not set");
 
@@ -559,7 +572,7 @@ export async function mintN8n(email, existing = {}) {
   payload.mcp_url =
     process.env.N8N_MCP_URL || "https://workflow-stg.plumhq.com/mcp-server/http";
   payload.shared = true;
-  payload.workflow_prefix = slugFor(email);
+  payload.workflow_prefix = resourceSlug(email, context);
   payload.note =
     "Shared hackathon n8n, reachable as the `n8n` MCP server in Claude Code. Everyone writes to the same " +
     "workspace, so name every workflow with your workflow_prefix and never edit one that isn't yours.";

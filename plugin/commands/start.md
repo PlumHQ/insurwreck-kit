@@ -63,7 +63,7 @@ curl -s -X POST $DESK/api/verify -H "Content-Type: application/json" -d '{"email
 
 ## Step 4 — Fetch their credential bundle
 
-Before running this call, tell the participant their personal infrastructure is being created — their own Vercel project and their own Supabase project — and that it takes a minute or two. Then run it with a generous timeout:
+Before running this call, tell the participant their **team's** infrastructure is being created — one Vercel project and one Supabase project for their idea, shared by everyone on it — and that it takes a minute or two. Then run it with a generous timeout:
 
 ```
 curl -s --max-time 280 -X POST $DESK/api/provision \
@@ -76,13 +76,62 @@ Omit `site_name` entirely if they didn't give one - an empty string is not the
 same thing, and sending one would replace a name they already chose on an earlier
 run. Their address falls back to their project slug, which always works.
 
-Once it returns, tell them their address: it's `services.vercel.app_url`. If that
-field is absent the domain isn't wired yet on the desk - say nothing about it
-rather than promising a URL that won't resolve.
+**On a team, the site name is the team's.** The Vercel project is shared, so
+whoever sets it last sets it for everyone on the idea. Say that before asking,
+and if their team already has one, do not silently replace it - ask first.
 
-The response is their credential bundle: `{ participant, services: {...}, pending: [...] }`. A service entry with `"incomplete": true` is partially provisioned — its `pending_parts` lists what's still coming (for example Supabase `api_keys` that need another minute). Re-running this same call later repairs incomplete entries; it never duplicates anything.
+**Read `status` on the response before doing anything with it.** Credentials belong
+to an idea now, not a person, so there are three possible outcomes and only one of
+them is a bundle.
 
-Store it:
+### `"status": "ok"` — the bundle
+
+`{ participant, idea, shared_with_team, services: {...}, pending: [...] }`. A service
+entry with `"incomplete": true` is partially provisioned — its `pending_parts` lists
+what's still coming (for example Supabase `api_keys` that need another minute).
+Re-running this same call later repairs incomplete entries; it never duplicates
+anything.
+
+When `shared_with_team` is true, say so plainly: this database, this URL and this
+inbox are the **whole team's**, and their teammates will get these exact same
+credentials. Anything they push, their teammates see. That is the point, and it is
+worth one sentence so nobody is surprised later.
+
+Then tell them their address: it's `services.vercel.app_url`. If that field is
+absent the domain isn't wired yet on the desk - say nothing about it rather than
+promising a URL that won't resolve.
+
+### `"status": "needs_choice"` — they are on more than one idea
+
+Show the `prompt` field **verbatim** — it lists their ideas by title and marks which
+they captain. Do not summarise it, do not reorder it, and do not pick for them.
+
+Wait for their answer, then re-run the same call with the chosen `idea_id` added:
+
+```
+-d '{"name":"<name>","agent":"claude-code","idea_id":"<the id they picked>"}'
+```
+
+The desk validates that id against their team memberships, so a typo is rejected
+rather than handing them another team's database. The answer is stored — they are
+asked once, not every session.
+
+If they captain an idea they did **not** pick, the prompt already told them that
+team cannot set itself up. Remind them once to tell an organizer, then move on.
+
+### `"status": "waiting_for_captain"` — a teammate has to go first
+
+Their team's credentials do not exist yet, and only the captain can create them.
+Show the `message` field, which names the captain and the idea. **Do not retry in a
+loop and do not try to work around it** — a second attempt would create a second
+Supabase project for the same team, which is exactly what this prevents.
+
+Tell them plainly what to do: ask the person named to run `/insurwreck:start`, then
+run `/insurwreck:start` again themselves and they will get the same setup. If the
+captain is unavailable, an organizer can provision the team for them. Then stop —
+do not continue to Step 4b or later steps, because there is nothing yet to connect.
+
+Store it (only on `"status": "ok"`):
 
 1. `mkdir -p ~/.insurwreck && chmod 700 ~/.insurwreck`
 2. Write the full JSON response to `~/.insurwreck/credentials.json` and `chmod 600` it.
