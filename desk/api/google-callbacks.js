@@ -25,7 +25,13 @@ export default async function handler(req, res) {
           const uri = row.payload?.callback_url;
           if (!uri) return null;
           if (row.payload?.console_registered) return { row, uri, live: true };
-          const live = await callbackRegistered(clientId, uri);
+          // Three, not the default two. This sweep runs right after an organizer
+          // pastes a batch, which is the worst moment to trust a probe: the URIs
+          // are mid-propagation, and the flag it writes is sticky - the branch
+          // above never re-checks a row once it says true. More agreement lowers
+          // the odds of latching early; it does not remove them, so a team that
+          // still reports mismatch after this needs the row cleared, not a retry.
+          const live = await callbackRegistered(clientId, uri, 3);
           if (live) {
             const payload = { ...row.payload, console_registered: true, registered_at: nowIso() };
             delete payload.incomplete;

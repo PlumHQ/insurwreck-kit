@@ -342,7 +342,7 @@ revoke execute on function public.insurwreck_restrict_signup_domain(jsonb) from 
 // endpoint, so probing it tells us whether an organizer has registered this
 // callback yet — no API needed. Fails closed: any doubt counts as
 // unregistered, so a participant is never told sign-in works when it doesn't.
-export async function callbackRegistered(clientId, redirectUri) {
+async function probeCallbackOnce(clientId, redirectUri) {
   const url =
     "https://accounts.google.com/o/oauth2/v2/auth" +
     `?client_id=${encodeURIComponent(clientId)}` +
@@ -371,6 +371,33 @@ export function googleAllowList(context = {}) {
   if (appProject) allowList.push(`https://${appProject}*.vercel.app/**`);
   if (appUrl) allowList.push(`${appUrl.replace(/\/+$/, "")}/**`);
   return allowList;
+}
+
+// ONE probe is not enough, and this is measured rather than defensive. A
+// newly-added redirect URI propagates across Google's frontends unevenly, and a
+// probe resolves to whichever frontend answers - so for a window of minutes to
+// hours the same URI alternates between accepted and redirect_uri_mismatch.
+//
+// Observed on 21 Aug 2026, pasting 51 callbacks for the event: successive sweeps
+// of the same 51 URIs returned 42, 45, 39 then 46 registered, and the membership
+// of the failing set changed completely between sweeps while the total climbed.
+// Controls run at the same time: a URI settled before that day passed 14/14, one
+// that can never be registered failed 6/6. So the probe itself is exact - the
+// state it reads is genuinely in flux. A URI reported missing one minute later
+// passed 13 of 14 probes.
+//
+// Because the caller PERSISTS a true, a single lucky probe latches
+// console_registered while stale frontends still reject - and the team is told
+// sign-in is ready, then hits redirect_uri_mismatch on the next edge that
+// answers. Requiring agreement makes a false positive need every probe to be
+// lucky. A false negative just leaves the pending part for the next repair,
+// which is the cheap direction to be wrong in.
+export async function callbackRegistered(clientId, redirectUri, confirmations = 2) {
+  const rounds = Math.max(1, confirmations);
+  for (let i = 0; i < rounds; i++) {
+    if (!(await probeCallbackOnce(clientId, redirectUri))) return false;
+  }
+  return true;
 }
 
 export async function mintGoogleAuth(email, existing = {}, context = {}) {
