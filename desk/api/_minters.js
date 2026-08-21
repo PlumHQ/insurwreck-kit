@@ -358,6 +358,21 @@ export async function callbackRegistered(clientId, redirectUri) {
   }
 }
 
+// Every redirect this team's sign-in must be allowed to return to. Shared by
+// the first configure and by the top-up below, so the two can never drift: the
+// vercel.app host, both localhost ports, and — when mintVercel has assigned one
+// — their insurwreck.com domain. That last entry is the URL on the slide, and
+// it is also the one a team configured before INSURWRECK_APP_DOMAIN existed is
+// missing: Google authenticates them and Supabase bounces the return trip.
+export function googleAllowList(context = {}) {
+  const appProject = context.vercel?.project_name;
+  const appUrl = context.vercel?.app_url;
+  const allowList = ["http://localhost:3000/**", "http://localhost:5173/**"];
+  if (appProject) allowList.push(`https://${appProject}*.vercel.app/**`);
+  if (appUrl) allowList.push(`${appUrl.replace(/\/+$/, "")}/**`);
+  return allowList;
+}
+
 export async function mintGoogleAuth(email, existing = {}, context = {}) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -386,8 +401,8 @@ export async function mintGoogleAuth(email, existing = {}, context = {}) {
     }
 
     const appProject = context.vercel?.project_name;
-    const allowList = ["http://localhost:3000/**", "http://localhost:5173/**"];
-    if (appProject) allowList.push(`https://${appProject}*.vercel.app/**`);
+    const appUrl = context.vercel?.app_url;
+    const allowList = googleAllowList(context);
 
     const config = {
       external_google_enabled: true,
@@ -398,7 +413,11 @@ export async function mintGoogleAuth(email, existing = {}, context = {}) {
         "pg-functions://postgres/public/insurwreck_restrict_signup_domain",
       uri_allow_list: allowList.join(","),
     };
-    if (appProject) config.site_url = `https://${appProject}.vercel.app`;
+    // site_url is where Supabase sends anyone who arrives without an explicit
+    // redirectTo. Prefer the insurwreck.com domain when they have one - it is
+    // the URL they demo from - over the vercel.app fallback.
+    if (appUrl) config.site_url = appUrl;
+    else if (appProject) config.site_url = `https://${appProject}.vercel.app`;
 
     const res = await fetch(`${SUPABASE_API}/projects/${ref}/config/auth`, {
       method: "PATCH",
@@ -410,10 +429,45 @@ export async function mintGoogleAuth(email, existing = {}, context = {}) {
     }
     payload.configured = true;
     payload.redirect_allow_list = allowList;
+    if (config.site_url) payload.site_url = config.site_url;
     payload.domain_guard = "insurwreck_restrict_signup_domain";
     payload.sign_in_snippet =
       `await supabase.auth.signInWithOAuth({ provider: 'google', ` +
       `options: { queryParams: { hd: '${domain}' } } })`;
+  }
+
+  // The top-up for teams configured before something in their allow list
+  // existed - in practice the insurwreck.com domain, which mintVercel assigns
+  // whenever it minted, possibly provisions after this first ran. The stored
+  // list says what we set; when it is missing an entry we now want, merge into
+  // the LIVE config rather than overwriting with our own copy, so an entry a
+  // team added by hand in their dashboard is never dropped. A throw here leaves
+  // the row exactly as it was and the next provision retries.
+  if (payload.configured) {
+    const wanted = googleAllowList(context);
+    const stored = payload.redirect_allow_list || [];
+    if (wanted.some((entry) => !stored.includes(entry))) {
+      const current = await fetch(`${SUPABASE_API}/projects/${ref}/config/auth`, { headers });
+      if (!current.ok) {
+        throw new Error(`auth config read failed: ${current.status} ${await current.text()}`);
+      }
+      const live = String((await current.json()).uri_allow_list || "")
+        .split(",")
+        .map((entry) => entry.trim())
+        .filter(Boolean);
+      const merged = [...live, ...wanted.filter((entry) => !live.includes(entry))];
+      if (merged.length !== live.length) {
+        const res = await fetch(`${SUPABASE_API}/projects/${ref}/config/auth`, {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ uri_allow_list: merged.join(",") }),
+        });
+        if (!res.ok) {
+          throw new Error(`redirect allow list top-up failed: ${res.status} ${await res.text()}`);
+        }
+      }
+      payload.redirect_allow_list = merged;
+    }
   }
 
   // Google has no API for authorized redirect URIs, so an organizer pastes
