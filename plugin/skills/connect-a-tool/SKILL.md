@@ -12,7 +12,7 @@ Ask them what they're missing, pick the row, run the command, restart Claude Cod
 
 ## Already installed - just needs auth
 
-Kula, Zendesk, CleverTap, Salesforce, Docusign and Remotion ship with the plugin and start
+Kula, Zendesk, CleverTap, Parallel, Salesforce, Docusign and Remotion ship with the plugin and start
 automatically. Don't run `claude mcp add` for any of them; sending someone to a second copy
 of the same server is how you end up with two entries and a confused participant.
 
@@ -21,11 +21,12 @@ of the same server is how you end up with two entries and a confused participant
 | Kula (candidates, jobs, interviews) | `/insurwreck:connect` | No - one shared organizer key, same view for everyone, read-only |
 | Zendesk (support tickets, comments) | nothing - already working | No - one shared organizer token, same view for everyone, read-only |
 | CleverTap (campaigns, engagement analytics, member profiles) | nothing - already working | No - one shared organizer credential, same view for everyone, strictly read-only |
+| Parallel (live web search and fetch) | nothing - already working | No - one shared metered key, allowlisted; read-only |
 | Salesforce (accounts, opportunities, notes) | `/insurwreck:connect` | Yes - browser login, their own profile and sharing rules |
 | Docusign (envelopes, e-signature) | `/insurwreck:connect` | Yes - browser login, their own account |
 | Remotion docs (programmatic video in React) | nothing - already working | n/a - public docs, no key |
 
-All six are always on, so they cost context on every turn for everyone. If a
+All seven are always on, so they cost context on every turn for everyone. If a
 participant's idea touches none of them, tell them they can drop one with
 `claude mcp remove <name>` for the rest of the day.
 

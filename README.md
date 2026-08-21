@@ -94,7 +94,7 @@ Still stuck after `iw-doctor`? Find an organiser. Do not lose twenty minutes to 
 
 ## Bundled MCP servers
 
-All seven start automatically when the plugin installs — they are declared in `plugin/.mcp.json`, so there is no separate install step.
+All eight start automatically when the plugin installs — they are declared in `plugin/.mcp.json`, so there is no separate install step.
 
 | Server | Package | Official? | Auth | Scoped to the individual? |
 |---|---|---|---|---|
@@ -102,6 +102,7 @@ All seven start automatically when the plugin installs — they are declared in 
 | `kula` | [`@kula-ai/mcp-server`](https://github.com/kula-ai/kula-mcp-server) (MIT) | Yes — Kula's own server | `KULA_API_KEY`, one shared organizer key, delivered in the bundle | **No** — read-only, enforced by a hook; see below |
 | `zendesk` | [`zd-mcp-server`](https://www.npmjs.com/package/zd-mcp-server) (MIT) | No — community server | `ZENDESK_SUBDOMAIN` / `ZENDESK_EMAIL` / `ZENDESK_TOKEN`, one shared organizer token, delivered in the bundle | **No** — read-only, enforced by a hook; see below |
 | `clevertap` | [`clevertap-mcp@1.0.0`](https://www.npmjs.com/package/clevertap-mcp) (MIT in [the repo](https://github.com/ralphcorleone/clevertap-mcp); no license field on npm) | No — community server, 6 stars, 3 commits | `CLEVERTAP_ACCOUNT_ID` / `CLEVERTAP_PASSCODE` / `CLEVERTAP_REGION`, one shared organizer credential, delivered in the bundle | **No** — read-only, enforced by a hook; see below |
+| `parallel` | [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) — hosted HTTP | Yes — Parallel's own | `PARALLEL_API_KEY` as a bearer token, one shared key, delivered in the bundle | **No** — but read-only by construction, not by hook; see below |
 | `insurwreck-data` | ours — `desk/api/mcp.js` | — | `INSURWRECK_TOKEN` | Allowlisted warehouse slices plus the live claims API, same for everyone |
 | `n8n` | organizer-hosted | — | `N8N_TOKEN` | Shared workspace |
 | `remotion` | [`@remotion/mcp`](https://github.com/remotion-dev/remotion/tree/main/packages/mcp) (MIT) | Yes — Remotion's own | none — unauthenticated, no key | n/a — searches public docs |
@@ -172,6 +173,16 @@ That is a *delivery* gate, not an API scope — CleverTap has no per-user creden
 - **`/api/admin` reports the allowlist size**, including a loud `allowlist EMPTY - nobody is provisioned`. An empty list and a broken credential look identical from a participant's seat, so the panel names which one it is.
 
 Run the checks with `bash plugin/hooks/scripts/test-block-clevertap-writes.sh` and `node desk/test-clevertap-gate.mjs` (the gate test asserts the empty-list default, case/whitespace handling, and that listing one person never implies the domain).
+
+### Parallel: gated for cost, not for safety
+
+The third email-gated service, on the same `emailAllowedFor()` helper — `PARALLEL_EMAILS`, default deny. The reason is different from the other two and worth being explicit about: Parallel is a **metered** web-search API, and one shared key spent by 137 people is a bill nobody chose. Nothing about it is dangerous.
+
+**It carries no write-block hook, and that is a reading rather than an omission.** The server exposes exactly two tools — `web_search` and `web_fetch` — and neither writes anywhere. A hook allowing both and denying everything else would be honest, but it would be the only hook in this kit protecting nothing, which makes the other three look decorative by association.
+
+It is also the only third-party server with **nothing to install**: Parallel hosts it, so there is no npx package, nothing to prewarm, and `/insurwreck:install-parallel` is a credential check plus `/reload-plugins` rather than a download.
+
+What participants should be told is the cost, not the risk: search deliberately rather than crawl, and reach for the warehouse slices first for anything they already answer.
 
 ## Layout
 

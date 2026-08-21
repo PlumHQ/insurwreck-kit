@@ -11,6 +11,7 @@ import {
   mintKula,
   mintZendesk,
   mintClevertap,
+  mintParallel,
   slugHost,
   slugForIdea,
 } from "./_minters.js";
@@ -26,6 +27,7 @@ const SERVICES = [
   "kula",
   "zendesk",
   "clevertap",
+  "parallel",
 ];
 
 // Every service has a minter now. One that throws - usually a missing env var -
@@ -43,6 +45,7 @@ const MINTERS = {
   kula: mintKula,
   zendesk: mintZendesk,
   clevertap: mintClevertap,
+  parallel: mintParallel,
 };
 
 // How long a claim may sit unfulfilled before another caller may retake it. A

@@ -123,5 +123,22 @@ since `/insurwreck:start`; `clevertap` still `pending` in the bundle, so re-run
 `/insurwreck:status`; or an organizer hasn't set the `CLEVERTAP_*` values on the
 desk.
 
-Never print `KULA_API_KEY`, the `ZENDESK_TOKEN`, the `CLEVERTAP_PASSCODE` or the Salesforce access token in full — the service name and
+## Parallel — already on, nothing to authenticate
+
+Same shape as the others. `/insurwreck:start` puts `PARALLEL_API_KEY` from their
+bundle into `~/.claude/settings.json` and the `parallel` server is live after that
+restart. Parallel hosts the endpoint, so there is no package to install.
+
+Two things to tell them, and note the first is about money rather than data:
+
+- **The key is metered and shared.** Search deliberately rather than crawling, and
+  check the Plum warehouse slices first - they answer a lot of what people reach for
+  web search to do, and they cost nothing.
+- **Two tools, both read-only**: `web_search` and `web_fetch`. There is no
+  write-block hook here because the server cannot change anything.
+
+As with Kula and CleverTap, check the allowlist before troubleshooting: `parallel`
+staying `pending` is the correct outcome for most participants, not a fault.
+
+Never print `KULA_API_KEY`, the `ZENDESK_TOKEN`, the `CLEVERTAP_PASSCODE`, the `PARALLEL_API_KEY` or the Salesforce access token in full — the service name and
 last 4 characters at most.

@@ -58,6 +58,7 @@ const wanted = {
   CLEVERTAP_ACCOUNT_ID: svc.clevertap?.account_id,
   CLEVERTAP_PASSCODE: svc.clevertap?.passcode,
   CLEVERTAP_REGION: svc.clevertap?.region,
+  PARALLEL_API_KEY: svc.parallel?.api_key,
 };
 
 let settings = {};
