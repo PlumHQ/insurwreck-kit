@@ -185,7 +185,21 @@ Three lists rather than one column, because each step up is its own decision: re
 
 The dashboard tools stay denied at every level too, so if the version pin ever moves they cannot become reachable through a data grant.
 
-**One thing to know before granting `full` to solve a drafting problem: it will not solve it.** The API has no save-as-draft — `create_campaign` only launches, immediately or at a scheduled time. Save Draft exists only in the dashboard UI, and `clevertap-mcp@1.0.0` does not register the dashboard tools. Verified against the running server: 28 tools, none of them `web_*`.
+**Drafting is possible, and `full` is what enables it — but not through the typed tool.** CleverTap's `/targets/create.json` accepts `"draft": true`, which saves the campaign to the dashboard and sends nothing. The `clevertap_create_campaign` *tool* does not expose that parameter: its schema stops at `name`, `target_mode`, `when`, `content`, `where`, `respect_frequency_caps` and `estimate_only`, and the payload it builds never includes `draft`. The limitation is the tool's schema, not the API.
+
+So a draft goes through `clevertap_request`, which passes an arbitrary body — and which is permitted only at `full`:
+
+```json
+{ "path": "/targets/create.json", "method": "POST",
+  "body": { "name": "…", "target_mode": "push", "when": "now",
+            "draft": true, "where": { … }, "content": { … } } }
+```
+
+`estimate_only: true` is also worth knowing: it returns projected reach without sending, which makes a safe dry run.
+
+The schema gap cannot be fixed here — `clevertap_create_campaign` is defined inside the pinned npm package, not in this repo. Patching it would mean forking the package or moving the version pin, and the pin is load-bearing for other reasons.
+
+A participant writing their own code needs none of this: the Account ID and passcode are in their bundle, and the write-block governs MCP tool calls, not their application.
 
 Run the checks with `bash plugin/hooks/scripts/test-block-clevertap-writes.sh` and `node desk/test-clevertap-gate.mjs` (the gate test asserts the empty-list default, case/whitespace handling, and that listing one person never implies the domain).
 

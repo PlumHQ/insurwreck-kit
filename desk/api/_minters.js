@@ -780,14 +780,16 @@ export async function mintClevertap(email, existing = {}) {
     payload.campaign_note =
       "You have every CleverTap tool this server registers, including profile deletion, consent changes " +
       "via subscribe, and clevertap_request against any endpoint. create_campaign with when:\"now\" SENDS - " +
-      "real push, email or SMS to real Plum members, immediately, with no recall. Note the API has NO " +
-      "save-as-draft: only the dashboard UI can save a draft, so schedule for a future time rather than " +
-      "sending, and test against a segment of one before anything wider.";
+      "real push, email or SMS to real Plum members, immediately, with no recall. To save a DRAFT instead, " +
+      "use clevertap_request with POST /targets/create.json and \"draft\": true - the typed create_campaign " +
+      "tool does not expose that parameter, though the API supports it. estimate_only: true returns reach " +
+      "without sending. Test against a segment of one before anything wider.";
   } else if (payload.access_level === "campaign") {
     payload.campaign_note =
       "You can create and stop campaigns. create_campaign with when:\"now\" SENDS - real push, email or " +
-      "SMS to real Plum members, immediately, with no recall. The API has no save-as-draft, so schedule " +
-      "for a future time rather than sending, and test against a segment of one before anything wider.";
+      "SMS to real Plum members, immediately, with no recall. The typed tool cannot save a draft - that " +
+      "needs clevertap_request, which you do not have - so schedule for a future time rather than sending, " +
+      "and test against a segment of one before anything wider.";
   } else {
     delete payload.campaign_note;
   }
