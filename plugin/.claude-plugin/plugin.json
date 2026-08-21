@@ -1,6 +1,6 @@
 {
   "name": "insurwreck",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Insurwreck 4.0 onboarding: registration, email verification, and credentials for Vercel, Supabase, n8n, Resend, AgentMail and the model gateway, plus read-only MCP servers for Plum data, Salesforce, Kula, Zendesk and CleverTap",
   "author": {
     "name": "AI pod at Plum"
