@@ -83,6 +83,7 @@ is live after that restart. Two things to tell them:
   `zendesk_get_*` and denies everything else, with no override. This matters more than it
   does for Kula: `zendesk_add_public_note` emails the reply to the customer who filed the
   ticket, and `zendesk_create_ticket` drops a fake ticket into a real agent's queue.
+- **If `services.clevertap.campaign_tools` is true**, they can also create and stop campaigns. Say what that means before they use it: `create_campaign` with `when: "now"` sends real push, email or SMS to real Plum members immediately, with no recall. Tell them to schedule rather than send-now while building, and to test against a segment of one before anything wider. `services.clevertap.campaign_note` says the same thing.
 - **What they read is real customer support traffic.** Not a de-identified snapshot.
   Nothing goes on a slide or into Slack.
 

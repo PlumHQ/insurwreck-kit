@@ -59,6 +59,10 @@ const wanted = {
   CLEVERTAP_PASSCODE: svc.clevertap?.passcode,
   CLEVERTAP_REGION: svc.clevertap?.region,
   PARALLEL_API_KEY: svc.parallel?.api_key,
+  // Not a credential - a capability flag the clevertap write-block hook reads.
+  // Only ever the string "1" or absent, so the existing clearing logic removes it
+  // the moment the desk stops granting it.
+  INSURWRECK_CLEVERTAP_CAMPAIGN_TOOLS: svc.clevertap?.campaign_tools ? "1" : undefined,
 };
 
 let settings = {};
