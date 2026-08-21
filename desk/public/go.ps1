@@ -263,6 +263,12 @@ if ($Desktop) {
   if (Test-Have 'claude') {
     Write-Ok "already installed ($(claude --version 2>$null | Select-Object -First 1))"
   } else {
+    # Same ~300 MB binary as the macOS path, and install.ps1 downloads it about as
+    # quietly. Output is not suppressed here, but silence from the installer looks
+    # identical to a hang, so say the size before starting rather than after
+    # someone has already closed the window.
+    Write-Info "Claude Code is a ~300 MB download - usually 3-8 minutes, longer on event wifi."
+    Write-Info "It prints little while it works. That is normal, not a hang."
     Invoke-Expression (Invoke-RestMethod -Uri 'https://claude.ai/install.ps1')
     Sync-Path
     if (Test-Have 'claude') { Write-Ok "installed" }

@@ -76,6 +76,12 @@ else
   B=""; DIM=""; R=""; GRN=""; YLW=""; RED=""; CYN=""
 fi
 
+# Scratch space for the one thing a backgrounded subshell has to hand back: the
+# Claude Code installer's exit code. A subshell cannot set a variable in its
+# parent, and losing that code would turn a failed install into a silent success.
+TMPDIR_CC="$(mktemp -d)"
+trap 'rm -rf "$TMPDIR_CC"' EXIT
+
 STEP=0
 step()  { STEP=$((STEP+1)); printf "\n${B}${CYN}[%d/%d]${R} ${B}%s${R}\n" "$STEP" "$TOTAL_STEPS" "$1"; }
 ok()    { printf "      ${GRN}✓${R} %s\n" "$1"; }
@@ -311,8 +317,47 @@ step "Installing Claude Code"
 if have claude; then
   ok "already installed ($(claude --version 2>/dev/null | head -1))"
 else
-  info "downloading…"
-  curl -fsSL https://claude.ai/install.sh | bash >/dev/null 2>&1 \
+  # This is the longest silent stretch in the whole script and the one people
+  # kill. The binary is ~300 MB, it took 5m19s on a good connection when this was
+  # last measured, and claude.ai/install.sh downloads it with `curl -fsSL` - the
+  # -s means the installer prints nothing at all. So suppressing our end as well
+  # gave a completely frozen terminal for five to twenty minutes.
+  #
+  # The rest of this file already learned this lesson twice, for winget and for
+  # Ghostty: "a slow step is indistinguishable from a hang and people kill the
+  # window mid-install". This step still had the bug.
+  #
+  # So: say the size up front, then show the download growing. Progress is read
+  # from the installer's own download directory rather than from its output,
+  # because it has none.
+  info "Claude Code is a ~300 MB download - usually 3-8 minutes, longer on event wifi."
+  info "The size below should keep climbing. If it does, it is working."
+
+  dl_dir="$HOME/.claude/downloads"
+  ( curl -fsSL https://claude.ai/install.sh | bash >/dev/null 2>&1; echo "$?" > "$TMPDIR_CC/rc" ) &
+  installer_pid=$!
+
+  # 20 minutes. Long enough for bad conference wifi, short enough that a truly
+  # dead download eventually fails with a message instead of hanging till someone
+  # closes the laptop.
+  deadline=$(( $(date +%s) + 1200 ))
+  while kill -0 "$installer_pid" 2>/dev/null; do
+    if [ "$(date +%s)" -ge "$deadline" ]; then
+      kill "$installer_pid" 2>/dev/null || true
+      die "Claude Code download did not finish in 20 minutes. Check your network - a
+  phone hotspot often beats conference wifi - then re-run this same command. It
+  picks up where it left off."
+    fi
+    biggest="$(find "$dl_dir" -type f -name 'claude-*' 2>/dev/null \
+      | while read -r f; do wc -c < "$f" 2>/dev/null; done | sort -n | tail -1)"
+    if [ -n "${biggest:-}" ] && [ "$biggest" -gt 0 ] 2>/dev/null; then
+      printf "\r      %s MB downloaded…   " "$(( biggest / 1048576 ))"
+    fi
+    sleep 3
+  done
+  printf "\r%*s\r" 40 ""
+
+  [ "$(cat "$TMPDIR_CC/rc" 2>/dev/null || echo 1)" = "0" ] \
     || die "Claude Code install failed. Try again, or see https://code.claude.com/docs/en/setup"
   ok "installed"
 fi
