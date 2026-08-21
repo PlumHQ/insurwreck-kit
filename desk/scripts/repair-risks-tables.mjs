@@ -1,6 +1,7 @@
 // Re-provision every team whose own Supabase project is missing its risks table.
 //
-//   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... ADMIN_KEY=... \
+//   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... \
+//   ADMIN_KEY=...  # or DESK_SESSION_TOKEN=... (an organizer session token) \
 //   node desk/scripts/repair-risks-tables.mjs [--dry-run] [--concurrency 3]
 //
 // Organizer-run, so 33 teams do not each have to be walked through
@@ -24,7 +25,20 @@
 const DESK = (process.env.DESK_BASE_URL || "https://insurwreck-desk.preview.plumhq.com").replace(/\/+$/, "");
 const SB_URL = must("SUPABASE_URL").replace(/\/+$/, "");
 const SB_KEY = must("SUPABASE_SERVICE_ROLE_KEY");
-const ADMIN_KEY = must("ADMIN_KEY");
+// Either auth path /api/provision accepts. ADMIN_KEY is often the harder one to
+// obtain in practice: Vercel marks it Sensitive, which means write-only - not even
+// the dashboard shows it back - so if nobody kept a copy it has to be rotated.
+// An organizer session token needs no rotation: verify at the desk as any
+// ORGANIZER_EMAILS address and use the token that returns.
+const ADMIN_KEY = process.env.ADMIN_KEY || "";
+const SESSION_TOKEN = process.env.DESK_SESSION_TOKEN || "";
+if (!ADMIN_KEY && !SESSION_TOKEN) {
+  console.error("ERROR: set ADMIN_KEY or DESK_SESSION_TOKEN (an organizer session token).");
+  process.exit(1);
+}
+const authHeaders = ADMIN_KEY
+  ? { "x-admin-key": ADMIN_KEY }
+  : { authorization: `Bearer ${SESSION_TOKEN}` };
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const CONCURRENCY = (() => {
@@ -113,7 +127,7 @@ async function worker() {
     try {
       const res = await fetch(`${DESK}/api/provision`, {
         method: "POST",
-        headers: { "content-type": "application/json", "x-admin-key": ADMIN_KEY },
+        headers: { "content-type": "application/json", ...authHeaders },
         body: JSON.stringify({ email: t.email }),
         // Generous: the endpoint itself is allowed 300s by vercel.json.
         signal: AbortSignal.timeout(300000),
