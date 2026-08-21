@@ -194,7 +194,7 @@
 }
 
 .t-prompt { color: var(--plum); font-weight: 600; }
-.t-ok     { color: #2f7d52; font-weight: 600; }
+.t-ok     { color: var(--ok); font-weight: 600; }
 .t-dim    { color: var(--faint); }
 .t-plum   { color: var(--plum); font-weight: 600; }
 
@@ -488,6 +488,18 @@
 
 .panel-signal h3 { color: #9d3f1f; }
 
+.panel-ok {
+  background: var(--ok-wash);
+  border-color: rgb(47 125 82 / 26%);
+}
+
+.panel-ok h3 { color: var(--ok); }
+
+.panel-ok .panel-icon {
+  color: var(--ok);
+  background: rgb(47 125 82 / 12%);
+}
+
 .panel-icon {
   display: inline-grid;
   place-items: center;
@@ -530,6 +542,7 @@
 }
 
 .panel-signal .panel-foot { border-top-color: rgb(198 90 50 / 22%); }
+.panel-ok .panel-foot { border-top-color: rgb(47 125 82 / 22%); }
 
 .term-inline + p { margin-top: 14px; }
 
