@@ -56,8 +56,10 @@
 #
 # Understand what these send before adding anyone: create_campaign posts
 # /targets/create.json and with when:"now" delivers push, email or SMS to real
-# members immediately - no draft, no recall. The API has NO save-as-draft; that
-# exists only in the dashboard UI, whose tools this build does not register.
+# members immediately - no draft, no recall from the typed tool. The API itself
+# DOES support drafts ("draft": true on /targets/create.json); the typed tool just
+# does not expose the parameter, so a draft has to go through clevertap_request,
+# which is why full is the level that enables drafting.
 #
 # Fail-open on error by design: only the explicit JSON "deny" below blocks, and
 # any internal failure falls through to exit 0. A broken hook must not stop
