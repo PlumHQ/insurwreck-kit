@@ -172,6 +172,12 @@ That is a *delivery* gate, not an API scope — CleverTap has no per-user creden
 - **It does not revoke.** Removing an email stops future mints. Anyone already provisioned keeps the passcode in their `~/.claude/settings.json`; taking it back means revoking their `credentials` row *and* clearing those three keys on their machine.
 - **`/api/admin` reports the allowlist size**, including a loud `allowlist EMPTY - nobody is provisioned`. An empty list and a broken credential look identical from a participant's seat, so the panel names which one it is.
 
+**One narrow exception exists, and it is not a general override.** `CLEVERTAP_CAMPAIGN_EMAILS` is a second, smaller list of people who may also use `clevertap_create_campaign` and `clevertap_stop_campaign` — for an idea that is *about* campaign automation and therefore cannot be built read-only. The desk delivers it as a capability flag (`INSURWRECK_CLEVERTAP_CAMPAIGN_TOOLS`) rather than as a local edit, so who holds it is a recorded decision.
+
+It widens **exactly those two names**. `clevertap_request` stays denied, and so does every `upload_*`, `delete_profile`, `demerge_profile`, `disassociate_phone` and `subscribe` — a blanket override would hand over consent flags and profile deletion alongside the campaign tools, which is not what anyone would remember granting. The test asserts that explicitly: 12 tools are checked *with the flag set* and must still deny, and a truthy-but-not-`"1"` value must not count as a grant.
+
+It is kept separate from `CLEVERTAP_EMAILS` on purpose. Being trusted to read engagement analytics is not the same decision as being trusted to send to real members, and one combined list would hide the bigger grant inside the smaller one.
+
 Run the checks with `bash plugin/hooks/scripts/test-block-clevertap-writes.sh` and `node desk/test-clevertap-gate.mjs` (the gate test asserts the empty-list default, case/whitespace handling, and that listing one person never implies the domain).
 
 ### Parallel: gated for cost, not for safety

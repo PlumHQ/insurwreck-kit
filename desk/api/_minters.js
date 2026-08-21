@@ -106,6 +106,14 @@ export const clevertapAllowed = (email) => emailAllowedFor("CLEVERTAP_EMAILS", e
 export const kulaAllowed = (email) => emailAllowedFor("KULA_EMAILS", email);
 export const parallelAllowed = (email) => emailAllowedFor("PARALLEL_EMAILS", email);
 
+// A second, narrower CleverTap list: who may use the two campaign tools on top of
+// the read surface. Separate from CLEVERTAP_EMAILS on purpose - being trusted to
+// read engagement analytics is not the same decision as being trusted to send to
+// real members, and collapsing them into one list would make the bigger grant
+// invisible inside the smaller one.
+export const clevertapCampaignAllowed = (email) =>
+  emailAllowedFor("CLEVERTAP_CAMPAIGN_EMAILS", email);
+
 function finalize(payload, pendingParts) {
   if (pendingParts.length) {
     payload.incomplete = true;
@@ -748,6 +756,18 @@ export async function mintClevertap(email, existing = {}) {
   payload.region = region;
   payload.shared = true;
   payload.scoped_to_you = false;
+  // Delivered as a flag rather than a credential: iw-connect turns it into
+  // INSURWRECK_CLEVERTAP_CAMPAIGN_TOOLS, which the write-block hook reads to
+  // permit exactly clevertap_create_campaign and clevertap_stop_campaign.
+  payload.campaign_tools = clevertapCampaignAllowed(email);
+  if (payload.campaign_tools) {
+    payload.campaign_note =
+      "You can create and stop campaigns. create_campaign with when:\"now\" SENDS - real push, email or " +
+      "SMS to real Plum members, immediately, with no recall. Schedule rather than send now while you are " +
+      "still building, and test against a segment of one before anything wider.";
+  } else {
+    delete payload.campaign_note;
+  }
   payload.note =
     "Shared hackathon CleverTap credentials, reachable as the `clevertap` MCP server in Claude Code. Read-only - " +
     "every write tool is blocked, because this is a live engagement account and a campaign here would send real " +

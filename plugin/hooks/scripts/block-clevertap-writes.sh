@@ -32,6 +32,25 @@
 # (/counts/profiles.json, /counts/trends.json), so an HTTP-method filter would
 # not work even if we could see the method from here - the name is the signal.
 #
+# ONE narrow exception exists, and it is not a general override.
+#
+# INSURWRECK_CLEVERTAP_CAMPAIGN_TOOLS=1 permits exactly two tools -
+# clevertap_create_campaign and clevertap_stop_campaign - for a participant whose
+# idea is CleverTap campaign automation and who therefore cannot build anything
+# read-only. It is delivered per person through the bundle
+# (CLEVERTAP_CAMPAIGN_EMAILS on the desk), not set by hand, so who holds it is a
+# recorded decision rather than a local edit.
+#
+# It deliberately does NOT unlock the rest. clevertap_request stays denied, and so
+# do every upload_*, delete_profile, demerge_profile, disassociate_phone and
+# subscribe - a blanket override would hand over consent flags and profile
+# deletion along with the campaign tools, which is not what was asked for and not
+# what anyone would remember granting. There is a test asserting exactly that.
+#
+# Understand what the two permitted tools do before adding anyone:
+# create_campaign posts /targets/create.json and with when:"now" sends push,
+# email or SMS to real members immediately - no draft, no recall.
+#
 # Fail-open on error by design: only the explicit JSON "deny" below blocks, and
 # any internal failure falls through to exit 0. A broken hook must not stop
 # someone's build day. The cost of that choice is bounded because the server is
@@ -89,6 +108,15 @@ case "$name" in
   clevertap_get_*|clevertap_list_projects|clevertap_poll)
     exit 0 ;;
 esac
+
+# The narrow campaign grant. Checked after the dashboard denials and after the
+# read allowlist, so it can only ever widen these two names and nothing else.
+if [ "${INSURWRECK_CLEVERTAP_CAMPAIGN_TOOLS:-}" = "1" ]; then
+  case "$name" in
+    clevertap_create_campaign|clevertap_stop_campaign)
+      exit 0 ;;
+  esac
+fi
 
 # Specific reasons for the tools an agent will actually reach for, so the block
 # teaches instead of just refusing.
