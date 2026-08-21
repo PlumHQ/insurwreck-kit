@@ -32,24 +32,32 @@
 # (/counts/profiles.json, /counts/trends.json), so an HTTP-method filter would
 # not work even if we could see the method from here - the name is the signal.
 #
-# ONE narrow exception exists, and it is not a general override.
+# TWO graded exceptions exist, both delivered per person through the bundle
+# (CLEVERTAP_CAMPAIGN_EMAILS and CLEVERTAP_FULL_EMAILS on the desk) rather than
+# set by hand, so who holds what is a recorded decision and not a local edit.
 #
-# INSURWRECK_CLEVERTAP_CAMPAIGN_TOOLS=1 permits exactly two tools -
-# clevertap_create_campaign and clevertap_stop_campaign - for a participant whose
-# idea is CleverTap campaign automation and who therefore cannot build anything
-# read-only. It is delivered per person through the bundle
-# (CLEVERTAP_CAMPAIGN_EMAILS on the desk), not set by hand, so who holds it is a
-# recorded decision rather than a local edit.
+#   INSURWRECK_CLEVERTAP_ACCESS=campaign
+#     Adds exactly clevertap_create_campaign and clevertap_stop_campaign. For an
+#     idea that IS campaign automation and cannot be built read-only. Nothing
+#     else widens: clevertap_request stays denied, and so do every upload_*,
+#     delete_profile, demerge_profile, disassociate_phone and subscribe.
 #
-# It deliberately does NOT unlock the rest. clevertap_request stays denied, and so
-# do every upload_*, delete_profile, demerge_profile, disassociate_phone and
-# subscribe - a blanket override would hand over consent flags and profile
-# deletion along with the campaign tools, which is not what was asked for and not
-# what anyone would remember granting. There is a test asserting exactly that.
+#   INSURWRECK_CLEVERTAP_ACCESS=full
+#     Adds every write the pinned server registers, including profile deletion,
+#     consent changes via subscribe, and clevertap_request with its arbitrary
+#     path and method. Granted by name, to one person, knowingly.
 #
-# Understand what the two permitted tools do before adding anyone:
-# create_campaign posts /targets/create.json and with when:"now" sends push,
-# email or SMS to real members immediately - no draft, no recall.
+# clevertap_configure stays denied at BOTH levels, and that is not an oversight.
+# It grants no capability - the credentials are already wired into the server -
+# and its only effect is printing the shared Account ID and passcode back as
+# text, putting a live credential that belongs to everyone on the key into one
+# person's transcript. "Full access to the data" and "leak the shared secret"
+# are different things.
+#
+# Understand what these send before adding anyone: create_campaign posts
+# /targets/create.json and with when:"now" delivers push, email or SMS to real
+# members immediately - no draft, no recall. The API has NO save-as-draft; that
+# exists only in the dashboard UI, whose tools this build does not register.
 #
 # Fail-open on error by design: only the explicit JSON "deny" below blocks, and
 # any internal failure falls through to exit 0. A broken hook must not stop
@@ -109,14 +117,22 @@ case "$name" in
     exit 0 ;;
 esac
 
-# The narrow campaign grant. Checked after the dashboard denials and after the
-# read allowlist, so it can only ever widen these two names and nothing else.
-if [ "${INSURWRECK_CLEVERTAP_CAMPAIGN_TOOLS:-}" = "1" ]; then
-  case "$name" in
-    clevertap_create_campaign|clevertap_stop_campaign)
-      exit 0 ;;
-  esac
-fi
+# The graded grants. Checked after the dashboard denials and after the read
+# allowlist, so neither can reach a dashboard tool even if the version pin moves.
+case "${INSURWRECK_CLEVERTAP_ACCESS:-}" in
+  campaign)
+    case "$name" in
+      clevertap_create_campaign|clevertap_stop_campaign) exit 0 ;;
+    esac
+    ;;
+  full)
+    # Everything except configure - see the note at the top of this file.
+    case "$name" in
+      clevertap_configure) ;;
+      *) exit 0 ;;
+    esac
+    ;;
+esac
 
 # Specific reasons for the tools an agent will actually reach for, so the block
 # teaches instead of just refusing.

@@ -172,11 +172,20 @@ That is a *delivery* gate, not an API scope — CleverTap has no per-user creden
 - **It does not revoke.** Removing an email stops future mints. Anyone already provisioned keeps the passcode in their `~/.claude/settings.json`; taking it back means revoking their `credentials` row *and* clearing those three keys on their machine.
 - **`/api/admin` reports the allowlist size**, including a loud `allowlist EMPTY - nobody is provisioned`. An empty list and a broken credential look identical from a participant's seat, so the panel names which one it is.
 
-**One narrow exception exists, and it is not a general override.** `CLEVERTAP_CAMPAIGN_EMAILS` is a second, smaller list of people who may also use `clevertap_create_campaign` and `clevertap_stop_campaign` — for an idea that is *about* campaign automation and therefore cannot be built read-only. The desk delivers it as a capability flag (`INSURWRECK_CLEVERTAP_CAMPAIGN_TOOLS`) rather than as a local edit, so who holds it is a recorded decision.
+**Two graded exceptions exist, each its own list.** The desk resolves a level and delivers it as `INSURWRECK_CLEVERTAP_ACCESS`, so who holds what is a recorded decision rather than a local edit on a laptop.
 
-It widens **exactly those two names**. `clevertap_request` stays denied, and so does every `upload_*`, `delete_profile`, `demerge_profile`, `disassociate_phone` and `subscribe` — a blanket override would hand over consent flags and profile deletion alongside the campaign tools, which is not what anyone would remember granting. The test asserts that explicitly: 12 tools are checked *with the flag set* and must still deny, and a truthy-but-not-`"1"` value must not count as a grant.
+| Level | List | Adds |
+|---|---|---|
+| `campaign` | `CLEVERTAP_CAMPAIGN_EMAILS` | `create_campaign`, `stop_campaign` — nothing else |
+| `full` | `CLEVERTAP_FULL_EMAILS` | every write the pinned server registers, including `delete_profile`, `subscribe` (consent) and `clevertap_request` |
 
-It is kept separate from `CLEVERTAP_EMAILS` on purpose. Being trusted to read engagement analytics is not the same decision as being trusted to send to real members, and one combined list would hide the bigger grant inside the smaller one.
+Three lists rather than one column, because each step up is its own decision: reading engagement analytics, sending to real members, and deleting profiles are not the same trust. One combined list would hide the bigger grant inside the smaller one.
+
+**`clevertap_configure` is denied even at `full`**, and that is not an oversight. It grants no capability — the credentials are already wired into the server — and its only effect is printing the shared Account ID and passcode back as text, putting a credential that belongs to everyone on the key into one person's transcript. *Full access to the data* and *leak the shared secret* are different things.
+
+The dashboard tools stay denied at every level too, so if the version pin ever moves they cannot become reachable through a data grant.
+
+**One thing to know before granting `full` to solve a drafting problem: it will not solve it.** The API has no save-as-draft — `create_campaign` only launches, immediately or at a scheduled time. Save Draft exists only in the dashboard UI, and `clevertap-mcp@1.0.0` does not register the dashboard tools. Verified against the running server: 28 tools, none of them `web_*`.
 
 Run the checks with `bash plugin/hooks/scripts/test-block-clevertap-writes.sh` and `node desk/test-clevertap-gate.mjs` (the gate test asserts the empty-list default, case/whitespace handling, and that listing one person never implies the domain).
 

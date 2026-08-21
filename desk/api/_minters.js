@@ -114,6 +114,21 @@ export const parallelAllowed = (email) => emailAllowedFor("PARALLEL_EMAILS", ema
 export const clevertapCampaignAllowed = (email) =>
   emailAllowedFor("CLEVERTAP_CAMPAIGN_EMAILS", email);
 
+// The widest CleverTap grant: every write the pinned server registers, including
+// profile deletion, consent changes and the arbitrary-path clevertap_request.
+// A third list rather than a value on the second, for the same reason the second
+// exists - each step up is its own decision and should be visible as one.
+export const clevertapFullAllowed = (email) =>
+  emailAllowedFor("CLEVERTAP_FULL_EMAILS", email);
+
+// full implies campaign; campaign implies neither. Resolved here rather than in
+// the hook so the desk stays the single place that decides.
+export function clevertapAccessLevel(email) {
+  if (clevertapFullAllowed(email)) return "full";
+  if (clevertapCampaignAllowed(email)) return "campaign";
+  return null;
+}
+
 function finalize(payload, pendingParts) {
   if (pendingParts.length) {
     payload.incomplete = true;
@@ -759,12 +774,20 @@ export async function mintClevertap(email, existing = {}) {
   // Delivered as a flag rather than a credential: iw-connect turns it into
   // INSURWRECK_CLEVERTAP_CAMPAIGN_TOOLS, which the write-block hook reads to
   // permit exactly clevertap_create_campaign and clevertap_stop_campaign.
-  payload.campaign_tools = clevertapCampaignAllowed(email);
-  if (payload.campaign_tools) {
+  payload.access_level = clevertapAccessLevel(email);
+  payload.campaign_tools = payload.access_level !== null;
+  if (payload.access_level === "full") {
+    payload.campaign_note =
+      "You have every CleverTap tool this server registers, including profile deletion, consent changes " +
+      "via subscribe, and clevertap_request against any endpoint. create_campaign with when:\"now\" SENDS - " +
+      "real push, email or SMS to real Plum members, immediately, with no recall. Note the API has NO " +
+      "save-as-draft: only the dashboard UI can save a draft, so schedule for a future time rather than " +
+      "sending, and test against a segment of one before anything wider.";
+  } else if (payload.access_level === "campaign") {
     payload.campaign_note =
       "You can create and stop campaigns. create_campaign with when:\"now\" SENDS - real push, email or " +
-      "SMS to real Plum members, immediately, with no recall. Schedule rather than send now while you are " +
-      "still building, and test against a segment of one before anything wider.";
+      "SMS to real Plum members, immediately, with no recall. The API has no save-as-draft, so schedule " +
+      "for a future time rather than sending, and test against a segment of one before anything wider.";
   } else {
     delete payload.campaign_note;
   }

@@ -39,6 +39,7 @@ async function health() {
     ["clevertap creds configured", "CLEVERTAP_PASSCODE"],
     ["clevertap email allowlist set", "CLEVERTAP_EMAILS"],
     ["clevertap CAMPAIGN grant list", "CLEVERTAP_CAMPAIGN_EMAILS"],
+    ["clevertap FULL grant list", "CLEVERTAP_FULL_EMAILS"],
     ["kula email allowlist set", "KULA_EMAILS"],
     ["parallel key set", "PARALLEL_API_KEY"],
     ["parallel email allowlist set", "PARALLEL_EMAILS"],

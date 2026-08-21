@@ -60,20 +60,20 @@ for var in INSURWRECK_ALLOW_CLEVERTAP_WRITES CLEVERTAP_ALLOW_WRITES CLEVERTAP_WR
   fi
 done
 
-# The narrow campaign grant permits EXACTLY two tools.
+# ACCESS=campaign permits EXACTLY two tools.
 for name in clevertap_create_campaign clevertap_stop_campaign; do
   out="$(printf '{"tool_name":"mcp__clevertap__%s"}' "$name" \
-    | env INSURWRECK_CLEVERTAP_CAMPAIGN_TOOLS=1 bash "$HOOK")"
+    | env INSURWRECK_CLEVERTAP_ACCESS=campaign bash "$HOOK")"
   if [ -z "$out" ]; then
     pass=$((pass+1))
   else
-    echo "FAIL: the campaign grant did not permit $name"; fail=$((fail+1))
+    echo "FAIL: ACCESS=campaign did not permit $name"; fail=$((fail+1))
   fi
 done
 
-# ...and widens NOTHING else. This is the assertion that matters: a grant meant
-# for two campaign tools must not quietly hand over consent flags, profile
-# deletion, or the arbitrary-path escape hatch.
+# ...and widens NOTHING else. The assertion that matters: a grant meant for two
+# campaign tools must not quietly hand over consent flags, profile deletion, or
+# the arbitrary-path escape hatch.
 for name in clevertap_request clevertap_upload_profile clevertap_upload_events \
             clevertap_upload_device_token clevertap_delete_profile \
             clevertap_demerge_profile clevertap_disassociate_phone \
@@ -81,24 +81,63 @@ for name in clevertap_request clevertap_upload_profile clevertap_upload_events \
             clevertap_send_test_push clevertap_web_login \
             clevertap_unknown_future_tool; do
   out="$(printf '{"tool_name":"mcp__clevertap__%s"}' "$name" \
-    | env INSURWRECK_CLEVERTAP_CAMPAIGN_TOOLS=1 bash "$HOOK")"
+    | env INSURWRECK_CLEVERTAP_ACCESS=campaign bash "$HOOK")"
   if printf '%s' "$out" | grep -q '"permissionDecision":"deny"'; then
     pass=$((pass+1))
   else
-    echo "FAIL: the campaign grant widened $name, which it must not"; fail=$((fail+1))
+    echo "FAIL: ACCESS=campaign widened $name, which it must not"; fail=$((fail+1))
   fi
 done
 
-# The flag only counts as exactly "1" - a truthy-looking value is not a grant.
-for val in 0 true yes ""; do
-  out="$(printf '{"tool_name":"mcp__clevertap__clevertap_create_campaign"}' \
-    | env INSURWRECK_CLEVERTAP_CAMPAIGN_TOOLS="$val" bash "$HOOK")"
+# ACCESS=full permits the writes, deliberately.
+for name in clevertap_create_campaign clevertap_stop_campaign clevertap_request \
+            clevertap_upload_profile clevertap_delete_profile clevertap_subscribe \
+            clevertap_demerge_profile clevertap_disassociate_phone; do
+  out="$(printf '{"tool_name":"mcp__clevertap__%s"}' "$name" \
+    | env INSURWRECK_CLEVERTAP_ACCESS=full bash "$HOOK")"
+  if [ -z "$out" ]; then
+    pass=$((pass+1))
+  else
+    echo "FAIL: ACCESS=full did not permit $name"; fail=$((fail+1))
+  fi
+done
+
+# Even at full: configure stays denied, because it grants no capability and its
+# only effect is printing a shared live credential into one person's transcript.
+# The dashboard tools stay denied too - they are not in the pinned build, and if
+# the pin ever moves they must not become reachable by a data grant.
+for name in clevertap_configure clevertap_web_login clevertap_web_request \
+            clevertap_send_test_push clevertap_get_campaigns_ui; do
+  out="$(printf '{"tool_name":"mcp__clevertap__%s"}' "$name" \
+    | env INSURWRECK_CLEVERTAP_ACCESS=full bash "$HOOK")"
   if printf '%s' "$out" | grep -q '"permissionDecision":"deny"'; then
     pass=$((pass+1))
   else
-    echo "FAIL: INSURWRECK_CLEVERTAP_CAMPAIGN_TOOLS='$val' was treated as a grant"; fail=$((fail+1))
+    echo "FAIL: ACCESS=full permitted $name, which it must never"; fail=$((fail+1))
   fi
 done
+
+# Only the two documented levels count. A typo, a guess, or the old flag name
+# must grant nothing rather than falling through to something permissive.
+for val in 1 true yes FULL Campaign admin ""; do
+  out="$(printf '{"tool_name":"mcp__clevertap__clevertap_create_campaign"}' \
+    | env INSURWRECK_CLEVERTAP_ACCESS="$val" bash "$HOOK")"
+  if printf '%s' "$out" | grep -q '"permissionDecision":"deny"'; then
+    pass=$((pass+1))
+  else
+    echo "FAIL: ACCESS='$val' was treated as a grant"; fail=$((fail+1))
+  fi
+done
+
+# The superseded flag name must be inert, so a stale settings.json from the
+# previous shape does not silently keep granting anything.
+out="$(printf '{"tool_name":"mcp__clevertap__clevertap_create_campaign"}' \
+  | env INSURWRECK_CLEVERTAP_CAMPAIGN_TOOLS=1 bash "$HOOK")"
+if printf '%s' "$out" | grep -q '"permissionDecision":"deny"'; then
+  pass=$((pass+1))
+else
+  echo "FAIL: the superseded CAMPAIGN_TOOLS flag still grants"; fail=$((fail+1))
+fi
 
 # Malformed input must fail open rather than block every CleverTap call.
 for payload in '' 'not json' '{}'; do
