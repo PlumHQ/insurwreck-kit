@@ -476,19 +476,33 @@ export async function mintSupabase(email, existing = {}, context = {}) {
       );
       alter table public.risks enable row level security;
     `;
-    try {
-      const res = await fetch(`${SUPABASE_API}/projects/${payload.project_ref}/database/query`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ query: ddl }),
-      });
-      if (res.ok) {
-        payload.risks_table_ready = true;
-      } else {
-        console.error(`risks table create failed for ${email}: ${res.status} ${await res.text()}`);
+    // Retry, because the key poll above is not proof the database is up. A new
+    // Supabase project exposes its API keys BEFORE Postgres accepts queries, so
+    // firing the DDL the moment keys appear races the database coming up - and it
+    // lost that race for 33 of 47 teams, while 14 whose provisioning happened to
+    // run slower succeeded. Same shape as the key poll: bounded, then give up and
+    // leave it as a pending part for the next repair.
+    const ddlDeadline = Date.now() + 40000;
+    let lastError = "";
+    while (Date.now() < ddlDeadline && !payload.risks_table_ready) {
+      try {
+        const res = await fetch(`${SUPABASE_API}/projects/${payload.project_ref}/database/query`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ query: ddl }),
+        });
+        if (res.ok) {
+          payload.risks_table_ready = true;
+          break;
+        }
+        lastError = `${res.status} ${(await res.text()).slice(0, 200)}`;
+      } catch (error) {
+        lastError = error.message;
       }
-    } catch (error) {
-      console.error(`risks table create failed for ${email}:`, error.message);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+    if (!payload.risks_table_ready && lastError) {
+      console.error(`risks table create failed for ${email} after retries: ${lastError}`);
     }
   }
 
