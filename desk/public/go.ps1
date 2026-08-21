@@ -607,20 +607,17 @@ guardrails are non-negotiable.
 4. **Keep sensitive data off Slack** — Share summaries ("5 active claims") not
    details ("John Doe has 5 claims").
 
-5. **Date range enforcement** — All data queries must specify a date range;
-   maximum 1-year window per query.
-
-6. **No export buttons in what you build** — Their app may display data, not
+5. **No export buttons in what you build** — Their app may display data, not
    re-export it. Pulling a slice through the kit is fine; adding a "download CSV"
    button to their own UI hands it onward to people the desk cannot see.
 
-7. **Audit logging required** — High-risk features must log: who accessed data,
+6. **Audit logging required** — High-risk features must log: who accessed data,
    when, what they searched for.
 
-8. **External integrations** — Request minimum OAuth scopes (not "admin"), store
+7. **External integrations** — Request minimum OAuth scopes (not "admin"), store
    secrets in environment variables, log all API calls.
 
-9. **Document all data access** — Code comments must explain: what data accessed,
+8. **Document all data access** — Code comments must explain: what data accessed,
    why, what protects it.
 
 ## Log requests that cross a data governance guardrail
