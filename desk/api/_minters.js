@@ -104,6 +104,7 @@ export function emailAllowedFor(envName, email) {
 
 export const clevertapAllowed = (email) => emailAllowedFor("CLEVERTAP_EMAILS", email);
 export const kulaAllowed = (email) => emailAllowedFor("KULA_EMAILS", email);
+export const parallelAllowed = (email) => emailAllowedFor("PARALLEL_EMAILS", email);
 
 function finalize(payload, pendingParts) {
   if (pendingParts.length) {
@@ -751,6 +752,40 @@ export async function mintClevertap(email, existing = {}) {
     "Shared hackathon CleverTap credentials, reachable as the `clevertap` MCP server in Claude Code. Read-only - " +
     "every write tool is blocked, because this is a live engagement account and a campaign here would send real " +
     "push, email and SMS to real members. Read the analytics freely; write anything you generate to your own Supabase.";
+  return finalize(payload, []);
+}
+
+// -------------------------------------------------------------- parallel ---
+
+// Parallel's own hosted Search MCP (https://search.parallel.ai/mcp), for the two
+// ideas whose research needs live web rather than the warehouse slices.
+//
+// Unlike kula, zendesk and clevertap this one carries NO write-block hook, and
+// that is a deliberate reading rather than an omission: the server exposes
+// exactly two tools, web_search and web_fetch, and neither writes anywhere. A
+// hook allowing both and denying everything else would be honest, but it would
+// also be the only hook in the kit protecting nothing - see the README.
+//
+// Still email-gated, on the same helper as the other two. Not because a search
+// API is dangerous, but because the key is metered and one shared key spent by
+// 137 people is a bill nobody chose.
+export async function mintParallel(email, existing = {}) {
+  if (!parallelAllowed(email)) {
+    throw new Error(`parallel not enabled for ${email} (not in PARALLEL_EMAILS)`);
+  }
+
+  const key = process.env.PARALLEL_API_KEY;
+  if (!key) throw new Error("PARALLEL_API_KEY not set");
+
+  const payload = { ...existing };
+  payload.api_key = key;
+  payload.endpoint = "https://search.parallel.ai/mcp";
+  payload.shared = true;
+  payload.scoped_to_you = false;
+  payload.note =
+    "Shared Parallel Search key, reachable as the `parallel` MCP server in Claude Code. Two tools: " +
+    "web_search and web_fetch, both read-only. The key is metered and shared, so search deliberately " +
+    "rather than crawling - and prefer the Plum warehouse slices for anything they already answer.";
   return finalize(payload, []);
 }
 

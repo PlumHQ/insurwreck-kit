@@ -57,6 +57,7 @@ const SERVICES = [
   ["kula", "Kula", "read-only recruiting data"],
   ["zendesk", "Zendesk", "read-only support tickets"],
   ["clevertap", "CleverTap", "read-only engagement analytics"],
+  ["parallel", "Parallel", "live web search and fetch"],
 ];
 
 const services = bundle.services || {};

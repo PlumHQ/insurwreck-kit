@@ -10,8 +10,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-const { emailAllowedFor, kulaAllowed, clevertapAllowed, mintKula, mintClevertap } =
-  await import("./api/_minters.js");
+const {
+  emailAllowedFor,
+  kulaAllowed,
+  clevertapAllowed,
+  parallelAllowed,
+  mintKula,
+  mintClevertap,
+  mintParallel,
+} = await import("./api/_minters.js");
 
 // `await run()`, not `return run()`: returning the promise restores the
 // environment the moment the callback hands one back, so an async body would run
@@ -36,6 +43,7 @@ async function withEnv(vars, run) {
 const GATES = [
   { name: "kula", env: "KULA_EMAILS", fn: (e) => kulaAllowed(e) },
   { name: "clevertap", env: "CLEVERTAP_EMAILS", fn: (e) => clevertapAllowed(e) },
+  { name: "parallel", env: "PARALLEL_EMAILS", fn: (e) => parallelAllowed(e) },
 ];
 
 for (const gate of GATES) {
@@ -81,14 +89,44 @@ for (const gate of GATES) {
   });
 }
 
-test("the two gates are independent", async () => {
+test("the gates are independent of each other", async () => {
   // The whole reason for one shared helper: a copied second implementation is
-  // how one list quietly starts honouring the other's variable.
-  await withEnv({ KULA_EMAILS: "k@plumhq.com", CLEVERTAP_EMAILS: "c@plumhq.com" }, () => {
-    assert.equal(kulaAllowed("k@plumhq.com"), true);
-    assert.equal(kulaAllowed("c@plumhq.com"), false, "kula must not honour the clevertap list");
-    assert.equal(clevertapAllowed("c@plumhq.com"), true);
-    assert.equal(clevertapAllowed("k@plumhq.com"), false, "clevertap must not honour the kula list");
+  // how one list quietly starts honouring another's variable.
+  await withEnv(
+    { KULA_EMAILS: "k@plumhq.com", CLEVERTAP_EMAILS: "c@plumhq.com", PARALLEL_EMAILS: "p@plumhq.com" },
+    () => {
+      assert.equal(kulaAllowed("k@plumhq.com"), true);
+      assert.equal(kulaAllowed("c@plumhq.com"), false);
+      assert.equal(kulaAllowed("p@plumhq.com"), false);
+      assert.equal(clevertapAllowed("c@plumhq.com"), true);
+      assert.equal(clevertapAllowed("k@plumhq.com"), false);
+      assert.equal(clevertapAllowed("p@plumhq.com"), false);
+      assert.equal(parallelAllowed("p@plumhq.com"), true);
+      assert.equal(parallelAllowed("k@plumhq.com"), false);
+      assert.equal(parallelAllowed("c@plumhq.com"), false);
+    }
+  );
+});
+
+test("mintParallel refuses an unlisted email even with a key present", async () => {
+  await withEnv(
+    { PARALLEL_EMAILS: "allowed@plumhq.com", PARALLEL_API_KEY: "not-a-real-key" },
+    async () => {
+      await assert.rejects(
+        () => mintParallel("blocked@plumhq.com"),
+        /parallel not enabled for blocked@plumhq\.com/
+      );
+      const payload = await mintParallel("allowed@plumhq.com");
+      assert.equal(payload.api_key, "not-a-real-key");
+      assert.equal(payload.endpoint, "https://search.parallel.ai/mcp");
+      assert.equal(payload.scoped_to_you, false);
+    }
+  );
+});
+
+test("mintParallel on the allowlist still fails closed with no key", async () => {
+  await withEnv({ PARALLEL_EMAILS: "allowed@plumhq.com", PARALLEL_API_KEY: undefined }, async () => {
+    await assert.rejects(() => mintParallel("allowed@plumhq.com"), /PARALLEL_API_KEY not set/);
   });
 });
 
