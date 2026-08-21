@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Insurwreck 4.0 build kit - onboarding, credentials and read-only Plum data for participants",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "plugins": [
     {
