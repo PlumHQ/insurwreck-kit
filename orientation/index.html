@@ -91,7 +91,7 @@
               checkpoint — not at the end, when you've lost twenty minutes.
             </p>
             <div class="principle-list">
-              <div><span>01</span><p><strong>Set up.</strong> One command installs everything. Five steps, each with a tick.</p></div>
+              <div><span>01</span><p><strong>Set up.</strong> One command installs everything. Six steps, each with a tick.</p></div>
               <div><span>02</span><p><strong>Meet the harness.</strong> What got built for you, and what you can now just ask for.</p></div>
               <div><span>03</span><p><strong>Try one thing.</strong> Point it at a real problem and watch something get made.</p></div>
             </div>
@@ -104,7 +104,7 @@
         <div class="wrap">
           <div class="section-heading">
             <p class="eyebrow">Stage one · Set up</p>
-            <h2>Five steps.<br />Tick each one.</h2>
+            <h2>Six steps.<br />Tick each one.</h2>
             <p>
               Your ticks are saved on this device, so you can see your own progress while we go through
               it together.
@@ -141,9 +141,8 @@
                             <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
                           </button>
                         </div>
-                        <pre><span class="t-prompt">$</span> <span id="cmd-install">curl -fsSL https://insurwreck-desk.preview.plumhq.com/go | bash</span>
-
-<span class="t-ok">✓</span> Ghostty installed
+                        <pre class="term-cmd"><span class="t-prompt">$</span> <span id="cmd-install">curl -fsSL https://insurwreck-desk.preview.plumhq.com/go | bash</span></pre>
+                        <pre class="term-output"><span class="t-ok">✓</span> Ghostty installed
 <span class="t-ok">✓</span> Claude Code installed
 <span class="t-ok">✓</span> node and Salesforce CLI ready
 <span class="t-ok">✓</span> Insurwreck toolkit installed
@@ -173,9 +172,8 @@
                             <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
                           </button>
                         </div>
-                        <pre><span class="t-prompt">$</span> <span id="cmd-install-win">irm https://insurwreck-desk.preview.plumhq.com/win | iex</span>
-
-<span class="t-ok">✓</span> Claude Code installed
+                        <pre class="term-cmd"><span class="t-prompt">$</span> <span id="cmd-install-win">irm https://insurwreck-desk.preview.plumhq.com/win | iex</span></pre>
+                        <pre class="term-output"><span class="t-ok">✓</span> Claude Code installed
 <span class="t-ok">✓</span> Git installed
 <span class="t-ok">✓</span> node and Salesforce CLI ready
 <span class="t-ok">✓</span> Insurwreck toolkit installed
@@ -378,9 +376,8 @@
                       <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
                     </button>
                   </div>
-                  <pre><span class="t-prompt">$</span> <span id="cmd-doctor">iw-doctor</span>
-
-<span class="t-ok">✓</span> Toolkit up to date
+                  <pre class="term-cmd"><span class="t-prompt">$</span> <span id="cmd-doctor">iw-doctor</span></pre>
+                  <pre class="term-output"><span class="t-ok">✓</span> Toolkit up to date
 <span class="t-ok">✓</span> Credentials found
 <span class="t-ok">✓</span> Plum data server responding
 <span class="t-ok">✓</span> Workflows connected
@@ -402,14 +399,36 @@
                     </p>
                   </article>
                 </div>
-                <label class="gate gate-final"><input type="checkbox" value="doctor" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span><strong>iw-doctor is green.</strong> I'm ready for stage two</span></label>
+                <label class="gate"><input type="checkbox" value="doctor" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span><strong>iw-doctor is green.</strong></span></label>
+              </div>
+            </li>
+
+            <!-- 6 -->
+            <li class="step">
+              <div class="step-head"><span class="step-num">06</span><h3>Check with the harness</h3></div>
+              <div class="step-body">
+                <p>One last check, from inside Claude Code itself, that everything it provisioned actually finished.</p>
+                <div class="term">
+                  <div class="term-bar">
+                    <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                    <span class="term-title">Claude Code</span>
+                    <button class="term-copy" type="button" data-copy="cmd-iwstatus">
+                      <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+                    </button>
+                  </div>
+                  <pre><span class="t-prompt">&gt;</span> <span id="cmd-iwstatus">/insurwreck:status</span></pre>
+                </div>
+                <p class="step-note">
+                  It repairs anything still unfinished on its own — no need to re-run the installer.
+                </p>
+                <label class="gate gate-final"><input type="checkbox" value="status" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span><strong>/insurwreck:status came back clean.</strong></span></label>
               </div>
             </li>
           </ol>
 
           <div class="progress-card">
             <div><p class="mono-label">Your setup</p><h3>Ready is enough.</h3></div>
-            <span class="check-count" aria-live="polite"><b>0</b>/5</span>
+            <span class="check-count" aria-live="polite"><b>0</b>/6</span>
           </div>
         </div>
       </section>

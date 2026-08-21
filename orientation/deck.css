@@ -161,6 +161,16 @@
   line-height: 1.75;
 }
 
+.term-cmd {
+  background: var(--mist);
+  border-bottom: 1px solid var(--line);
+  font-weight: 600;
+}
+
+.term-output {
+  color: var(--stone);
+}
+
 .term-inline {
   margin-top: 18px;
 }
@@ -216,11 +226,15 @@
 }
 
 .step-num {
-  display: block;
+  display: inline-block;
   margin-bottom: 10px;
-  color: var(--plum);
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--plum-wash);
+  color: var(--plum-ink);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 600;
   letter-spacing: 0.14em;
 }
 
