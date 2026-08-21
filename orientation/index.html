@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="auth-pending">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -18,9 +18,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="auth.css" />
     <link rel="stylesheet" href="deck.css" />
-    <script src="auth.js" defer></script>
     <script src="deck.js" defer></script>
   </head>
   <body>
@@ -43,6 +41,7 @@
       <symbol id="icon-restart" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9" /><path d="M20 4v4h-4" /></symbol>
       <symbol id="icon-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3.5 7.5 8.5 5.5 8.5-5.5" /></symbol>
       <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 7v5l3.5 2" /></symbol>
+      <symbol id="icon-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5v6M12 17v.01" /></symbol>
     </svg>
 
     <header class="site-nav">
@@ -59,7 +58,6 @@
           <a href="#examples">Examples</a>
           <a href="/landing">Event page</a>
         </nav>
-        <span data-auth-slot></span>
       </div>
       <div class="read-progress"><span data-progress></span></div>
     </header>
@@ -67,7 +65,7 @@
     <main id="top">
       <!-- hero ------------------------------------------------------------->
       <section class="wrap orient-hero">
-        <p class="eyebrow">Insurwreck 4.0 · Orientation · 31 July 2026</p>
+        <p class="eyebrow">Insurwreck 4.0 · Orientation</p>
         <h1>Let's get your<br />hackathon running.</h1>
         <p class="hero-promise">By the end of this page you have a working build environment.</p>
         <p class="hero-lede">
@@ -94,7 +92,7 @@
               checkpoint — not at the end, when you've lost twenty minutes.
             </p>
             <div class="principle-list">
-              <div><span>01</span><p><strong>Set up.</strong> One command installs everything. Five steps, each with a tick.</p></div>
+              <div><span>01</span><p><strong>Set up.</strong> One command installs everything. Seven steps, each with a tick.</p></div>
               <div><span>02</span><p><strong>Meet the harness.</strong> What got built for you, and what you can now just ask for.</p></div>
               <div><span>03</span><p><strong>Try one thing.</strong> Point it at a real problem and watch something get made.</p></div>
             </div>
@@ -107,7 +105,7 @@
         <div class="wrap">
           <div class="section-heading">
             <p class="eyebrow">Stage one · Set up</p>
-            <h2>Five steps.<br />Tick each one.</h2>
+            <h2>Seven steps.<br />Tick each one.</h2>
             <p>
               Your ticks are saved on this device, so you can see your own progress while we go through
               it together.
@@ -117,91 +115,216 @@
           <ol class="steps" data-checklist="orientation">
             <!-- 1 -->
             <li class="step">
-              <div class="step-head"><span class="step-num">01</span><h3>Paste one line</h3></div>
+              <div class="step-head"><span class="step-num">01</span><h3>Check in at the pantry</h3></div>
               <div class="step-body">
                 <p>
-                  Not yet installed? <a href="https://claude.ai/download" target="_blank">Download Claude Code</a>.
+                  We emailed you a QR code before the event. Show it at the pantry desk so we know
+                  you're here.
                 </p>
-                <p>
-                  On a Mac press <kbd>⌘</kbd><kbd>Space</kbd>, type <em>Terminal</em>, hit enter. Then
-                  paste this and press enter.
-                </p>
-                <div class="term">
-                  <div class="term-bar">
-                    <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-                    <span class="term-title">Terminal</span>
-                    <button class="term-copy" type="button" data-copy="cmd-install">
-                      <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
-                    </button>
-                  </div>
-                  <pre><span class="t-prompt">$</span> <span id="cmd-install">curl -fsSL https://insurwreck-desk.preview.plumhq.com/go | bash</span>
-
-<span class="t-ok">✓</span> Ghostty installed
-<span class="t-ok">✓</span> Claude Code installed
-<span class="t-ok">✓</span> node ready
-<span class="t-ok">✓</span> Insurwreck toolkit installed
-<span class="t-ok">✓</span> Project folder at <span class="t-dim">~/insurwreck</span>
-</pre>
-                </div>
-                <p>
-                  On a Windows laptop press the <kbd>Windows</kbd> button, type <em>Terminal</em>, hit
-                  enter. Then paste this and press enter.
-                </p>
-                <div class="term">
-                  <div class="term-bar">
-                    <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-                    <span class="term-title">Terminal</span>
-                    <button class="term-copy" type="button" data-copy="cmd-install-win">
-                      <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
-                    </button>
-                  </div>
-                  <pre><span class="t-prompt">$</span> <span id="cmd-install-win">irm https://insurwreck-desk.preview.plumhq.com/win | iex</span>
-
-<span class="t-ok">✓</span> Claude Code installed
-<span class="t-ok">✓</span> Git installed
-<span class="t-ok">✓</span> node ready
-<span class="t-ok">✓</span> Insurwreck toolkit installed
-<span class="t-ok">✓</span> Project folder at <span class="t-dim">%USERPROFILE%\insurwreck</span>
-</pre>
-                </div>
                 <p class="step-note">
-                  Three to five minutes, with a tick per step. If it asks for your Mac password, that's
-                  the installer needing permission to install software — type it and carry on. Safe to
-                  run twice; it skips whatever is already done.
+                  Can't find the email? Check spam, or just tell whoever's at the desk your name.
                 </p>
-                <label class="gate"><input type="checkbox" value="install" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>My install finished and printed a command to run next</span></label>
+                <label class="gate"><input type="checkbox" value="checkin" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>I checked in at the pantry</span></label>
               </div>
             </li>
 
             <!-- 2 -->
             <li class="step">
-              <div class="step-head"><span class="step-num">02</span><h3>Tell it who you are</h3></div>
+              <div class="step-head"><span class="step-num">02</span><h3>Paste one line</h3></div>
               <div class="step-body">
-                <p>
-                  The installer ends by printing a line to paste, finishing in
-                  <code>claude --permission-mode auto</code>. Paste that. Nothing happens on its own
-                  after that — once the agent starts, remember to type <code>/insurwreck:start</code> in
-                  the same terminal:
-                </p>
-                <div class="term">
-                  <div class="term-bar">
-                    <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-                    <span class="term-title">Claude Code</span>
-                    <button class="term-copy" type="button" data-copy="cmd-start">
-                      <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
-                    </button>
+                <div class="setup-picker">
+                  <div class="idea-tabs" role="tablist" aria-label="Operating system" data-os-tabs>
+                    <button type="button" class="idea-tab active" data-os="mac" aria-pressed="true">macOS</button>
+                    <button type="button" class="idea-tab" data-os="win" aria-pressed="false">Windows</button>
                   </div>
-                  <pre><span class="t-prompt">&gt;</span> <span id="cmd-start">/insurwreck:start</span>
-
-<span class="t-plum">?</span> Your name   <span class="t-dim">→</span>
-<span class="t-plum">?</span> Work email  <span class="t-dim">→ your @plumhq.com address</span>
-<span class="t-plum">?</span> Idea brief  <span class="t-dim">→ two sentences are enough</span>
-</pre>
+                  <div class="idea-tabs" role="tablist" aria-label="How you'll install" data-path-tabs>
+                    <button type="button" class="idea-tab active" data-path="terminal" aria-pressed="true">Terminal</button>
+                    <button type="button" class="idea-tab" data-path="app" aria-pressed="false">Claude app</button>
+                  </div>
                 </div>
-                <p>
-                  Then it emails you a six-digit code from
-                  <code>insurwreck@badge.plumhq.com</code>. Paste it back. Check spam the first time.
-                </p>
+
+                <div class="setup-variant is-active" data-os="mac" data-path="terminal">
+                  <ol class="setup-steps">
+                    <li>Accept the Claude Code invite we emailed you. Don't see it? Message the organizers.</li>
+                    <li>Press <kbd>⌘</kbd><kbd>Space</kbd>, type <em>Terminal</em>, hit enter.</li>
+                    <li>
+                      Paste this and press enter.
+                      <div class="term">
+                        <div class="term-bar">
+                          <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                          <span class="term-title">Terminal</span>
+                          <button class="term-copy" type="button" data-copy="cmd-install">
+                            <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+                          </button>
+                        </div>
+                        <pre class="term-cmd"><span class="t-prompt">$</span> <span id="cmd-install">curl -fsSL https://insurwreck-desk.preview.plumhq.com/go | bash</span></pre>
+                        <pre class="term-output"><span class="t-ok">✓</span> Ghostty installed
+<span class="t-ok">✓</span> Claude Code installed
+<span class="t-ok">✓</span> node and Salesforce CLI ready
+<span class="t-ok">✓</span> Insurwreck toolkit installed
+<span class="t-ok">✓</span> Project folder at <span class="t-dim">~/insurwreck</span>
+</pre>
+                      </div>
+                    </li>
+                  </ol>
+                  <p class="step-note">
+                    Three to five minutes, with a tick per step. If it asks for your Mac password,
+                    that's the installer needing permission to install software. Type it and carry on.
+                    Safe to run twice; it skips whatever is already done.
+                  </p>
+                </div>
+
+                <div class="setup-variant" data-os="win" data-path="terminal">
+                  <ol class="setup-steps">
+                    <li>Accept the Claude Code invite we emailed you. Don't see it? Message the organizers.</li>
+                    <li>Press the <kbd>Windows</kbd> button, type <em>Terminal</em>, hit enter.</li>
+                    <li>
+                      Paste this and press enter.
+                      <div class="term">
+                        <div class="term-bar">
+                          <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                          <span class="term-title">Terminal</span>
+                          <button class="term-copy" type="button" data-copy="cmd-install-win">
+                            <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+                          </button>
+                        </div>
+                        <pre class="term-cmd"><span class="t-prompt">$</span> <span id="cmd-install-win">irm https://insurwreck-desk.preview.plumhq.com/win | iex</span></pre>
+                        <pre class="term-output"><span class="t-ok">✓</span> Claude Code installed
+<span class="t-ok">✓</span> Git installed
+<span class="t-ok">✓</span> node and Salesforce CLI ready
+<span class="t-ok">✓</span> Insurwreck toolkit installed
+<span class="t-ok">✓</span> Project folder at <span class="t-dim">%USERPROFILE%\insurwreck</span>
+</pre>
+                      </div>
+                    </li>
+                  </ol>
+                  <p class="step-note">
+                    Eight to fifteen minutes, with a tick per step. If it asks for a Windows
+                    administrator password, that's the installer needing permission to install
+                    software. Type it and carry on. Safe to run twice; it skips whatever is already
+                    done.
+                  </p>
+                </div>
+
+                <div class="setup-variant" data-os="mac" data-path="app">
+                  <ol class="setup-steps">
+                    <li>Accept the Claude Code invite we emailed you. Don't see it? Message the organizers.</li>
+                    <li>
+                      You already have the assistant, so this skips installing it. Download and sign in
+                      first at <a href="https://claude.com/download" target="_blank" rel="noopener"><code>claude.com/download</code></a>, with your Plum Google account.
+                    </li>
+                    <li>
+                      Open the <strong>Code</strong> tab, start a session in any folder, and set the mode
+                      selector next to the send button to <strong>Auto</strong>.
+                    </li>
+                    <li>
+                      Paste this into the prompt box. It is an instruction to Claude, not a terminal
+                      command.
+                      <div class="term term-chat">
+                        <div class="term-bar">
+                          <span class="term-title">Claude app · prompt box</span>
+                          <button class="term-copy" type="button" data-copy="cmd-install-gui">
+                            <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+                          </button>
+                        </div>
+                        <div class="chat-bubble">
+                          <span id="cmd-install-gui">Set me up for Insurwreck by running: curl -fsSL https://insurwreck-desk.preview.plumhq.com/gui | bash</span>
+                        </div>
+                      </div>
+                    </li>
+                  </ol>
+                  <p class="step-note">
+                    When it finishes, <strong>quit the app completely and open it again</strong> — it
+                    reads your setup only at launch. Then open the folder it named, say yes when it asks
+                    whether you trust the folder, set the mode selector back to <strong>Auto</strong>,
+                    and type <code>/insurwreck:start</code>. If that command isn't offered, click
+                    <strong>+</strong> next to the prompt box, choose <strong>Plugins</strong>, install
+                    <strong>insurwreck</strong>, and try again.
+                  </p>
+                </div>
+
+                <div class="setup-variant" data-os="win" data-path="app">
+                  <ol class="setup-steps">
+                    <li>Accept the Claude Code invite we emailed you. Don't see it? Message the organizers.</li>
+                    <li>
+                      You already have the assistant, so this skips installing it. Download and sign in
+                      first at <a href="https://claude.com/download" target="_blank" rel="noopener"><code>claude.com/download</code></a>, with your Plum Google account.
+                    </li>
+                    <li>
+                      Open the <strong>Code</strong> tab, start a session in any folder, and set the mode
+                      selector next to the send button to <strong>Auto</strong>.
+                    </li>
+                    <li>
+                      Paste this into the prompt box. It tells Claude to run the installer through
+                      PowerShell itself, since the app's own commands go through Git Bash, which can't run
+                      it directly.
+                      <div class="term term-chat">
+                        <div class="term-bar">
+                          <span class="term-title">Claude app · prompt box</span>
+                          <button class="term-copy" type="button" data-copy="cmd-install-wingui">
+                            <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+                          </button>
+                        </div>
+                        <div class="chat-bubble">
+                          <span id="cmd-install-wingui">Set me up for Insurwreck by running this in PowerShell: irm https://insurwreck-desk.preview.plumhq.com/win-gui | iex</span>
+                        </div>
+                      </div>
+                    </li>
+                  </ol>
+                  <p class="step-note">
+                    When it finishes, <strong>quit the app completely and open it again</strong> — it
+                    reads your setup only at launch. Then open the folder it named, say yes when it asks
+                    whether you trust the folder, set the mode selector back to <strong>Auto</strong>,
+                    and type <code>/insurwreck:start</code>. If that command isn't offered, click
+                    <strong>+</strong> next to the prompt box, choose <strong>Plugins</strong>, install
+                    <strong>insurwreck</strong>, and try again.
+                  </p>
+                </div>
+
+                <label class="gate"><input type="checkbox" value="install" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span>My install finished and printed a command to run next</span></label>
+              </div>
+            </li>
+
+            <!-- 3 -->
+            <li class="step">
+              <div class="step-head"><span class="step-num">03</span><h3>Tell it who you are</h3></div>
+              <div class="step-body">
+                <ol class="setup-steps">
+                  <li>
+                    Paste the line the installer printed, finishing in
+                    <code>claude --permission-mode auto</code>.
+                  </li>
+                  <li>
+                    Once the agent starts, type <code>/insurwreck:start</code> in the same terminal.
+                    <div class="term">
+                      <div class="term-bar">
+                        <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                        <span class="term-title">Claude Code</span>
+                        <button class="term-copy" type="button" data-copy="cmd-start">
+                          <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+                        </button>
+                      </div>
+                      <pre><span class="t-prompt">&gt;</span> <span id="cmd-start">/insurwreck:start</span></pre>
+                    </div>
+                  </li>
+                  <li>
+                    It answers back with two questions. Nothing to copy here — just type your answer and
+                    press enter, one at a time.
+                    <div class="term">
+                      <div class="term-bar">
+                        <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                        <span class="term-title">Claude Code</span>
+                      </div>
+                      <pre><span class="t-plum">?</span> Your name   <span class="t-dim">→</span>
+<span class="t-plum">?</span> Work email  <span class="t-dim">→ your @plumhq.com address</span>
+</pre>
+                    </div>
+                  </li>
+                  <li>
+                    Then it emails you a six-digit code from
+                    <code>insurwreck@badge.plumhq.com</code>. Paste it back. Check spam the first time.
+                  </li>
+                </ol>
                 <p class="step-note">
                   No idea yet? Say <em>"still exploring"</em>. It's a valid answer and we'll help you
                   pick one later.
@@ -210,9 +333,9 @@
               </div>
             </li>
 
-            <!-- 3 -->
+            <!-- 4 -->
             <li class="step">
-              <div class="step-head"><span class="step-num">03</span><h3>Wait while it builds your kit</h3></div>
+              <div class="step-head"><span class="step-num">04</span><h3>Wait while it builds your kit</h3></div>
               <div class="step-body">
                 <p>
                   This is the slow bit — a minute or two. It's creating real infrastructure in your name.
@@ -237,9 +360,9 @@
               </div>
             </li>
 
-            <!-- 4 -->
+            <!-- 5 -->
             <li class="step step-emphasis">
-              <div class="step-head"><span class="step-num">04</span><h3>Quit it. Start it again.</h3></div>
+              <div class="step-head"><span class="step-num">05</span><h3>Quit it. Start it again.</h3></div>
               <div class="step-body">
                 <div class="emphasis-box">
                   <span class="emphasis-icon"><svg aria-hidden="true"><use href="#icon-restart"></use></svg></span>
@@ -256,9 +379,31 @@
               </div>
             </li>
 
-            <!-- 5 -->
+            <!-- 6 -->
             <li class="step">
-              <div class="step-head"><span class="step-num">05</span><h3>Prove it works</h3></div>
+              <div class="step-head"><span class="step-num">06</span><h3>Check with the harness</h3></div>
+              <div class="step-body">
+                <p>One last check, from inside Claude Code itself, that everything it provisioned actually finished.</p>
+                <div class="term">
+                  <div class="term-bar">
+                    <span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                    <span class="term-title">Claude Code</span>
+                    <button class="term-copy" type="button" data-copy="cmd-iwstatus">
+                      <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
+                    </button>
+                  </div>
+                  <pre><span class="t-prompt">&gt;</span> <span id="cmd-iwstatus">/insurwreck:status</span></pre>
+                </div>
+                <p class="step-note">
+                  It repairs anything still unfinished on its own — no need to re-run the installer.
+                </p>
+                <label class="gate"><input type="checkbox" value="status" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span><strong>/insurwreck:status came back clean.</strong></span></label>
+              </div>
+            </li>
+
+            <!-- 7 -->
+            <li class="step">
+              <div class="step-head"><span class="step-num">07</span><h3>Prove it works</h3></div>
               <div class="step-body">
                 <p>One command checks your whole setup and explains anything wrong in plain English.</p>
                 <div class="term">
@@ -269,9 +414,8 @@
                       <svg aria-hidden="true"><use href="#icon-copy"></use></svg><span>Copy</span>
                     </button>
                   </div>
-                  <pre><span class="t-prompt">$</span> <span id="cmd-doctor">iw-doctor</span>
-
-<span class="t-ok">✓</span> Toolkit up to date
+                  <pre class="term-cmd"><span class="t-prompt">$</span> <span id="cmd-doctor">iw-doctor</span></pre>
+                  <pre class="term-output"><span class="t-ok">✓</span> Toolkit up to date
 <span class="t-ok">✓</span> Credentials found
 <span class="t-ok">✓</span> Plum data server responding
 <span class="t-ok">✓</span> Workflows connected
@@ -281,11 +425,13 @@
 </pre>
                 </div>
                 <div class="pair-grid tight">
-                  <article class="panel">
+                  <article class="panel panel-ok">
+                    <span class="panel-icon"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span>
                     <h3>All green?</h3>
                     <p>You're done. Sit tight while we get everyone else there.</p>
                   </article>
-                  <article class="panel">
+                  <article class="panel panel-signal">
+                    <span class="panel-icon"><svg aria-hidden="true"><use href="#icon-alert"></use></svg></span>
                     <h3>Something red?</h3>
                     <p>
                       Read what it says — it usually names the fix. "Restart" genuinely means restart. If
@@ -293,14 +439,14 @@
                     </p>
                   </article>
                 </div>
-                <label class="gate gate-final"><input type="checkbox" value="doctor" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span><strong>iw-doctor is green.</strong> I'm ready for stage two</span></label>
+                <label class="gate gate-final"><input type="checkbox" value="doctor" /><span class="custom-check"><svg aria-hidden="true"><use href="#icon-check"></use></svg></span><span><strong>iw-doctor is green.</strong></span></label>
               </div>
             </li>
           </ol>
 
           <div class="progress-card">
             <div><p class="mono-label">Your setup</p><h3>Ready is enough.</h3></div>
-            <span class="check-count" aria-live="polite"><b>0</b>/5</span>
+            <span class="check-count" aria-live="polite"><b>0</b>/7</span>
           </div>
         </div>
       </section>
@@ -310,7 +456,7 @@
         <div class="wrap">
           <div class="section-heading">
             <p class="eyebrow">Stage two · What got built</p>
-            <h2>Eight things,<br />all yours.</h2>
+            <h2>Seven things,<br />all yours.</h2>
             <p>
               You never see or paste a key. They're written into your project for you, scoped to you, and
               revoked after the event.
@@ -345,10 +491,6 @@
               <div class="kit-head"><span class="kit-logo"><img src="assets/logo-google.svg" alt="" /></span><span class="mono-label">Login</span></div>
               <strong>Google</strong><p>Plum-only sign-in for whatever app you build. Two lines of code.</p>
             </article>
-            <article>
-              <div class="kit-head"><span class="kit-logo"><b>K</b></span><span class="mono-label">Recruiting</span></div>
-              <strong>Kula</strong><p>Read-only pipeline data, shared across everyone.</p>
-            </article>
           </div>
         </div>
       </section>
@@ -358,24 +500,18 @@
         <div class="wrap">
           <div class="section-heading">
             <p class="eyebrow">The harness · Connections</p>
-            <h2>Five live systems,<br />already attached.</h2>
+            <h2>Three live systems,<br />already attached.</h2>
           </div>
           <div class="matrix-wrap">
             <table class="matrix">
               <thead><tr><th scope="col">Connection</th><th scope="col">Ask for things like</th><th scope="col">What you can see</th></tr></thead>
               <tbody>
-                <tr><td>Plum data<small>insurwreck-data</small></td><td>"Show me claims by status" · "what's our NPS trend"</td><td>Ten read-only slices, de-identified</td></tr>
-                <tr><td>Salesforce</td><td>"What's this account's history?"</td><td><strong>Your own</strong> login and permissions — run <code>/insurwreck:connect</code></td></tr>
-                <tr><td>Kula</td><td>"Show the current hiring pipeline"</td><td>Read-only, same view for everyone</td></tr>
+                <tr><td>Plum data<small>insurwreck-data</small></td><td>"Show me claims by status" · "what's our NPS trend"</td><td>29 read-only slices, partly unmasked</td></tr>
                 <tr><td>n8n</td><td>"Run this every morning at 9"</td><td>Shared workspace</td></tr>
                 <tr><td>Remotion</td><td>"Make a short video from this data"</td><td>Documentation only</td></tr>
               </tbody>
             </table>
           </div>
-          <p class="stack-footnote">
-            Only Salesforce asks you to log in, because it acts as <em>you</em> — you see exactly what
-            you'd see in the Salesforce UI, and nothing more.
-          </p>
 
           <div class="section-heading spaced">
             <p class="eyebrow">The harness · Shortcuts</p>
@@ -433,10 +569,10 @@
             <article class="panel">
               <h3>What you get</h3>
               <p>
-                Ten read-only slices: claims, covered lives, support tickets, NPS, policy schedules and
+                29 read-only slices: claims, covered lives, support tickets, NPS, policy schedules and
                 more. Ask for what you want — you don't need to know table names.
               </p>
-              <p class="panel-foot">De-identified: no member names, ages banded, free-text notes stripped out.</p>
+              <p class="panel-foot">Read-only, and real. Some slices are masked, others are not — expect real organisation names, dates of birth and raw claim comment text. Confidential either way: nothing into Slack, no raw rows on a slide. Aggregates and charts in your demo are fine.</p>
             </article>
             <article class="panel panel-signal">
               <h3>Read this once</h3>
@@ -508,7 +644,7 @@
     <footer class="site-footer">
       <div class="wrap footer-inner">
         <span>Plum · Insurwreck 4.0</span>
-        <span>Orientation · 31 July 2026</span>
+        <span>Orientation · Insurwreck 4.0</span>
       </div>
     </footer>
   </body>
